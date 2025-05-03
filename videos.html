@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Videos Locales con Visualizador</title> <!-- Título actualizado -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📹</text></svg>">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    /* --- CSS MANTENIDO CON max-width: 98% --- */
+    html, body { height: 100%; margin: 0; }
+    .main-wrapper { display: flex; flex-direction: column; min-height: 100vh; }
+    main { flex: 1; }
+    footer { background-color: #007bff; color: white; text-align: center; padding: 1rem; margin-top: auto; }
+    .video-header { display: inline-flex; align-items: center; gap: 1.5rem; margin-bottom: 0.5rem; max-width: 100%; }
+    .video-header-image img { max-width: 120px; height: auto; display: block; }
+    .video-header-content { text-align: left; }
+    /* Contenedor con ancho aumentado */
+    .player-playlist-container { display: flex; gap: 1rem; max-width: 98%; margin: 1rem auto; }
+    /* Player y Lista con ancho igual */
+    #video-player { flex: 1; min-width: 0; aspect-ratio: 16 / 9; background-color: #000; border-radius: 5px; }
+    #video-list { flex: 1; min-width: 0; list-style: none; padding: 0; max-height: 500px; overflow-y: auto; background-color: #e7f5ff; border-radius: 5px; }
+    #video-list li { display: flex; align-items: center; padding: 0.5rem; cursor: pointer; background-color: transparent; border-bottom: 1px solid #dee2e6; }
+    #video-list li:last-child { border-bottom: none; }
+    .video-thumbnail { width: 80px; height: 45px; object-fit: cover; margin-right: 10px; background-color: #ccc; border-radius: 3px; flex-shrink: 0; }
+    .video-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #video-list li:hover { background-color: #f0f0f0; }
+    #video-list li.active { background-color: #007bff; color: white; }
+    #video-list li.active .video-name { color: white; }
+
+    /* <<< INICIO CSS AÑADIDO: Estilos Visualizer >>> */
+    #visualizer {
+      display: block;
+      /* Centrado debajo del contenedor player/lista */
+      /* Usamos el mismo ancho y margen que el contenedor para alinear */
+      max-width: 98%;
+      margin: 2rem auto 1rem auto; /* Margen superior/inferior y centrado */
+      width: 100%; /* Ocupa el ancho del max-width */
+      height: 80px;
+      background-color: #e7f5ff; /* Mismo azul claro que la lista */
+      border-radius: 5px;
+    }
+     /* <<< FIN CSS AÑADIDO >>> */
+
+    @media (max-width: 992px) {
+        .player-playlist-container { flex-direction: column; max-width: 98%; }
+        #video-player, #video-list { flex: none; width: 100%; }
+        #video-list { margin-top: 1rem; max-height: 400px; }
+         /* Visualizer en móvil también ocupa ancho */
+         #visualizer {
+             max-width: 98%;
+             margin: 1.5rem auto 1rem auto; /* Menos margen en móvil */
+         }
+    }
+  </style>
+</head>
+<body>
+<div class="main-wrapper">
+
+  <!-- NAVBAR -->
+  <div id="navbar-placeholder"></div>
+  <script src="navbar.js"></script>
+
+  <!-- Contenedor principal fluido y centrado -->
+  <main class="container-fluid text-center my-4">
+
+    <!-- Encabezado (Verifica ruta de imagen - SIN CAMBIOS) -->
+    <div class="video-header">
+        <div class="video-header-image">
+            <!-- MANTENIDA imagen de tu código anterior -->
+            <img src="img/video-sinfondo.png" alt="Videos locales">
+        </div>
+        <div class="video-header-content">
+            <h3>Videos desde tu dispositivo</h3>
+            <p>Selecciona videos (MP4, WebM, Ogg) desde tu computadora o memoria USB</p>
+            <div class="d-flex gap-2">
+                <input type="file" id="video-file-input" accept="video/mp4,video/webm,video/ogg" multiple hidden />
+                <button class="btn btn-primary" onclick="document.getElementById('video-file-input').click()">🎬 Cargar Videos</button>
+                <button class="btn btn-danger" onclick="limpiarListaVideos()">🗑️ Limpiar lista</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor Player + Playlist -->
+    <div class="player-playlist-container">
+        <video id="video-player" controls playsinline crossorigin="anonymous"></video> <!-- Añadido crossorigin -->
+        <ul id="video-list" class="list-group"></ul>
+    </div>
+
+    <!-- <<< INICIO HTML AÑADIDO: Canvas para Visualizer >>> -->
+    <canvas id="visualizer"></canvas>
+    <!-- <<< FIN HTML AÑADIDO >>> -->
+
+  </main>
+
+  <!-- FOOTER -->
+  <div id="footer-placeholder"></div>
+  <script src="footer.js"></script>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const videoFileInput = document.getElementById("video-file-input");
+  const videoPlayer = document.getElementById("video-player");
+  const videoList = document.getElementById("video-list");
+
+  let currentVideoIndex = 0;
+  let videos = [];
+  let videoURLs = new Map();
+
+  // <<< INICIO JS AÑADIDO: Variables para Visualizer >>>
+  const visualizerCanvas = document.getElementById('visualizer');
+  // Obtener contexto solo si el canvas existe
+  const visualizerCtx = visualizerCanvas ? visualizerCanvas.getContext('2d') : null;
+  let audioCtx; // Se inicializará al primer play
+  let analyser;
+  let source; // Fuente será el videoPlayer
+  // <<< FIN JS AÑADIDO >>>
+
+  const PLACEHOLDER_SRC = 'img/placeholder_video.png';
+  const PLACEHOLDER_ERROR_SRC = 'img/placeholder_error.png';
+
+  videoFileInput.addEventListener("change", function (event) {
+    limpiarListaVideos(true);
+    videos = Array.from(event.target.files);
+    console.log(`Cargados ${videos.length} videos.`);
+    mostrarVideos(videos);
+    if (videos.length > 0) {
+      currentVideoIndex = 0;
+      reproducirVideo(videos[currentVideoIndex], currentVideoIndex);
+    }
+  });
+
+  function mostrarVideos(videoFiles) {
+    videoList.innerHTML = "";
+    let thumbnailDelay = 0;
+    const delayIncrement = 100;
+
+    videoFiles.forEach((video, index) => {
+      const li = document.createElement("li");
+      li.id = `video-item-${index}`;
+      li.classList.add("list-group-item", "list-group-item-action");
+      li.style.cursor = "pointer";
+      const thumbnail = document.createElement('img');
+      thumbnail.classList.add('video-thumbnail');
+      thumbnail.src = PLACEHOLDER_SRC;
+      thumbnail.alt = 'Cargando...';
+      thumbnail.onerror = () => { thumbnail.alt = "Sin miniatura"; console.error(`Error al cargar: ${PLACEHOLDER_SRC}`);}
+      const nameSpan = document.createElement('span');
+      nameSpan.classList.add('video-name');
+      nameSpan.textContent = video.name;
+      li.appendChild(thumbnail); li.appendChild(nameSpan);
+      li.addEventListener("click", () => { currentVideoIndex = index; reproducirVideo(video, index); });
+      videoList.appendChild(li);
+      setTimeout(() => { if (document.getElementById(`video-item-${index}`)) { generateThumbnail(video, thumbnail, index); } else { console.log(`[${index}] Li omitido.`); } }, thumbnailDelay);
+      thumbnailDelay += delayIncrement;
+    });
+    marcarVideoActivo();
+  }
+
+  async function generateThumbnail(videoFile, imgElement, index) {
+      // --- Código de generateThumbnail (SIN CAMBIOS respecto a la última versión) ---
+       console.log(`[${index}] Iniciando thumbnail para: ${videoFile.name}`); if (!imgElement.isConnected) { console.log(`[${index}] Abortando: img no conectada.`); return; }
+       const video = document.createElement('video'); const canvas = document.createElement('canvas'); const context = canvas.getContext('2d', { alpha: false, desynchronized: true, powerPreference: "low-power" }); let url = null; let timeoutId = null; let didCleanup = false;
+       const cleanup = (reason = "Completado") => { if (didCleanup) return; didCleanup = true; console.log(`[${index}] Limpieza (${reason}). Revocando URL: ${url ? 'Sí' : 'No'}`); if (timeoutId) clearTimeout(timeoutId); video.onloadedmetadata = null; video.onseeked = null; video.onerror = null; if (url) { try { URL.revokeObjectURL(url); } catch(e){} url = null; } video.removeAttribute('src'); video.load(); try { video.remove(); } catch(e){} try { canvas.remove(); } catch(e){} };
+       timeoutId = setTimeout(() => { console.warn(`[${index}] ¡TIMEOUT GENERAL (20s) generando thumbnail!`); if (imgElement.isConnected) { imgElement.src = PLACEHOLDER_ERROR_SRC; imgElement.alt = "Error: Timeout"; imgElement.onerror = () => { imgElement.alt = "Sin miniatura"; console.error(`Error al cargar: ${PLACEHOLDER_ERROR_SRC}`);} } cleanup("Timeout General"); }, 20000);
+       try {
+           url = URL.createObjectURL(videoFile); video.src = url; video.muted = true; video.playsInline = true; video.preload = 'metadata';
+           console.log(`[${index}] Esperando metadatos...`);
+           await Promise.race([ new Promise((resolve, reject) => { video.onloadedmetadata = () => { console.log(`[${index}] Metadatos recibidos.`); resolve(); }; video.onerror = (e) => reject(new Error(`Error ${e.target?.error?.code}: Carga de metadatos`)); }), new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout (7s) esperando metadatos")), 7000)) ]);
+           console.log(`[${index}] Metadatos OK. Dur: ${video.duration}, Dim: ${video.videoWidth}x${video.videoHeight}`); if (!video.videoWidth || !video.videoHeight || isNaN(video.duration)) { throw new Error(`Metadatos inválidos/incompletos.`); }
+           const seekTime = 0; video.currentTime = seekTime; console.log(`[${index}] Buscando fotograma en ${video.currentTime}s...`);
+           await new Promise((resolve, reject) => { const seekTimeoutId = setTimeout(() => reject(new Error(`Timeout (7s) buscando fotograma ${seekTime}`)), 7000); video.onseeked = () => { clearTimeout(seekTimeoutId); console.log(`[${index}] Seek a ${seekTime} completado.`); resolve(); }; video.onerror = (e) => { clearTimeout(seekTimeoutId); reject(new Error(`Error durante seek a ${seekTime}`)); }; });
+           await new Promise(resolve => setTimeout(resolve, 50));
+           console.log(`[${index}] Fotograma listo para dibujar...`); const targetWidth = 80; const targetHeight = 45; canvas.width = targetWidth; canvas.height = targetHeight; let sourceX = 0, sourceY = 0, sourceWidth = video.videoWidth, sourceHeight = video.videoHeight; const videoRatio = video.videoWidth / video.videoHeight; const targetRatio = targetWidth / targetHeight;
+           if (videoRatio > targetRatio) { sourceWidth = video.videoHeight * targetRatio; sourceX = (video.videoWidth - sourceWidth) / 2; } else { sourceHeight = video.videoWidth / targetRatio; sourceY = (video.videoHeight - sourceHeight) / 2; }
+           context.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+           if (imgElement.isConnected) { imgElement.src = canvas.toDataURL('image/jpeg', 0.7); imgElement.alt = `Previsualización de ${videoFile.name}`; console.log(`[${index}] Thumbnail generado con éxito.`); } else { console.log(`[${index}] Elemento img desapareció.`); }
+       } catch (error) { console.error(`Error final generando thumbnail para [${index}]: ${videoFile.name}`, error.message || error); if (imgElement.isConnected) { imgElement.src = PLACEHOLDER_ERROR_SRC; imgElement.alt = "Error al generar previsualización"; imgElement.onerror = () => { imgElement.alt = "Sin miniatura"; console.error(`Error al cargar: ${PLACEHOLDER_ERROR_SRC}`);}}
+       } finally { cleanup("Finally block"); }
+  }
+
+  function reproducirVideo(video, index) {
+    if (!video) return;
+    console.log(`Reproduciendo [${index}]: ${video.name}`);
+    const newUrl = URL.createObjectURL(video);
+    const oldPlayerSrc = videoPlayer.src;
+    // Revocar URLs anteriores de forma segura
+    if (oldPlayerSrc && oldPlayerSrc.startsWith('blob:') && oldPlayerSrc !== newUrl) { URL.revokeObjectURL(oldPlayerSrc); console.log(`URL anterior del player revocada: ${oldPlayerSrc}`); }
+    if (videoURLs.has(index) && videoURLs.get(index) !== newUrl) { URL.revokeObjectURL(videoURLs.get(index)); console.log(`URL anterior para índice ${index} revocada.`); }
+
+    videoURLs.set(index, newUrl);
+    videoPlayer.src = newUrl;
+    videoPlayer.load();
+    videoPlayer.play().catch(error => console.error(`Error play [${index}]`, error));
+    marcarVideoActivo();
+
+    // <<< JS MODIFICADO: Iniciar visualizador al reproducir video >>>
+    // Asegurarse que el contexto de audio se inicie/reanude al reproducir
+    try {
+        if (!audioCtx || audioCtx.state === 'closed') {
+            console.log("Visualizer: AudioContext cerrado o no inicializado. Iniciando...");
+            iniciarVisualizador(); // Llama a la función del visualizador
+        } else if (audioCtx.state === "suspended") {
+            console.log("Visualizer: AudioContext suspendido. Reanudando...");
+            audioCtx.resume().catch(e=>console.error("Error reanudando AudioContext", e));
+        } else {
+            console.log("Visualizer: AudioContext ya está corriendo.");
+        }
+    } catch (e) {
+        console.error("Error al intentar iniciar/reanudar AudioContext en play:", e);
+    }
+    // <<< FIN JS MODIFICADO >>>
+  }
+
+  function marcarVideoActivo() {
+    videoList.querySelectorAll("li").forEach((li, i) => {
+      if(li) li.classList.toggle("active", i === currentVideoIndex);
+    });
+  }
+
+  function limpiarListaVideos(revokeOld = true) {
+    console.log("Limpiando lista...");
+    videoList.innerHTML = "";
+    videoPlayer.pause();
+    const oldSrc = videoPlayer.src;
+    videoPlayer.removeAttribute('src'); videoPlayer.load();
+    if (oldSrc && oldSrc.startsWith('blob:')) { URL.revokeObjectURL(oldSrc); console.log("Player URL revocado"); }
+    if (revokeOld) { videoURLs.forEach((url, index) => { if (url) URL.revokeObjectURL(url); }); console.log(`${videoURLs.size} URLs de lista revocadas.`); videoURLs.clear(); }
+    videos = []; currentVideoIndex = 0; console.log("Lista limpiada.");
+
+    // <<< JS MODIFICADO: Limpiar canvas del visualizador >>>
+    if (visualizerCtx) {
+        visualizerCtx.fillStyle = '#e7f5ff'; // Usa el color de fondo correcto
+        visualizerCtx.fillRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+        console.log("Visualizer canvas limpiado.");
+    }
+    // <<< FIN JS MODIFICADO >>>
+  }
+
+  videoPlayer.addEventListener("ended", () => {
+    console.log(`Video [${currentVideoIndex}] terminado.`);
+    if (videos.length > 1) {
+        currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+        if(videos[currentVideoIndex]){ console.log(`Siguiente [${currentVideoIndex}]`); reproducirVideo(videos[currentVideoIndex], currentVideoIndex); }
+        else { console.warn(`Video no encontrado en ${currentVideoIndex}`); }
+    } else { console.log("Fin de lista."); }
+  });
+
+
+  // --- INICIO FUNCIONES JS AÑADIDAS: Visualizer ---
+  function iniciarVisualizador() {
+    // Verificar si el canvas existe
+    if (!visualizerCanvas) {
+        console.error("Elemento canvas #visualizer no encontrado.");
+        return;
+    }
+    if (!visualizerCtx) {
+        console.error("Contexto 2D para #visualizer no pudo ser creado.");
+        return;
+    }
+
+    // Crear AudioContext solo si no existe o está cerrado
+    if (!audioCtx || audioCtx.state === 'closed') {
+      try {
+        console.log("Creando nuevo AudioContext...");
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {
+        console.error("Error initializing AudioContext:", e);
+        alert("Tu navegador no soporta Web Audio API.");
+        return;
+      }
+    }
+
+    // Crear o recrear Analyser
+    // if (!analyser || analyser.context.state === 'closed') { // Comentado temporalmente para recrear siempre
+        console.log("Creando nuevo AnalyserNode...");
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256; // Igual que en musica.html
+    // }
+
+    // Crear o recrear Source desde el videoPlayer
+    // Desconectar fuente anterior si existe
+    if (source) {
+        try {
+             source.disconnect();
+             console.log("Fuente de audio anterior desconectada.");
+         } catch(e) { console.warn("Error al desconectar fuente anterior:", e);}
+    }
+    try {
+        console.log("Creando MediaElementSourceNode desde videoPlayer...");
+        source = audioCtx.createMediaElementSource(videoPlayer);
+        console.log("Conectando source -> analyser -> destination...");
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination); // Conectar al destino final (altavoces)
+        console.log("Nodos de audio conectados.");
+    } catch (e) {
+        console.error("Error al crear o conectar MediaElementSourceNode:", e);
+        // Esto puede pasar si el elemento video no está listo o tiene problemas de CORS
+        // si se usaran fuentes externas, pero con archivos locales debería funcionar.
+        // Agregar el atributo crossorigin="anonymous" al tag <video> puede ayudar en algunos casos.
+         alert("Error al conectar el audio del video para el visualizador. ¿Quizás el video no está listo?");
+        return;
+    }
+
+
+    // Ajustar tamaño del canvas del visualizador
+    try {
+        visualizerCanvas.width = visualizerCanvas.clientWidth;
+        visualizerCanvas.height = visualizerCanvas.clientHeight;
+        console.log(`Visualizer canvas size: ${visualizerCanvas.width}x${visualizerCanvas.height}`);
+    } catch(e){ console.warn("Error ajustando tamaño del visualizer canvas:", e);}
+
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    console.log(`Visualizer bufferLength: ${bufferLength}`);
+
+    // Iniciar el bucle de dibujo
+    dibujarVisualizador(dataArray, bufferLength); // Llamar a la función de dibujo específica
+  }
+
+  // Función de dibujo renombrada para claridad
+  function dibujarVisualizador(dataArray, bufferLength) {
+      // Verificar si el contexto y el analyser siguen válidos
+      if (!visualizerCtx || !analyser || !audioCtx || audioCtx.state === 'closed') {
+          console.log("Deteniendo bucle de dibujo del visualizador (contexto/analyser inválido).");
+          return;
+      }
+
+      // Solicitar el siguiente cuadro de animación
+      requestAnimationFrame(() => dibujarVisualizador(dataArray, bufferLength)); // Llama a sí misma
+
+      try {
+          analyser.getByteFrequencyData(dataArray); // Obtener datos de frecuencia
+
+          // Limpiar el canvas con el color de fondo
+          visualizerCtx.fillStyle = '#e7f5ff'; // Azul claro
+          visualizerCtx.fillRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+
+          const barGap = 1; // Mantenido de musica.html
+          const segmentWidth = visualizerCanvas.width / bufferLength;
+          let barWidth = Math.max(1, segmentWidth - barGap);
+
+          // Color de las barras
+          visualizerCtx.fillStyle = "#00aaff"; // Azul de las barras
+
+          for (let i = 0; i < bufferLength; i++) {
+              const x = i * segmentWidth;
+              // Escalar altura basada en el valor y altura del canvas
+              const barHeight = (dataArray[i] / 255) * visualizerCanvas.height * 1.0;
+              let currentBarWidth = barWidth;
+              // Ajustar última barra
+              if (i === bufferLength - 1) {
+                  currentBarWidth = Math.max(1, visualizerCanvas.width - x);
+              }
+              // Dibujar la barra desde abajo hacia arriba
+              visualizerCtx.fillRect(
+                  x,
+                  visualizerCanvas.height - barHeight, // y = altura total - altura barra
+                  currentBarWidth,
+                  barHeight
+              );
+          }
+      } catch(e) {
+          console.error("Error en el bucle de dibujo del visualizador:", e);
+          // Podrías detener el bucle aquí si hay errores continuos
+      }
+  }
+
+  // Listener para iniciar el visualizador en el primer play (y reanudar contexto si es necesario)
+  // Este listener ya estaba en tu código anterior, lo movemos aquí para agrupar
+  // videoPlayer.addEventListener("play", () => { // COMENTADO PORQUE YA SE LLAMA DESDE reproducirVideo
+  //   try {
+  //       if (!audioCtx || audioCtx.state === 'closed') {
+  //           iniciarVisualizador();
+  //       } else if (audioCtx.state === "suspended") {
+  //           audioCtx.resume().catch(e=>console.error("Resume error on play",e));
+  //       }
+  //       // Asegurar tamaño canvas si ya estaba inicializado
+  //       if (visualizerCtx && visualizerCanvas.isConnected) {
+  //           try {
+  //                visualizerCanvas.width = visualizerCanvas.clientWidth;
+  //                visualizerCanvas.height = visualizerCanvas.clientHeight;
+  //           } catch(e){console.warn("Resize visualizer error on play (running)", e);}
+  //       }
+  //   } catch (e) {
+  //       console.error("Error in visualizer play event handler:", e);
+  //   }
+  // });
+
+  // Listener para ajustar tamaño del visualizer canvas si la ventana cambia
+  window.addEventListener('resize', () => {
+      if (visualizerCtx && visualizerCanvas.isConnected) {
+          try {
+              visualizerCanvas.width = visualizerCanvas.clientWidth;
+              visualizerCanvas.height = visualizerCanvas.clientHeight;
+              console.log(`Visualizer canvas redimensionado a: ${visualizerCanvas.width}x${visualizerCanvas.height}`);
+          } catch(e) {console.warn("Error al redimensionar visualizer canvas:", e);}
+      }
+  });
+  // --- FIN FUNCIONES JS AÑADIDAS: Visualizer ---
+
+
+</script>
+</body>
+</html>

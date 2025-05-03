@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Música MP3</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎵</text></svg>">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+
+    .main-wrapper {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    main {
+      flex: 1;
+    }
+
+    footer {
+      background-color: #007bff;
+      color: white;
+      text-align: center;
+      padding: 1rem;
+      margin-top: auto;
+    }
+
+    /* --- INICIO: CSS Modificado/Añadido SOLO para Layout Título/Imagen --- */
+    /* Contenedor Flex para imagen y texto/botones */
+    .music-header {
+      display: inline-flex; /* Usa inline-flex para que el bloque respete el text-center del padre */
+      align-items: center; /* Alinea verticalmente imagen y texto */
+      gap: 1.5rem;         /* Espacio entre la imagen y el bloque de texto/botones */
+      margin-bottom: 1.5rem; /* Espacio debajo de este bloque */
+      max-width: 100%;      /* Asegura que no exceda el contenedor */
+    }
+
+    /* Columna de la imagen */
+    .music-header-image img {
+      max-width: 120px; /* Ajusta este tamaño como necesites */
+      height: auto;
+      display: block;
+    }
+
+    /* Columna del texto y botones */
+    .music-header-content {
+      text-align: left; /* Sobrescribe text-center para esta columna */
+    }
+    /* --- FIN: CSS Modificado/Añadido --- */
+
+
+    /* --- Estilos Playlist (SIN CAMBIOS) --- */
+    #playlist {
+      list-style: none;
+      padding: 0;
+      margin-top: 1rem; /* Ajustado levemente por nuevo layout */
+      max-height: 410px; /* Mantenido */
+      overflow-y: auto;
+	  background-color:  #e7f5ff;
+    }
+    #playlist li {
+      padding: 0.5rem;
+      cursor: pointer;
+	  background-color: transparent;.
+    }
+    #playlist li:hover {
+      background-color: #f0f0f0;
+    }
+    #playlist li.active {
+      background-color: #007bff;
+      color: white;
+    }
+
+    /* --- Estilos Visualizer (SIN CAMBIOS) --- */
+    #visualizer {
+      display: block;
+      margin: 2rem auto;
+	  margin-bottom: 0rem; 
+      width: 100%;
+      max-width: 800px;
+      height: 80px;
+      background-color: #e7f5ff; /* Mantenido */
+      border-radius: 5px;
+    }
+
+    /* --- Estilos Audio Player (SIN CAMBIOS) --- */
+    #audio-player {
+        width: 100%;
+        max-width: 800px;
+        margin: 1rem auto;
+    }
+  </style>
+</head>
+<body>
+<div class="main-wrapper">
+
+  <!-- NAVBAR -->
+  <div id="navbar-placeholder"></div>
+  <script src="navbar.js"></script>
+
+  <!-- Contenedor principal MANTIENE text-center -->
+  <main class="container text-center my-4">
+
+    <!-- INICIO: Nueva estructura HTML con Flexbox para Título/Imagen -->
+    <div class="music-header">
+        <!-- Columna izquierda: Imagen -->
+        <div class="music-header-image">
+            <img src="img/hombreradio2.png" alt="Ilustración radio"> <!-- Nuevo nombre de imagen -->
+        </div>
+        <!-- Columna derecha: Texto y botones -->
+        <div class="music-header-content">
+            <h3>Música desde tu dispositivo</h3>
+            <p>Selecciona canciones MP3 desde tu computadora o memoria USB</p>
+            <div class="d-flex gap-2"> <!-- Botones (sin justify-content-center aquí) -->
+                <input type="file" id="file-input" accept=".mp3" multiple hidden />
+                <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">🎵 Cargar canciones MP3</button>
+                <button class="btn btn-danger" onclick="limpiarLista()">🗑️ Limpiar lista</button>
+            </div>
+        </div>
+    </div>
+    <!-- FIN: Nueva estructura HTML -->
+
+    <!-- RESTO DEL CONTENIDO: Player, Playlist, Visualizer (SIN CAMBIOS) -->
+    <audio id="audio-player" controls></audio>
+    <ul id="playlist" class="list-group mt-3 mx-auto"></ul>
+    <canvas id="visualizer"></canvas>
+
+  </main>
+
+  <!-- FOOTER -->
+  <div id="footer-placeholder"></div>
+  <script src="footer.js"></script>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // --- TODO EL CÓDIGO JAVASCRIPT SE MANTIENE EXACTAMENTE IGUAL ---
+  const fileInput = document.getElementById("file-input");
+  const audioPlayer = document.getElementById("audio-player");
+  const playlist = document.getElementById("playlist");
+  const canvas = document.getElementById("visualizer");
+  const canvasCtx = canvas.getContext("2d");
+  let audioCtx, analyser, source;
+  let currentIndex = 0;
+  let songs = [];
+
+  // Initial canvas dimensions setup safely
+  try {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+  } catch(e) { console.warn("Error setting initial canvas dimensions"); }
+
+
+  fileInput.addEventListener("change", function () {
+    songs = Array.from(this.files);
+    mostrarCanciones(songs);
+    if (songs.length > 0) {
+      currentIndex = 0;
+      reproducir(songs[currentIndex]);
+    } else {
+      limpiarLista();
+    }
+  });
+
+  function mostrarCanciones(canciones) {
+    playlist.innerHTML = "";
+    canciones.forEach((song, index) => {
+      const li = document.createElement("li");
+      li.textContent = song.name;
+      li.classList.add("list-group-item", "list-group-item-action");
+      li.style.cursor = "pointer";
+      li.addEventListener("click", () => {
+        currentIndex = index;
+        reproducir(song);
+      });
+      playlist.appendChild(li);
+    });
+    marcarActivo();
+  }
+
+  function reproducir(song) {
+    if (!song) return;
+    const songUrl = URL.createObjectURL(song);
+    audioPlayer.src = songUrl;
+    audioPlayer.play()
+      .then(() => {
+          if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume().catch(e=>console.error("Resume error",e));
+          }
+          if (!analyser) {
+              iniciarVisualizador();
+          } else {
+              // Update canvas size on play
+              try {
+                  canvas.width = canvas.clientWidth;
+                  canvas.height = canvas.clientHeight;
+              } catch(e){console.warn("Resize error on play", e)}
+          }
+      })
+      .catch(error => console.error("Error playing audio:", error));
+    marcarActivo();
+
+    audioPlayer.onloadedmetadata = () => {
+        if (audioPlayer.previousObjectURL) {
+            URL.revokeObjectURL(audioPlayer.previousObjectURL);
+        }
+        audioPlayer.previousObjectURL = songUrl;
+    }
+  }
+
+  function marcarActivo() {
+    const items = playlist.querySelectorAll("li");
+    items.forEach((li, i) => {
+      li.classList.toggle("active", i === currentIndex);
+    });
+  }
+
+  function limpiarLista() {
+    playlist.innerHTML = "";
+    audioPlayer.pause();
+    if (audioPlayer.previousObjectURL) {
+        URL.revokeObjectURL(audioPlayer.previousObjectURL);
+    }
+    audioPlayer.src = "";
+    audioPlayer.removeAttribute('src');
+    songs = [];
+    currentIndex = 0;
+    if (canvasCtx) {
+        canvasCtx.fillStyle = '#e0f2e9';
+        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  audioPlayer.addEventListener("ended", () => {
+    if (songs.length > 0) {
+        currentIndex = (currentIndex + 1) % songs.length;
+        if(songs[currentIndex]){ // Check if song exists
+             reproducir(songs[currentIndex]);
+        }
+    }
+  });
+
+  // Visualizer Setup (SIN CAMBIOS)
+  function iniciarVisualizador() {
+    if (!audioCtx || audioCtx.state === 'closed') {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {
+        console.error("Error initializing AudioContext:", e);
+        return;
+      }
+    }
+
+    if (!analyser || analyser.context.state === 'closed') {
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256; // Mantenido
+    }
+
+    if (source) {
+        try { source.disconnect(); } catch(e){}
+    }
+    source = audioCtx.createMediaElementSource(audioPlayer);
+    source.connect(analyser);
+    analyser.connect(audioCtx.destination);
+
+    try {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+    } catch(e){ console.warn("Resize error in init", e);}
+
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    function dibujar() {
+      if (!analyser || analyser.context.state === 'closed') return;
+
+      requestAnimationFrame(dibujar);
+
+      try {
+          analyser.getByteFrequencyData(dataArray);
+          canvasCtx.fillStyle = '#e7f5ff';
+          canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+          const barGap = 1; // Mantenido
+          const segmentWidth = canvas.width / bufferLength;
+          let barWidth = Math.max(1, segmentWidth - barGap);
+          canvasCtx.fillStyle = "#00aaff";
+
+          for (let i = 0; i < bufferLength; i++) {
+              const x = i * segmentWidth;
+              const barHeight = (dataArray[i] / 255) * canvas.height * 1.0;
+              let currentBarWidth = barWidth;
+              if (i === bufferLength - 1) {
+                  currentBarWidth = Math.max(1, canvas.width - x);
+              }
+              canvasCtx.fillRect(x, canvas.height - barHeight, currentBarWidth, barHeight);
+          }
+      } catch(e) {
+          console.error("Draw error", e);
+      }
+    }
+    dibujar();
+  }
+
+  // Resize listener (SIN CAMBIOS)
+  window.addEventListener('resize', () => {
+      if (canvasCtx && canvas.isConnected) {
+          try {
+              canvas.width = canvas.clientWidth;
+              canvas.height = canvas.clientHeight;
+          } catch(e) {console.warn("Resize error", e);}
+      }
+  });
+
+  // Play listener (SIN CAMBIOS EN LÓGICA)
+  audioPlayer.addEventListener("play", () => {
+    try {
+        if (!audioCtx || audioCtx.state === 'closed') {
+            iniciarVisualizador();
+        } else if (audioCtx.state === "suspended") {
+            audioCtx.resume().catch(e=>console.error("Resume error on play",e));
+            if (canvasCtx && canvas.isConnected) {
+                 try{
+                    canvas.width = canvas.clientWidth;
+                    canvas.height = canvas.clientHeight;
+                 } catch(e){console.warn("Resize error after resume",e);}
+             }
+        } else {
+              if (canvasCtx && canvas.isConnected) {
+                 try{
+                     canvas.width = canvas.clientWidth;
+                     canvas.height = canvas.clientHeight;
+                 } catch(e){console.warn("Resize error on play (running)", e);}
+             }
+        }
+    } catch (e) {
+        console.error("Error in play event handler:", e);
+    }
+  });
+
+</script>
+</body>
+</html>
