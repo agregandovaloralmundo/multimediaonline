@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Grabar Pantalla - Plataforma Multimedia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    html, body { height: 100%; margin: 0; background-color: #f8f9fa; }
+    .main-wrapper { display: flex; flex-direction: column; min-height: 100vh; }
+    main { flex: 1; text-align: center; padding: 2rem 1rem; }
+
+    #character-img {
+      max-width: 480px;
+      margin: 0 auto 20px auto;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    #countdown-circle {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background-color: #007bff;
+      color: white;
+      font-size: 3rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    #video-preview {
+      width: 100%;
+      max-width: 720px;
+      margin: 20px auto;
+      display: none;
+      background: black;
+    }
+
+    #webcam-preview {
+      display: none;
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 250px;
+      height: 190px;
+      border: 2px solid #007bff;
+      border-radius: 8px;
+      z-index: 1000;
+      cursor: move;
+    }
+
+    .btn-row {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    footer {
+      background: #0d6efd;
+      color: white;
+      padding: 1rem 0;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    footer a {
+      color: white;
+      text-decoration: underline;
+      margin: 0 5px;
+    }
+
+    .form-check-input {
+      background-color: #0d6efd;
+      border-color: #0d6efd;
+    }
+
+    .form-check-input:checked {
+      background-color: #198754;
+      border-color: #198754;
+    }
+
+    .custom-context-menu {
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      z-index: 9999;
+      display: none;
+      padding: 5px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+<div class="main-wrapper">
+  <div id="navbar-placeholder"></div>
+  <script src="navbar.js"></script>
+
+  <video id="pipWebcam" muted autoplay playsinline style="display: none;"></video>
+
+
+  <main>
+    <h2>Grabar Pantalla</h2>
+    <p>Selecciona "Pantalla completa" para grabar sin interrupciones. Usa la tecla <strong>Esc</strong> para detener la grabación.</p>
+
+    <div class="form-check form-switch d-flex justify-content-center mb-3">
+      <input class="form-check-input" type="checkbox" id="useWebcam">
+      <label class="form-check-label ms-2" for="useWebcam">Incluir cámara web</label>
+    </div>
+
+    <img id="character-img" src="img/grabarpantalla.png" alt="Personaje grabando pantalla">
+    <div id="countdown-circle">5</div>
+
+    <video id="webcam-preview" autoplay muted></video>
+    <div id="context-menu" class="custom-context-menu"></div>
+
+    <div class="btn-row">
+      <button id="startBtn" class="btn btn-primary">Iniciar Grabación</button>
+      <button id="clearBtn" class="btn btn-danger" style="display:none;">Limpiar</button>
+      <a id="downloadBtn" class="btn btn-success" style="display:none;" download="grabacion.webm">Descargar</a>
+    </div>
+
+    <video id="video-preview" controls></video>
+  </main>
+
+  <footer>
+    Derechos reservados © 2025 - 2030 - Agregando Valor Al Mundo 🌐<br>
+    <a href="#">Política de Privacidad</a> |
+    <a href="#">Términos y Condiciones</a>
+  </footer>
+</div>
+
+<script>
+const startBtn = document.getElementById('startBtn');
+const clearBtn = document.getElementById('clearBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const countdownCircle = document.getElementById('countdown-circle');
+const characterImg = document.getElementById('character-img');
+const videoPreview = document.getElementById('video-preview');
+const webcamPreview = document.getElementById('webcam-preview');
+const useWebcam = document.getElementById('useWebcam');
+const contextMenu = document.getElementById('context-menu');
+
+let mediaRecorder;
+let recordedChunks = [];
+let fullStream = null;
+let webcamStream = null;
+let webcamEnabled = true;
+
+function resetUI() {
+  characterImg.style.display = 'block';
+  countdownCircle.style.display = 'none';
+  videoPreview.style.display = 'none';
+  webcamPreview.style.display = 'none';
+  videoPreview.src = '';
+  startBtn.style.display = 'inline-block';
+  clearBtn.style.display = 'none';
+  downloadBtn.style.display = 'none';
+}
+
+clearBtn.addEventListener('click', resetUI);
+
+function startCountdownAndRecord() {
+  let count = 5;
+  characterImg.style.display = 'none';
+  countdownCircle.style.display = 'flex';
+  countdownCircle.textContent = count;
+
+  const interval = setInterval(() => {
+    count--;
+    countdownCircle.textContent = count;
+    if (count === 0) {
+      clearInterval(interval);
+      countdownCircle.style.display = 'none';
+      startRecording();
+    }
+  }, 1000);
+}
+
+async function startRecording() {
+  try {
+    const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true });
+    const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    let tracks = [...displayStream.getVideoTracks(), ...audioStream.getAudioTracks()];
+
+    if (useWebcam.checked) {
+	  webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+	  webcamPreview.srcObject = webcamStream;
+	  webcamPreview.style.display = 'block';
+	  enableDrag(webcamPreview);
+	  tracks = tracks.concat(webcamStream.getVideoTracks());
+
+	  // NUEVO: activar Picture-in-Picture en video oculto
+	  const pipVideo = document.getElementById('pipWebcam');
+	  pipVideo.srcObject = webcamStream;
+	  await pipVideo.play();
+	  await pipVideo.requestPictureInPicture();
+	}
+
+    fullStream = new MediaStream(tracks);
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(fullStream);
+
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      videoPreview.src = url;
+      videoPreview.style.display = 'block';
+      downloadBtn.href = url;
+      downloadBtn.style.display = 'inline-block';
+      clearBtn.style.display = 'inline-block';
+      if (webcamPreview) webcamPreview.style.display = 'none';
+    };
+
+    mediaRecorder.start();
+
+    document.onkeydown = async (e) => {
+      if (e.key === "Escape" && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+        if (fullStream) fullStream.getTracks().forEach(t => t.stop());
+        if (webcamStream) webcamStream.getTracks().forEach(t => t.stop());
+
+        // Salir de Picture-in-Picture si está activo
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture();
+        }
+      }
+    };
+  } catch (e) {
+    alert("Error al iniciar la grabación o permisos denegados.");
+    resetUI();
+  }
+}
+
+function enableDrag(el) {
+  let isDown = false;
+  let offset = [0, 0];
+
+  el.addEventListener('mousedown', function (e) {
+    isDown = true;
+    offset = [el.offsetLeft - e.clientX, el.offsetTop - e.clientY];
+  });
+
+  document.addEventListener('mouseup', () => { isDown = false; });
+  document.addEventListener('mousemove', (e) => {
+    if (isDown) {
+      el.style.left = (e.clientX + offset[0]) + 'px';
+      el.style.top = (e.clientY + offset[1]) + 'px';
+      el.style.right = 'auto';
+    }
+  });
+}
+
+webcamPreview.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+  contextMenu.textContent = webcamEnabled ? "Deshabilitar cámara" : "Habilitar cámara";
+  contextMenu.style.top = `${e.clientY}px`;
+  contextMenu.style.left = `${e.clientX}px`;
+  contextMenu.style.display = 'block';
+});
+
+document.addEventListener('click', () => {
+  contextMenu.style.display = 'none';
+});
+
+contextMenu.addEventListener('click', () => {
+  if (webcamEnabled) {
+    webcamPreview.style.display = 'none';
+    webcamEnabled = false;
+  } else {
+    webcamPreview.style.display = 'block';
+    webcamEnabled = true;
+  }
+  contextMenu.style.display = 'none';
+});
+
+startBtn.addEventListener('click', () => {
+  startBtn.style.display = 'none';
+  startCountdownAndRecord();
+});
+
+resetUI();
+</script>
+</body>
+</html>
