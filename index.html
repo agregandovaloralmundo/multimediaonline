@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+  
+  <script>
+  if (localStorage.getItem("grabando") === "true") {
+    alert("🚫 Esta función está deshabilitada temporalmente porque hay una grabación en curso.\n\nPor favor, abre una nueva pestaña si deseas acceder a otras funciones mientras grabas, o espera a que finalice la grabación (tecla ESC).");
+    window.history.back(); // O redirige a otra página: window.location.href = "index.html";
+  }
+</script>
+  
   <meta name="google-site-verification" content="cdFzOlcEDZmJoZ7xHn-gXwh-2dI-5jARfQOLHZuDDr4" />
   <title>Multimedia Online - Audios, Videos, Radio y Televisión Gratuita</title>
 
@@ -112,6 +119,7 @@
         <a href="peliculas.html" class="btn btn-warning btn-lg">🎬 Películas</a>
         <a href="musica.html" class="btn btn-info btn-lg">🎵 Música</a>
         <a href="videos.html" class="btn btn-danger btn-lg">📹 Videos</a>
+		<a href="grabarpantalla.html" class="btn btn-dark btn-lg">🎥 Grabar Pantalla</a>
       </div>
     </div>
 
