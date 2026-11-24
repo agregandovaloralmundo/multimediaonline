@@ -10,7 +10,7 @@
         }
     </script>
     <title>Multimedia Online - Descargar Videos</title>
-    <meta name="description" content="Descarga y gestiona tus videos, audios y archivos multimedia de forma rápida y gratuita en Multimedia Online." />
+    <meta name="description" content="Descarga y gestiona tus videos, audios y archivos multimedia libres de forma rápida y gratuita en Multimedia Online." />
     <meta name="author" content="Lic. Antonio Ramírez Bogantes" />
     <link rel="icon" type="image/x-icon" href="img/principal.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -58,14 +58,6 @@
             object-fit: cover;
             background: #000;
         }
-        .embed-downloader {
-            width: 100%;
-            height: 260px;
-            border: 2px solid #0d6efd;
-            border-radius: 12px;
-            margin-top: 10px;
-            background: #f8f9fa;
-        }
     </style>
 </head>
 <body>
@@ -84,7 +76,7 @@
 
                 <div id="inputBox">
                     <div class="input-group input-group-lg">
-                        <input type="text" id="urlInput" class="form-control" placeholder="Pega el link aquí..." autofocus>
+                        <input type="text" id="urlInput" class="form-control" placeholder="Pega el link aquí (.mp4, .webm, .mp3 o enlace)..." autofocus>
                         <button class="btn btn-primary fw-bold px-4" id="btnAnalizar" onclick="analizarVideo()">🔍 Analizar</button>
                     </div>
                 </div>
@@ -97,11 +89,6 @@
 
                     <div id="directActions"></div>
 
-                    <!-- Contenedor incrustado dentro de la misma página (sin salir del sitio) -->
-                    <div id="embedContainer" style="display:none;">
-                        <iframe id="embedFrame" class="embed-downloader" allowtransparency="true" scrolling="no"></iframe>
-                    </div>
-
                     <button class="btn btn-sm btn-secondary mt-3" onclick="reset()">
                         🔄 Analizar otro enlace
                     </button>
@@ -113,8 +100,8 @@
                 </div>
 
                 <div id="successBox" style="display:none;" class="mt-3">
-                    <div class="alert alert-success fw-bold">✅ ¡Descarga iniciada! Revisa tu carpeta de Descargas</div>
-                    <button class="btn btn-primary fw-bold w-100" onclick="reset()">Descargar otro video</button>
+                    <div class="alert alert-success fw-bold">✅ ¡Descarga completada! Revisa tu carpeta de Descargas</div>
+                    <button class="btn btn-primary fw-bold w-100" onclick="reset()">Descargar otro archivo</button>
                 </div>
             </div>
         </div>
@@ -257,16 +244,6 @@
             }
         }
 
-        function abrirSelectorInterno(ytId, formato) {
-            const embedContainer = document.getElementById('embedContainer');
-            const embedFrame = document.getElementById('embedFrame');
-            const actionsDiv = document.getElementById('directActions');
-
-            actionsDiv.style.display = 'none';
-            embedContainer.style.display = 'block';
-            embedFrame.src = `https://loader.to/api/button/?url=https://www.youtube.com/watch?v=${ytId}&f=${formato}&color=0d6efd`;
-        }
-
         async function analizarVideo() {
             const urlInput = document.getElementById('urlInput');
             const rawUrl = urlInput.value.trim();
@@ -285,11 +262,9 @@
             btn.innerText = "...";
             btn.disabled = true;
             document.getElementById('previewArea').style.display = 'none';
-            document.getElementById('embedContainer').style.display = 'none';
             document.getElementById('loader').style.display = 'block';
 
             const actionsDiv = document.getElementById('directActions');
-            actionsDiv.style.display = 'block';
             actionsDiv.innerHTML = "";
 
             try {
@@ -297,7 +272,7 @@
                 const audioPlayer = document.getElementById('audioPlayer');
                 const thumb = document.getElementById('videoThumb');
 
-                // 1. Si es archivo directo (.mp4, .mp3, .webm...)
+                // 1. Archivo directo (.mp4, .mp3, .webm...) -> descarga directa en la misma página
                 if (esVideoDirecto(rawUrl) || esAudioDirecto(rawUrl)) {
                     thumb.style.display = 'none';
                     const nombreArchivo = decodeURIComponent(rawUrl.split('/').pop().split('?')[0]) || "multimedia_avm.mp4";
@@ -324,7 +299,7 @@
                     return;
                 }
 
-                // 2. Si es enlace de YouTube u otra plataforma web
+                // 2. Enlace de YouTube -> muestra miniatura, título y descarga directa de Miniatura HD
                 const ytId = extraerYoutubeId(rawUrl);
                 let tituloDetectado = "Video Detectado";
                 let miniatura = "";
@@ -348,15 +323,12 @@
                     document.getElementById('videoTitle').innerText = tituloDetectado;
 
                     actionsDiv.innerHTML = `
-                        <button class="btn btn-success btn-lg w-100 fw-bold mb-2" onclick="abrirSelectorInterno('${ytId}', '720')">
-                            ⬇️ Descargar Video (MP4 HD) aquí mismo
+                        <button class="btn btn-success btn-lg w-100 fw-bold mb-2" onclick="descargarEnMismaPagina('https://img.youtube.com/vi/${ytId}/maxresdefault.jpg', 'miniatura_${ytId}.jpg')">
+                            🖼️ Descargar Miniatura HD (JPG)
                         </button>
-                        <button class="btn btn-outline-primary w-100 fw-bold mb-2" onclick="abrirSelectorInterno('${ytId}', 'mp3')">
-                            🎵 Descargar Solo Audio (MP3) aquí mismo
-                        </button>
-                        <button class="btn btn-outline-dark btn-sm w-100 mb-1" onclick="descargarEnMismaPagina('https://img.youtube.com/vi/${ytId}/maxresdefault.jpg', 'miniatura_${ytId}.jpg')">
-                            🖼️ Guardar Miniatura HD (JPG)
-                        </button>
+                        <div class="alert alert-info small text-start mb-0">
+                            ℹ️ <strong>Nota:</strong> Por políticas de derechos de autor en navegadores web, la descarga directa de video/audio está habilitada para enlaces multimedia libres (<code>.mp4</code>, <code>.webm</code>, <code>.mp3</code>, <code>.wav</code>).
+                        </div>
                     `;
                 } else {
                     if (miniatura) {
@@ -367,9 +339,9 @@
                     }
                     document.getElementById('videoTitle').innerText = tituloDetectado;
                     actionsDiv.innerHTML = `
-                        <button class="btn btn-success btn-lg w-100 fw-bold mb-2" onclick="descargarEnMismaPagina('${rawUrl.replace(/'/g, "\\'")}', 'multimedia_avm.mp4')">
-                            ⬇️ Intentar Descarga Directa
-                        </button>
+                        <div class="alert alert-info small text-start mb-0">
+                            ℹ️ Pega el enlace directo del archivo multimedia libre (terminado en <code>.mp4</code>, <code>.webm</code>, <code>.mp3</code> o <code>.wav</code>) para descargarlo directamente en tu equipo.
+                        </div>
                     `;
                 }
 
@@ -398,16 +370,13 @@
             const input = document.getElementById('urlInput');
             const videoPlayer = document.getElementById('videoPlayer');
             const audioPlayer = document.getElementById('audioPlayer');
-            const embedFrame = document.getElementById('embedFrame');
             videoPlayer.pause();
             videoPlayer.src = "";
             audioPlayer.pause();
             audioPlayer.src = "";
-            embedFrame.src = "about:blank";
             input.value = "";
             document.getElementById('inputBox').style.display = 'flex';
             document.getElementById('previewArea').style.display = 'none';
-            document.getElementById('embedContainer').style.display = 'none';
             document.getElementById('loader').style.display = 'none';
             document.getElementById('successBox').style.display = 'none';
             input.focus();
