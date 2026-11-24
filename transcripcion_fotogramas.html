@@ -111,7 +111,7 @@
         <div class="main-content">
             <div class="tool-box">
                 <h3 class="mb-1 fw-bold text-dark text-center">Transcripción IA y Fotogramas a Word</h3>
-                <p class="text-muted small mb-3 text-center">Escucha directamente el audio interno del video con IA Whisper (sin ruido ambiente ni bucles), sincroniza cada párrafo con su filmina y genera tu Word o PDF</p>
+                <p class="text-muted small mb-3 text-center">Escucha directamente el audio interno del video con IA Whisper (rápido y sin bucles), captura todas las filminas y genera tu Word o PDF</p>
 
                 <!-- Cajetín de enlace, video local y subtítulos opcionales -->
                 <div class="row g-2 mb-3 text-start">
@@ -171,7 +171,7 @@
                         <div id="timelinePreview">
                             <p class="text-muted small text-center mt-5">
                                 Pega el link de la clase o sube el video arriba.<br>
-                                Al darle a <b>Reproducir y Transcribir</b>, verás avanzar el reloj a la izquierda y aquí aparecerá cada filmina con su transcripción limpia debajo.
+                                Al darle a <b>Reproducir y Transcribir</b>, verás avanzar el reloj a la izquierda y aquí aparecerán todas las filminas junto con la transcripción continua.
                             </p>
                         </div>
                     </div>
@@ -213,8 +213,8 @@
         env.allowLocalModels = false;
         window.whisperPipelineLoader = async (onStatus) => {
             if (window._whisperInstance) return window._whisperInstance;
-            if (onStatus) onStatus('⏳ Descargando Whisper Base IA...');
-            window._whisperInstance = await pipeline('automatic-speech-recognition', 'Xenova/whisper-base', {
+            if (onStatus) onStatus('⏳ Cargando motor rápido Whisper IA...');
+            window._whisperInstance = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
                 quantized: true
             });
             return window._whisperInstance;
@@ -243,13 +243,13 @@
         const exportPdfBtn = document.getElementById('exportPdfBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
 
-        const STORAGE_KEY = "multimedia_doc_respaldo_v8";
+        const STORAGE_KEY = "multimedia_doc_respaldo_v9";
         let bloquesDocumento = []; // { tiempoSeg, tiempoTxt, textoConfirmado, imagenBase64 }
         let srtEntradas = [];
         let nombreVideoActual = "Clase_Transcripcion";
         let modoYoutube = false;
         let youtubeIdActual = null;
-        let youtubeStartTime = 0;
+        let youtubeStartTime = null;
         let clockTimer = null;
         let capturandoEscenas = false;
         let tabCaptureStream = null;
@@ -285,7 +285,7 @@
 
         function guardarRespaldoLocal() {
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(bloquesDocumento.slice(-80)));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(bloquesDocumento.slice(-100)));
             } catch {}
         }
 
@@ -315,9 +315,9 @@
         }
 
         function obtenerTiempoActual() {
-            return modoYoutube
-                ? ((Date.now() - youtubeStartTime) / 1000)
-                : (videoPlayer.currentTime || 0);
+            if (!modoYoutube) return videoPlayer.currentTime || 0;
+            if (!youtubeStartTime) return 0;
+            return (Date.now() - youtubeStartTime) / 1000;
         }
 
         function iniciarRelojReproduccion() {
@@ -340,7 +340,6 @@
             }
         });
 
-        // Filtro blindado contra bucles de repetición ("¡Vamos! ¡Vamos!...", "1, 1, 1...", etiquetas de música, etc.)
         function limpiarTextoWhisper(raw) {
             if (!raw) return "";
             let limpio = raw
@@ -348,12 +347,10 @@
                 .replace(/¡?\s*Subtítulos\s+(realizados|creados|por)[^.?!]*[.?!]?/gi, '')
                 .replace(/¡?\s*Amara\.org[^.?!]*[.?!]?/gi, '')
                 .replace(/¡?\s*Gracias por ver el video[^.?!]*[.?!]?/gi, '')
-                // Cortar cualquier token/palabra repetida 3 o más veces seguidas incluso con signos (ej. "¡Vamos! ¡Vamos! ¡Vamos!")
                 .replace(/([¡¿]?\s*[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]+[!?.,;:]*)(\s*\1){2,}/gi, '')
                 .replace(/\s+/g, ' ')
                 .trim();
 
-            // Verificar diversidad de palabras: si una misma palabra ocupa más del 45% del bloque, es un bucle
             const palabras = limpio.toLowerCase().match(/[a-zA-Záéíóúüñ]{2,}/g) || [];
             if (palabras.length < 2) return "";
 
@@ -414,12 +411,12 @@
             const sampleRateOrigen = audioCaptureCtx ? audioCaptureCtx.sampleRate : 44100;
             const audio16k = remuestrearA16k(buffersAProcesar, sampleRateOrigen);
 
-            if (audio16k.length < 24000) return;
+            if (audio16k.length < 16000) return;
             let energia = 0;
             for (let i = 0; i < audio16k.length; i += 10) {
                 energia += Math.abs(audio16k[i]);
             }
-            if ((energia / (audio16k.length / 10)) < 0.006) return;
+            if ((energia / (audio16k.length / 10)) < 0.004) return;
 
             whisperOcupado = true;
             aiStatusBadge.style.display = 'inline-block';
@@ -434,14 +431,14 @@
                 const output = await transcriber(audio16k, {
                     language: 'spanish',
                     task: 'transcribe',
-                    chunk_length_s: 25,
-                    stride_length_s: 5,
+                    chunk_length_s: 15,
+                    stride_length_s: 3,
                     repetition_penalty: 1.25,
                     no_repeat_ngram_size: 3
                 });
 
                 const textoLimpio = limpiarTextoWhisper(output && output.text ? output.text : '');
-                if (textoLimpio && textoLimpio.length > 3) {
+                if (textoLimpio && textoLimpio.length > 2) {
                     const bloqueActual = asegurarBloqueActivo();
                     const sep = bloqueActual.textoConfirmado ? ' ' : '';
                     bloqueActual.textoConfirmado = (bloqueActual.textoConfirmado + sep + textoLimpio).trim();
@@ -534,7 +531,13 @@
                 }
                 const promedioDiff = diff / (32 * 18 * 3);
 
-                if (promedioDiff > 24) {
+                // Iniciar cronómetro sincronizado en el primer movimiento real del video
+                if (modoYoutube && !youtubeStartTime && promedioDiff > 4) {
+                    youtubeStartTime = Date.now();
+                }
+
+                // Umbral 14 para capturar TODAS las filminas y cambios de escena sin saltarse ninguno
+                if (promedioDiff > 14) {
                     lastFrameSignature = data;
                     return { cambio: true, diff: promedioDiff };
                 } else {
@@ -575,7 +578,7 @@
                             <span class="badge bg-light text-primary border">Sección ${idx + 1} · ⏱️ ${b.tiempoTxt}</span>
                             <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarBloque(${idx})">✕</button>
                         </div>
-                        <textarea class="form-control form-control-sm mt-1" rows="3" placeholder="Transcripción de esta sección..." onchange="actualizarTextoBloque(${idx}, this.value)">${textoMostrar}</textarea>
+                        <textarea class="form-control form-control-sm mt-1" rows="2" placeholder="Esperando voz o escribe aquí..." onchange="actualizarTextoBloque(${idx}, this.value)">${textoMostrar}</textarea>
                         ${b.imagenBase64 ? `<img src="${b.imagenBase64}" class="bloque-img" alt="Filmina ${idx + 1}">` : ''}
                     </div>
                 `;
@@ -624,6 +627,7 @@
 
                 modoYoutube = true;
                 youtubeIdActual = ytId;
+                youtubeStartTime = null;
                 playbackClock.textContent = "00:00";
                 videoPlayer.pause();
                 videoPlayer.style.display = 'none';
@@ -649,6 +653,7 @@
 
             modoYoutube = false;
             youtubeIdActual = null;
+            youtubeStartTime = null;
             corsBloqueado = false;
             playbackClock.textContent = "00:00";
             youtubeFrame.style.display = 'none';
@@ -667,6 +672,7 @@
             if (!file) return;
             modoYoutube = false;
             youtubeIdActual = null;
+            youtubeStartTime = null;
             corsBloqueado = false;
             playbackClock.textContent = "00:00";
             youtubeFrame.style.display = 'none';
@@ -878,7 +884,7 @@
             }
 
             capturandoEscenas = true;
-            youtubeStartTime = Date.now();
+            youtubeStartTime = null;
             iniciarRelojReproduccion();
             lastFrameSignature = null;
             ultimoFotogramaEstable = null;
@@ -909,6 +915,7 @@
                 videoPlayer.play();
             }
 
+            // 1. Vigilante cada 1.2s con intervalo mínimo de 2.5s para capturar TODAS las filminas sin saltarse ninguna
             sceneCheckTimer = setInterval(() => {
                 if (!capturandoEscenas) return;
                 if (!modoYoutube && videoPlayer.paused) return;
@@ -919,17 +926,18 @@
                 if (estado.cambio && filminaAnteriorCompleta) {
                     const bloqueActual = asegurarBloqueActivo();
                     const tActual = obtenerTiempoActual();
-                    if ((tActual - bloqueActual.tiempoSeg) >= 6) {
+                    if ((tActual - bloqueActual.tiempoSeg) >= 2.5) {
                         cerrarSeccionConFilmina(filminaAnteriorCompleta);
                     }
                 }
-            }, 2000);
+            }, 1200);
 
+            // 2. Transcripción IA Whisper cada 10 segundos (modelo rápido, sin atrasarse)
             whisperTimer = setInterval(() => {
                 if (!capturandoEscenas) return;
                 if (!modoYoutube && videoPlayer.paused) return;
                 procesarBloqueAudioConWhisper();
-            }, 18000);
+            }, 10000);
         });
 
         videoPlayer.addEventListener('ended', detenerCapturaFotogramas);
@@ -978,7 +986,7 @@
                     if (!textoLimpio && !imgHtml) return "";
 
                     return `
-                        <div style="margin-bottom: 16pt; page-break-inside: avoid;">
+                        <div style="margin-bottom: 14pt; page-break-inside: avoid;">
                             ${textoLimpio ? `<p style="font-size: 11.5pt; text-align: justify; margin-bottom: 8pt;">${textoLimpio.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>` : ''}
                             ${imgHtml}
                         </div>
@@ -1034,6 +1042,7 @@
 
         clearAllBtn.addEventListener('click', () => {
             detenerCapturaFotogramas();
+            youtubeStartTime = null;
             playbackClock.textContent = "00:00";
             bloquesDocumento = [];
             srtEntradas = [];
