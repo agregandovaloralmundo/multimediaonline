@@ -16,6 +16,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sam-js@0.3.2/dist/samjs.min.js"></script>
     <style>
         html, body {
             height: 100%;
@@ -507,7 +508,7 @@
             cancelButton.disabled = !leyendo;
         }
 
-        function dividirEnFragmentos(texto, maxLen = 180) {
+        function dividirEnFragmentos(texto, maxLen = 140) {
             const oraciones = texto
                 .replace(/\r\n/g, '\n')
                 .split(/(?<=[.?!;\n])\s+/);
@@ -576,7 +577,7 @@
                 restaurarBotonDictado();
             }
 
-            const fragmentos = dividirEnFragmentos(texto);
+            const fragmentos = dividirEnFragmentos(texto, 180);
             canceladoManual = false;
             let indice = 0;
 
@@ -629,115 +630,47 @@
         });
 
         // ==========================================
-        // 3. SINTETIZADOR FORMÁNTICO 100% INTERNO (SIN WORKERS NI RED) -> MP3
+        // 3. SINTETIZADOR DE VOZ REAL SAM-JS (100% EN MEMORIA) -> MP3
         // ==========================================
-        const FORMANTES_ES = {
-            'a': [730, 1090, 2440, 1.0, false],
-            'á': [750, 1100, 2450, 1.25, false],
-            'e': [530, 1840, 2480, 1.0, false],
-            'é': [540, 1860, 2500, 1.25, false],
-            'i': [270, 2290, 3010, 0.95, false],
-            'í': [270, 2310, 3020, 1.2, false],
-            'y': [270, 2290, 3010, 0.9, false],
-            'o': [570, 840, 2410, 1.0, false],
-            'ó': [580, 850, 2420, 1.25, false],
-            'u': [300, 870, 2240, 0.95, false],
-            'ú': [300, 880, 2250, 1.2, false],
-            'ü': [300, 880, 2250, 1.0, false],
-            'm': [280, 900, 2200, 0.75, false],
-            'n': [280, 1400, 2300, 0.75, false],
-            'ñ': [280, 1900, 2500, 0.85, false],
-            'l': [350, 1200, 2400, 0.75, false],
-            'r': [420, 1300, 2200, 0.65, false],
-            's': [0, 0, 0, 0.65, true],
-            'z': [0, 0, 0, 0.65, true],
-            'f': [0, 0, 0, 0.55, true],
-            'j': [0, 0, 0, 0.6, true],
-            'x': [0, 0, 0, 0.65, true],
-            'b': [250, 800, 2100, 0.5, false],
-            'v': [250, 800, 2100, 0.5, false],
-            'd': [260, 1500, 2400, 0.5, false],
-            'g': [260, 1100, 2200, 0.5, false],
-            'p': [0, 0, 0, 0.42, true],
-            't': [0, 0, 0, 0.42, true],
-            'k': [0, 0, 0, 0.42, true],
-            'c': [0, 0, 0, 0.42, true],
-            'q': [0, 0, 0, 0.42, true]
-        };
-
-        function sintetizarTextoEnMemoria(texto, rate) {
-            const sampleRate = 22050;
-            const cleanText = texto.toLowerCase().replace(/[^a-záéíóúüñ0-9\s.,;?!-]/g, ' ');
-            const baseDur = (0.068 / rate);
-            const pitchBase = 118; // Hz voz masculina clara
-
-            // Estimar muestras totales
-            const totalEstimado = Math.ceil(cleanText.length * baseDur * sampleRate * 1.15);
-            const buffer = new Float32Array(totalEstimado);
-            let pos = 0;
-            let fase = 0;
-
-            for (let i = 0; i < cleanText.length; i++) {
-                const ch = cleanText[i];
-
-                if (ch === ' ') {
-                    const sil = Math.floor(baseDur * 0.65 * sampleRate);
-                    pos += sil;
-                    continue;
-                }
-                if (ch === ',' || ch === ';') {
-                    const sil = Math.floor(baseDur * 2.4 * sampleRate);
-                    pos += sil;
-                    continue;
-                }
-                if (ch === '.' || ch === '?' || ch === '!' || ch === '\n') {
-                    const sil = Math.floor(baseDur * 4.2 * sampleRate);
-                    pos += sil;
-                    continue;
-                }
-
-                const spec = FORMANTES_ES[ch] || [450, 1300, 2350, 0.55, false];
-                const [f1, f2, f3, durMult, esFricativa] = spec;
-                const numSamples = Math.floor(baseDur * durMult * sampleRate);
-
-                // Entonación prosódica ligera
-                const progresoFrase = (i % 45) / 45;
-                const f0 = pitchBase * (1.06 - 0.12 * progresoFrase) * (/[áéíóú]/.test(ch) ? 1.08 : 1.0);
-
-                for (let n = 0; n < numSamples && (pos + n) < buffer.length; n++) {
-                    const env = Math.sin((Math.PI * n) / numSamples);
-                    let muestra = 0;
-
-                    if (esFricativa) {
-                        const ruido = (Math.random() * 2 - 1) * 0.22;
-                        muestra = ruido * env;
-                    } else {
-                        fase += (2 * Math.PI * f0) / sampleRate;
-                        // Pulso glotal rico en armónicos
-                        const glotal = Math.sin(fase) + 0.5 * Math.sin(2 * fase) + 0.25 * Math.sin(3 * fase);
-                        const w1 = (2 * Math.PI * f1 * n) / sampleRate;
-                        const w2 = (2 * Math.PI * f2 * n) / sampleRate;
-                        const w3 = (2 * Math.PI * f3 * n) / sampleRate;
-                        const resonancia = 0.55 * Math.sin(w1) + 0.30 * Math.sin(w2) + 0.15 * Math.sin(w3);
-                        muestra = (0.45 * glotal + 0.55 * resonancia) * env * 0.72;
-                    }
-                    buffer[pos + n] = muestra;
-                }
-                pos += numSamples;
-            }
-
-            return { samples: buffer.subarray(0, pos), sampleRate };
+        function adaptarFoneticaEspanol(texto) {
+            return texto
+                .toLowerCase()
+                .replace(/á/g, 'ah').replace(/é/g, 'eh').replace(/í/g, 'ee')
+                .replace(/ó/g, 'oh').replace(/ú/g, 'oo').replace(/ü/g, 'oo')
+                .replace(/ñ/g, 'ny')
+                .replace(/ll/g, 'y')
+                .replace(/qu([ei])/g, 'k$1')
+                .replace(/c([ei])/g, 's$1')
+                .replace(/g([ei])/g, 'h$1')
+                .replace(/gu([ei])/g, 'g$1')
+                .replace(/j/g, 'h')
+                .replace(/z/g, 's')
+                .replace(/v/g, 'b')
+                .replace(/\bh([aeiou])/g, '$1')
+                .replace(/([a-z])\bh/g, '$1')
+                .replace(/r{2}/g, 'rr')
+                .replace(/a/g, 'ah').replace(/e/g, 'eh').replace(/i/g, 'ee')
+                .replace(/o/g, 'oh').replace(/u/g, 'oo')
+                .replace(/[^a-z0-9\s.,?!-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
         }
 
-        function codificarFloat32AMp3(floatArr, sampleRate) {
+        function codificarFloat32AMp3(floatArrays, sampleRate) {
             const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
             const mp3Data = [];
             const blockSize = 1152;
-            const samples = new Int16Array(floatArr.length);
 
-            for (let i = 0; i < floatArr.length; i++) {
-                const s = Math.max(-1, Math.min(1, floatArr[i]));
-                samples[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            let totalLength = 0;
+            floatArrays.forEach(arr => totalLength += arr.length);
+            const samples = new Int16Array(totalLength);
+            let offset = 0;
+
+            for (const arr of floatArrays) {
+                for (let i = 0; i < arr.length; i++) {
+                    const s = Math.max(-1, Math.min(1, arr[i]));
+                    samples[offset++] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                }
             }
 
             for (let i = 0; i < samples.length; i += blockSize) {
@@ -764,20 +697,58 @@
                 restaurarBotonDictado();
             }
 
+            if (!window.SamJs) {
+                Swal.fire('Aviso', 'Recarga la página con Ctrl + F5 para cargar el sintetizador.', 'info');
+                return;
+            }
+
             const textoOriginalBtn = recordMp3Button.innerHTML;
             recordMp3Button.disabled = true;
             speakButton.disabled = true;
             recordMp3Button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Generando...';
             progressWrapper.style.display = 'block';
-            progressBar.style.width = '45%';
+            progressBar.style.width = '15%';
 
             setTimeout(() => {
                 try {
                     const rate = parseFloat(rateRange.value) || 1.0;
-                    const { samples, sampleRate } = sintetizarTextoEnMemoria(texto, rate);
-                    progressBar.style.width = '85%';
+                    const speedSam = Math.max(40, Math.min(130, Math.round(74 / rate)));
+                    const sam = new SamJs({
+                        pitch: 64,
+                        speed: speedSam,
+                        mouth: 128,
+                        throat: 128
+                    });
 
-                    const mp3Blob = codificarFloat32AMp3(samples, sampleRate);
+                    const vozSel = voices.find(v => v.name === voiceSelect.value);
+                    const esIngles = vozSel && vozSel.lang.toLowerCase().startsWith('en');
+
+                    const fragmentos = dividirEnFragmentos(texto, 95);
+                    const buffersVoz = [];
+                    const pausaSilencio = new Float32Array(3300);
+
+                    for (let i = 0; i < fragmentos.length; i++) {
+                        const frasePreparada = esIngles
+                            ? fragmentos[i].replace(/[^a-zA-Z0-9\s.,?!-]/g, ' ')
+                            : adaptarFoneticaEspanol(fragmentos[i]);
+
+                        if (frasePreparada) {
+                            const pcm = sam.buf32(frasePreparada);
+                            if (pcm && pcm.length > 0) {
+                                buffersVoz.push(pcm);
+                                buffersVoz.push(pausaSilencio);
+                            }
+                        }
+
+                        const pct = Math.round(((i + 1) / fragmentos.length) * 85);
+                        progressBar.style.width = `${pct}%`;
+                    }
+
+                    if (buffersVoz.length === 0) {
+                        throw new Error("Sin muestras generadas");
+                    }
+
+                    const mp3Blob = codificarFloat32AMp3(buffersVoz, 22050);
                     const url = URL.createObjectURL(mp3Blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -788,9 +759,9 @@
                     URL.revokeObjectURL(url);
 
                     progressBar.style.width = '100%';
-                    Toast.fire({ icon: 'success', title: '¡MP3 descargado!' });
+                    Toast.fire({ icon: 'success', title: '¡MP3 con voz descargado!' });
                 } catch (e) {
-                    Swal.fire('Aviso', 'No se pudo codificar el archivo MP3.', 'error');
+                    Swal.fire('Aviso', 'No se pudo generar el archivo MP3.', 'error');
                 } finally {
                     recordMp3Button.disabled = false;
                     speakButton.disabled = false;
