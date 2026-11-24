@@ -10,7 +10,7 @@
         }
     </script>
     <title>Multimedia Online - Descargar Videos</title>
-    <meta name="description" content="Descarga y gestiona tus videos y archivos multimedia libres de forma rápida y gratuita en Multimedia Online." />
+    <meta name="description" content="Descarga y gestiona tus videos, audios y archivos multimedia libres de forma rápida y gratuita en Multimedia Online." />
     <meta name="author" content="Lic. Antonio Ramírez Bogantes" />
     <link rel="icon" type="image/x-icon" href="img/principal.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -32,22 +32,26 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            padding: 0.75rem 1rem;
+            padding: 1rem;
         }
         .mascot-img {
-            width: 185px;
-            height: 185px;
+            width: 175px;
+            height: 175px;
             object-fit: contain;
-            margin-bottom: 10px;
+            margin-bottom: -10px;
+            position: relative;
+            z-index: 2;
         }
         .downloader-box {
             width: 100%;
-            max-width: 540px;
+            max-width: 560px;
             background: #ffffff;
             border: 3px solid #0d6efd;
-            border-radius: 18px;
-            padding: 22px;
+            border-radius: 20px;
+            padding: 26px 24px 24px 24px;
             box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
+            position: relative;
+            z-index: 1;
         }
         .thumb-img, .video-preview {
             width: 100%;
@@ -62,20 +66,18 @@
 </head>
 <body>
     <div class="main-wrapper">
-        <!-- Barra de navegación compartida -->
         <div id="navbar-placeholder"></div>
         <script src="navbar.js"></script>
 
-        <!-- Contenido Principal Centrado -->
         <div class="main-content">
-            <!-- Muñeco grande encima del título -->
+            <!-- Muñeco asentado encima de la raya azul del marco -->
             <img id="mascotImg" src="img/descargar.png" alt="Descargar Videos" class="mascot-img">
 
-            <h3 class="mb-1 fw-bold">Descargar Videos</h3>
-            <p class="text-muted small mb-3">Pega el enlace del video o archivo multimedia libre para analizar y guardar en tu equipo</p>
-
-            <!-- Cajita con borde azul completo alrededor -->
+            <!-- Marco azul con el título y subtítulo adentro -->
             <div class="downloader-box">
+                <h3 class="mb-1 fw-bold text-dark">Descargar Videos</h3>
+                <p class="text-muted small mb-3">Pega el enlace del video o archivo multimedia libre para analizar y guardar en tu equipo</p>
+
                 <div id="inputBox">
                     <div class="input-group input-group-lg">
                         <input type="text" id="urlInput" class="form-control" placeholder="Pega el link aquí..." autofocus>
@@ -88,12 +90,8 @@
                     <video id="videoPlayer" class="video-preview" controls style="display:none;"></video>
                     <div id="videoTitle" class="fw-bold text-dark mb-3"></div>
 
-                    <a id="btnDownloadVideo" href="#" target="_blank" rel="noopener" class="btn btn-success btn-lg w-100 fw-bold mb-2" onclick="marcarExito()">
-                        ⬇️ Descargar Video (MP4)
-                    </a>
-                    <a id="btnDownloadAudio" href="#" target="_blank" rel="noopener" class="btn btn-outline-primary w-100 fw-bold mb-2" style="display:none;" onclick="marcarExito()">
-                        🎵 Descargar Solo Audio (MP3)
-                    </a>
+                    <div id="directActions"></div>
+
                     <button class="btn btn-sm btn-secondary mt-2" onclick="reset()">
                         🔄 Analizar otro enlace
                     </button>
@@ -101,24 +99,22 @@
 
                 <div id="loader" style="display: none;" class="mt-3">
                     <div class="spinner-border text-primary mb-2"></div>
-                    <p class="fw-bold text-primary mb-0">Analizando enlace...</p>
+                    <p class="fw-bold text-primary mb-0">Preparando opciones de descarga...</p>
                 </div>
 
                 <div id="successBox" style="display:none;" class="mt-3">
-                    <div class="alert alert-success fw-bold">✅ ¡Descarga iniciada!</div>
-                    <button class="btn btn-primary fw-bold w-100" onclick="reset()">Descargar otro video</button>
+                    <div class="alert alert-success fw-bold">✅ ¡Listo! Revisa tus descargas</div>
+                    <button class="btn btn-primary fw-bold w-100" onclick="reset()">Analizar otro video</button>
                 </div>
             </div>
         </div>
 
-        <!-- Pie de página compartido -->
         <div id="footer-placeholder"></div>
         <script src="footer.js"></script>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Respaldo automático de extensión para img/descargar
         const CANDIDATOS_IMAGEN = [
             "img/descargar.png",
             "img/descargar.png.jpg",
@@ -137,7 +133,6 @@
             }
         };
 
-        // Limpia automáticamente el fondo exterior (blanco o gris claro) cuando corre en servidor web
         function limpiarFondoExterior(imgElement) {
             if (window.location.protocol === "file:") return;
             const tempImg = new Image();
@@ -194,9 +189,7 @@
 
                     ctx.putImageData(imgData, 0, 0);
                     imgElement.src = canvas.toDataURL("image/png");
-                } catch (e) {
-                    console.warn("Omitiendo limpieza de fondo en modo local:", e);
-                }
+                } catch (e) {}
             };
         }
 
@@ -204,12 +197,6 @@
             document.getElementById('urlInput').focus();
             limpiarFondoExterior(mascotImg);
         };
-
-        const EXTRACTION_ENDPOINTS = [
-            "https://api.cobalt.tools/",
-            "https://cobalt-api.kwiatekmiki.com/",
-            "https://cobalt-backend.canine.tools/"
-        ];
 
         function mostrarMensaje(titulo, texto, icono) {
             return Swal.fire({
@@ -230,32 +217,24 @@
             return /\.(mp4|webm|ogg|mov|mp3|wav|m4a)(\?.*)?$/i.test(url);
         }
 
-        async function consultarNodoExtraccion(videoUrl, modoAudio = false) {
-            for (const endpoint of EXTRACTION_ENDPOINTS) {
-                try {
-                    const resp = await fetch(endpoint, {
-                        method: "POST",
-                        headers: {
-                            "Accept": "application/json",
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            url: videoUrl,
-                            videoQuality: "720",
-                            audioFormat: "mp3",
-                            downloadMode: modoAudio ? "audio" : "auto"
-                        })
-                    });
-                    if (!resp.ok) continue;
-                    const data = await resp.json();
-                    if (data && data.url) {
-                        return { ok: true, downloadUrl: data.url };
-                    }
-                } catch (err) {
-                    console.warn("Nodo no disponible:", endpoint);
-                }
+        async function descargarArchivoDirecto(url, nombre) {
+            try {
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error("CORS");
+                const blob = await resp.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = nombre;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(blobUrl);
+                marcarExito();
+            } catch {
+                window.open(url, '_blank', 'noopener');
+                marcarExito();
             }
-            return { ok: false };
         }
 
         async function analizarVideo() {
@@ -263,9 +242,13 @@
             const rawUrl = urlInput.value.trim();
             const btn = document.getElementById('btnAnalizar');
 
-            if (!rawUrl) return;
-            if (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")) {
+            if (!rawUrl) {
+                urlInput.focus();
+                return;
+            }
+            if (!/^https?:\/\//i.test(rawUrl)) {
                 await mostrarMensaje('Enlace inválido', 'Por favor pega un enlace completo que empiece con https://', 'warning');
+                urlInput.focus();
                 return;
             }
 
@@ -274,21 +257,26 @@
             document.getElementById('previewArea').style.display = 'none';
             document.getElementById('loader').style.display = 'block';
 
+            const actionsDiv = document.getElementById('directActions');
+            actionsDiv.innerHTML = "";
+
             try {
+                const player = document.getElementById('videoPlayer');
+                const thumb = document.getElementById('videoThumb');
+
                 if (esArchivoDirecto(rawUrl)) {
-                    const player = document.getElementById('videoPlayer');
-                    const thumb = document.getElementById('videoThumb');
                     thumb.style.display = 'none';
                     player.style.display = 'block';
                     player.src = rawUrl;
 
-                    const nombreArchivo = rawUrl.split('/').pop().split('?')[0] || "video_multimedia.mp4";
+                    const nombreArchivo = rawUrl.split('/').pop().split('?')[0] || "archivo_multimedia.mp4";
                     document.getElementById('videoTitle').innerText = nombreArchivo;
 
-                    const btnVideo = document.getElementById('btnDownloadVideo');
-                    btnVideo.href = rawUrl;
-                    btnVideo.setAttribute('download', nombreArchivo);
-                    document.getElementById('btnDownloadAudio').style.display = 'none';
+                    actionsDiv.innerHTML = `
+                        <button class="btn btn-success btn-lg w-100 fw-bold mb-2" onclick="descargarArchivoDirecto('${rawUrl.replace(/'/g, "\\'")}', '${nombreArchivo.replace(/'/g, "\\'")}')">
+                            ⬇️ Descargar Archivo Ahora
+                        </button>
+                    `;
 
                     document.getElementById('loader').style.display = 'none';
                     document.getElementById('previewArea').style.display = 'block';
@@ -296,63 +284,63 @@
                 }
 
                 const ytId = extraerYoutubeId(rawUrl);
-                let tituloDetectado = "Video Listo para Descargar";
+                let tituloDetectado = "Enlace Multimedia Detectado";
                 let miniatura = "";
+
+                try {
+                    const oembed = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(rawUrl)}`);
+                    if (oembed.ok) {
+                        const info = await oembed.json();
+                        if (info.title) tituloDetectado = info.title;
+                        if (info.thumbnail_url) miniatura = info.thumbnail_url;
+                    }
+                } catch {}
 
                 if (ytId) {
                     miniatura = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
-                    try {
-                        const oembed = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(rawUrl)}`);
-                        if (oembed.ok) {
-                            const info = await oembed.json();
-                            if (info.title) tituloDetectado = info.title;
-                        }
-                    } catch {}
-                }
+                    const enlaceVideo = `https://www.ssyoutube.com/watch?v=${ytId}`;
+                    const enlaceAudio = `https://y2mate.nu/en-yt/?url=${encodeURIComponent(rawUrl)}`;
 
-                const [resVideo, resAudio] = await Promise.all([
-                    consultarNodoExtraccion(rawUrl, false),
-                    consultarNodoExtraccion(rawUrl, true)
-                ]);
-
-                if (resVideo.ok) {
-                    const player = document.getElementById('videoPlayer');
-                    const thumb = document.getElementById('videoThumb');
+                    thumb.src = miniatura;
+                    thumb.style.display = 'block';
                     player.style.display = 'none';
+                    document.getElementById('videoTitle').innerText = tituloDetectado;
 
+                    actionsDiv.innerHTML = `
+                        <a href="${enlaceVideo}" target="_blank" rel="noopener" class="btn btn-success btn-lg w-100 fw-bold mb-2" onclick="marcarExito()">
+                            ⬇️ Descargar Video (MP4 / HD)
+                        </a>
+                        <a href="${enlaceAudio}" target="_blank" rel="noopener" class="btn btn-outline-primary w-100 fw-bold mb-2" onclick="marcarExito()">
+                            🎵 Descargar Solo Audio (MP3)
+                        </a>
+                        <button class="btn btn-outline-dark btn-sm w-100 mb-1" onclick="descargarArchivoDirecto('https://img.youtube.com/vi/${ytId}/maxresdefault.jpg', 'miniatura_${ytId}.jpg')">
+                            🖼️ Guardar Miniatura HD (JPG)
+                        </button>
+                    `;
+                } else {
                     if (miniatura) {
                         thumb.src = miniatura;
                         thumb.style.display = 'block';
                     } else {
                         thumb.style.display = 'none';
                     }
-
+                    player.style.display = 'none';
                     document.getElementById('videoTitle').innerText = tituloDetectado;
-                    document.getElementById('btnDownloadVideo').href = resVideo.downloadUrl;
 
-                    const btnAudio = document.getElementById('btnDownloadAudio');
-                    if (resAudio.ok) {
-                        btnAudio.href = resAudio.downloadUrl;
-                        btnAudio.style.display = 'block';
-                    } else {
-                        btnAudio.style.display = 'none';
-                    }
-
-                    document.getElementById('loader').style.display = 'none';
-                    document.getElementById('previewArea').style.display = 'block';
-                    urlInput.blur();
-                } else {
-                    document.getElementById('loader').style.display = 'none';
-                    await mostrarMensaje(
-                        'Servidor de extracción ocupado',
-                        'Los servidores gratuitos están saturados en este momento o el enlace tiene restricción. Prueba con un enlace directo .mp4 o intenta de nuevo en unos minutos.',
-                        'warning'
-                    );
-                    reset();
+                    const enlaceGestor = `https://cobalt.tools/#u=${encodeURIComponent(rawUrl)}`;
+                    actionsDiv.innerHTML = `
+                        <a href="${enlaceGestor}" target="_blank" rel="noopener" class="btn btn-success btn-lg w-100 fw-bold mb-2" onclick="marcarExito()">
+                            ⬇️ Continuar a Descarga Directa (MP4 / MP3)
+                        </a>
+                    `;
                 }
+
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('previewArea').style.display = 'block';
+                urlInput.blur();
             } catch (e) {
                 document.getElementById('loader').style.display = 'none';
-                await mostrarMensaje('Error', 'No se pudo procesar el enlace en este momento.', 'error');
+                await mostrarMensaje('Aviso', 'Verifica que el enlace sea público y esté bien copiado.', 'info');
                 reset();
             } finally {
                 btn.innerText = "🔍 Analizar";
@@ -365,7 +353,7 @@
                 document.getElementById('previewArea').style.display = 'none';
                 document.getElementById('inputBox').style.display = 'none';
                 document.getElementById('successBox').style.display = 'block';
-            }, 800);
+            }, 700);
         }
 
         function reset() {
