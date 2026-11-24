@@ -16,7 +16,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
-    <script src="https://unpkg.com/espeak-ng@1.0.2/dist/espeak-ng.js"></script>
     <style>
         html, body {
             height: 100%;
@@ -34,7 +33,7 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            padding: 0.85rem 1.25rem;
+            padding: 0.75rem 1.25rem;
         }
         .tts-box {
             width: 95%;
@@ -98,7 +97,7 @@
                 <!-- Medidor de nivel de voz del micrófono en vivo -->
                 <div id="vuWrapper" class="mb-3 text-start" style="display: none;">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <small id="vuLabel" class="fw-bold text-secondary">🎙️ Nivel de señal del micrófono:</small>
+                        <small class="fw-bold text-secondary">🎙️ Nivel de señal del micrófono:</small>
                         <small id="vuPercent" class="text-muted">0%</small>
                     </div>
                     <div class="progress" style="height: 8px;">
@@ -149,12 +148,10 @@
                     <button id="cancelButton" class="btn btn-danger btn-sm fw-bold px-3" disabled>⏹️ Cancelar</button>
                 </div>
 
-                <!-- Barra de progreso -->
-                <div id="progressWrapper" class="progress mt-2" style="height: 8px; display: none;">
+                <!-- Barra de progreso compacta -->
+                <div id="progressWrapper" class="progress mt-2" style="height: 6px; display: none;">
                     <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%;"></div>
                 </div>
-
-                <div id="status" class="mt-2 small fw-bold text-primary"></div>
             </div>
         </div>
 
@@ -185,7 +182,6 @@
         const cancelButton = document.getElementById('cancelButton');
         const progressWrapper = document.getElementById('progressWrapper');
         const progressBar = document.getElementById('progressBar');
-        const statusDiv = document.getElementById('status');
 
         let voices = [];
         let micStream = null;
@@ -195,16 +191,13 @@
         let canceladoManual = false;
         let textoBaseConfirmado = "";
 
-        // Inicialización silenciosa del motor interno eSpeakNG en memoria
-        let ttsEngine = null;
-        let ttsReady = false;
-        if (window.eSpeakNG) {
-            try {
-                ttsEngine = new eSpeakNG('https://unpkg.com/espeak-ng@1.0.2/dist/espeak-ng.worker.js', () => {
-                    ttsReady = true;
-                });
-            } catch {}
-        }
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2600,
+            timerProgressBar: true
+        });
 
         // ==========================================
         // ESTADO DE BOTONES DE EXPORTACIÓN (WORD/TXT)
@@ -284,7 +277,7 @@
             a.click();
             a.remove();
             URL.revokeObjectURL(url);
-            statusDiv.textContent = '✅ Documento guardado en Word (.doc) en Descargas.';
+            Toast.fire({ icon: 'success', title: 'Guardado en Word (.doc)' });
         });
 
         saveTxtButton.addEventListener('click', () => {
@@ -300,14 +293,13 @@
             a.click();
             a.remove();
             URL.revokeObjectURL(url);
-            statusDiv.textContent = '✅ Archivo de texto (.txt) guardado en Descargas.';
+            Toast.fire({ icon: 'success', title: 'Guardado en TXT (.txt)' });
         });
 
         clearTextButton.addEventListener('click', () => {
             textContent.value = '';
             textoBaseConfirmado = '';
             actualizarEstadisticas();
-            statusDiv.textContent = '';
             textContent.focus();
         });
 
@@ -380,7 +372,6 @@
                 dictateButton.classList.remove('btn-outline-danger');
                 dictateButton.classList.add('btn-danger', 'mic-active');
                 dictateButton.innerHTML = '⏹️ Detener Dictado';
-                statusDiv.textContent = '🎙️ Escuchando... habla claro cerca del micrófono.';
             };
 
             recognition.onresult = (event) => {
@@ -435,9 +426,6 @@
             dictateButton.classList.remove('btn-danger', 'mic-active');
             dictateButton.classList.add('btn-outline-danger');
             dictateButton.innerHTML = '🎙️ Dictar por Voz';
-            if (statusDiv.textContent.includes('Escuchando')) {
-                statusDiv.textContent = '✅ Dictado finalizado. Ya puedes escucharlo, bajarlo en MP3 o guardarlo en Word y TXT.';
-            }
         }
 
         dictateButton.addEventListener('click', async () => {
@@ -503,7 +491,7 @@
                 textContent.value = event.target.result;
                 textoBaseConfirmado = textContent.value;
                 actualizarEstadisticas();
-                statusDiv.textContent = `✅ Archivo cargado: ${file.name}`;
+                Toast.fire({ icon: 'success', title: `Cargado: ${file.name}` });
             };
             reader.onerror = () => {
                 Swal.fire('Error', 'No se pudo leer el archivo seleccionado.', 'error');
@@ -609,13 +597,12 @@
                     detenerKeepAlive();
                     progressBar.style.width = '100%';
                     actualizarBotones(false, false);
-                    statusDiv.textContent = '✅ Lectura completa finalizada.';
+                    setTimeout(() => { progressWrapper.style.display = 'none'; }, 800);
                     return;
                 }
 
                 const pct = Math.round(((indice + 1) / fragmentos.length) * 100);
                 progressBar.style.width = `${pct}%`;
-                statusDiv.textContent = `🔊 Leyendo parte ${indice + 1} de ${fragmentos.length} (${pct}%)...`;
 
                 const utterance = new SpeechSynthesisUtterance(fragmentos[indice]);
                 const selectedVoice = voices.find(v => v.name === voiceSelect.value);
@@ -642,22 +629,115 @@
         });
 
         // ==========================================
-        // 3. BAJAR MP3 INTERNO EN MEMORIA (SIN COMPARTIR PANTALLA NI APIs EXTERNAS)
+        // 3. SINTETIZADOR FORMÁNTICO 100% INTERNO (SIN WORKERS NI RED) -> MP3
         // ==========================================
-        function codificarFloat32AMp3(floatArrays, sampleRate) {
+        const FORMANTES_ES = {
+            'a': [730, 1090, 2440, 1.0, false],
+            'á': [750, 1100, 2450, 1.25, false],
+            'e': [530, 1840, 2480, 1.0, false],
+            'é': [540, 1860, 2500, 1.25, false],
+            'i': [270, 2290, 3010, 0.95, false],
+            'í': [270, 2310, 3020, 1.2, false],
+            'y': [270, 2290, 3010, 0.9, false],
+            'o': [570, 840, 2410, 1.0, false],
+            'ó': [580, 850, 2420, 1.25, false],
+            'u': [300, 870, 2240, 0.95, false],
+            'ú': [300, 880, 2250, 1.2, false],
+            'ü': [300, 880, 2250, 1.0, false],
+            'm': [280, 900, 2200, 0.75, false],
+            'n': [280, 1400, 2300, 0.75, false],
+            'ñ': [280, 1900, 2500, 0.85, false],
+            'l': [350, 1200, 2400, 0.75, false],
+            'r': [420, 1300, 2200, 0.65, false],
+            's': [0, 0, 0, 0.65, true],
+            'z': [0, 0, 0, 0.65, true],
+            'f': [0, 0, 0, 0.55, true],
+            'j': [0, 0, 0, 0.6, true],
+            'x': [0, 0, 0, 0.65, true],
+            'b': [250, 800, 2100, 0.5, false],
+            'v': [250, 800, 2100, 0.5, false],
+            'd': [260, 1500, 2400, 0.5, false],
+            'g': [260, 1100, 2200, 0.5, false],
+            'p': [0, 0, 0, 0.42, true],
+            't': [0, 0, 0, 0.42, true],
+            'k': [0, 0, 0, 0.42, true],
+            'c': [0, 0, 0, 0.42, true],
+            'q': [0, 0, 0, 0.42, true]
+        };
+
+        function sintetizarTextoEnMemoria(texto, rate) {
+            const sampleRate = 22050;
+            const cleanText = texto.toLowerCase().replace(/[^a-záéíóúüñ0-9\s.,;?!-]/g, ' ');
+            const baseDur = (0.068 / rate);
+            const pitchBase = 118; // Hz voz masculina clara
+
+            // Estimar muestras totales
+            const totalEstimado = Math.ceil(cleanText.length * baseDur * sampleRate * 1.15);
+            const buffer = new Float32Array(totalEstimado);
+            let pos = 0;
+            let fase = 0;
+
+            for (let i = 0; i < cleanText.length; i++) {
+                const ch = cleanText[i];
+
+                if (ch === ' ') {
+                    const sil = Math.floor(baseDur * 0.65 * sampleRate);
+                    pos += sil;
+                    continue;
+                }
+                if (ch === ',' || ch === ';') {
+                    const sil = Math.floor(baseDur * 2.4 * sampleRate);
+                    pos += sil;
+                    continue;
+                }
+                if (ch === '.' || ch === '?' || ch === '!' || ch === '\n') {
+                    const sil = Math.floor(baseDur * 4.2 * sampleRate);
+                    pos += sil;
+                    continue;
+                }
+
+                const spec = FORMANTES_ES[ch] || [450, 1300, 2350, 0.55, false];
+                const [f1, f2, f3, durMult, esFricativa] = spec;
+                const numSamples = Math.floor(baseDur * durMult * sampleRate);
+
+                // Entonación prosódica ligera
+                const progresoFrase = (i % 45) / 45;
+                const f0 = pitchBase * (1.06 - 0.12 * progresoFrase) * (/[áéíóú]/.test(ch) ? 1.08 : 1.0);
+
+                for (let n = 0; n < numSamples && (pos + n) < buffer.length; n++) {
+                    const env = Math.sin((Math.PI * n) / numSamples);
+                    let muestra = 0;
+
+                    if (esFricativa) {
+                        const ruido = (Math.random() * 2 - 1) * 0.22;
+                        muestra = ruido * env;
+                    } else {
+                        fase += (2 * Math.PI * f0) / sampleRate;
+                        // Pulso glotal rico en armónicos
+                        const glotal = Math.sin(fase) + 0.5 * Math.sin(2 * fase) + 0.25 * Math.sin(3 * fase);
+                        const w1 = (2 * Math.PI * f1 * n) / sampleRate;
+                        const w2 = (2 * Math.PI * f2 * n) / sampleRate;
+                        const w3 = (2 * Math.PI * f3 * n) / sampleRate;
+                        const resonancia = 0.55 * Math.sin(w1) + 0.30 * Math.sin(w2) + 0.15 * Math.sin(w3);
+                        muestra = (0.45 * glotal + 0.55 * resonancia) * env * 0.72;
+                    }
+                    buffer[pos + n] = muestra;
+                }
+                pos += numSamples;
+            }
+
+            return { samples: buffer.subarray(0, pos), sampleRate };
+        }
+
+        function codificarFloat32AMp3(floatArr, sampleRate) {
             const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
             const mp3Data = [];
             const blockSize = 1152;
+            const samples = new Int16Array(floatArr.length);
 
-            let totalLength = 0;
-            floatArrays.forEach(arr => totalLength += arr.length);
-            const samples = new Int16Array(totalLength);
-            let offset = 0;
-            for (const arr of floatArrays) {
-                for (let i = 0; i < arr.length; i++) {
-                    const s = Math.max(-1, Math.min(1, arr[i]));
-                    samples[offset++] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-                }
+            for (let i = 0; i < floatArr.length; i++) {
+                const s = Math.max(-1, Math.min(1, floatArr[i]));
+                samples[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
             }
 
             for (let i = 0; i < samples.length; i += blockSize) {
@@ -684,66 +764,45 @@
                 restaurarBotonDictado();
             }
 
-            if (!ttsEngine || !ttsReady) {
-                // Inicialización al vuelo si aún no había terminado
-                try {
-                    ttsEngine = new eSpeakNG('https://unpkg.com/espeak-ng@1.0.2/dist/espeak-ng.worker.js', () => {
-                        ttsReady = true;
-                        recordMp3Button.click();
-                    });
-                } catch {}
-                statusDiv.textContent = '⏳ Preparando sintetizador interno de voz...';
-                return;
-            }
-
+            const textoOriginalBtn = recordMp3Button.innerHTML;
             recordMp3Button.disabled = true;
             speakButton.disabled = true;
+            recordMp3Button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Generando...';
             progressWrapper.style.display = 'block';
-            progressBar.style.width = '30%';
-            statusDiv.textContent = '⚙️ Sintetizando audio en memoria y convirtiendo a MP3...';
+            progressBar.style.width = '45%';
 
-            const vozSel = voices.find(v => v.name === voiceSelect.value);
-            const esIngles = vozSel && vozSel.lang.toLowerCase().startsWith('en');
-            const rate = parseFloat(rateRange.value) || 1.0;
+            setTimeout(() => {
+                try {
+                    const rate = parseFloat(rateRange.value) || 1.0;
+                    const { samples, sampleRate } = sintetizarTextoEnMemoria(texto, rate);
+                    progressBar.style.width = '85%';
 
-            ttsEngine.set_voice(esIngles ? 'en-us' : 'es-419');
-            ttsEngine.set_rate(Math.round(165 * rate));
-            ttsEngine.set_pitch(48);
+                    const mp3Blob = codificarFloat32AMp3(samples, sampleRate);
+                    const url = URL.createObjectURL(mp3Blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `voz_multimedia_${Date.now()}.mp3`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
 
-            const chunksPcm = [];
-            let rateDetectado = 22050;
-
-            ttsEngine.synthesize(texto, (samples, events) => {
-                if (samples && samples.length > 0) {
-                    chunksPcm.push(new Float32Array(samples));
-                } else {
-                    // Terminó la síntesis completa: codificar a MP3 y descargar
-                    progressBar.style.width = '90%';
-                    setTimeout(() => {
-                        const mp3Blob = codificarFloat32AMp3(chunksPcm, rateDetectado);
-                        const url = URL.createObjectURL(mp3Blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `voz_multimedia_${Date.now()}.mp3`;
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                        URL.revokeObjectURL(url);
-
-                        progressBar.style.width = '100%';
-                        statusDiv.textContent = '✅ ¡Pista MP3 descargada directamente en tu equipo!';
-                        recordMp3Button.disabled = false;
-                        speakButton.disabled = false;
-                        setTimeout(() => { progressWrapper.style.display = 'none'; }, 1500);
-                    }, 50);
+                    progressBar.style.width = '100%';
+                    Toast.fire({ icon: 'success', title: '¡MP3 descargado!' });
+                } catch (e) {
+                    Swal.fire('Aviso', 'No se pudo codificar el archivo MP3.', 'error');
+                } finally {
+                    recordMp3Button.disabled = false;
+                    speakButton.disabled = false;
+                    recordMp3Button.innerHTML = textoOriginalBtn;
+                    setTimeout(() => { progressWrapper.style.display = 'none'; }, 700);
                 }
-            });
+            }, 60);
         });
 
         pauseButton.addEventListener('click', () => {
             if (synth.speaking && !synth.paused) {
                 synth.pause();
-                statusDiv.textContent = '⏸️ Lectura en pausa.';
                 actualizarBotones(true, true);
             }
         });
@@ -751,7 +810,6 @@
         resumeButton.addEventListener('click', () => {
             if (synth.paused) {
                 synth.resume();
-                statusDiv.textContent = '🔊 Reanudando...';
                 actualizarBotones(true, false);
             }
         });
@@ -761,7 +819,6 @@
             detenerKeepAlive();
             synth.cancel();
             progressWrapper.style.display = 'none';
-            statusDiv.textContent = '⏹️ Lectura detenida.';
             actualizarBotones(false, false);
         });
     </script>
