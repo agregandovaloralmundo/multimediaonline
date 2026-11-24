@@ -15,6 +15,7 @@
     <link rel="icon" type="image/x-icon" href="img/principal.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         html, body {
             height: 100%;
@@ -120,7 +121,7 @@
         <div class="main-content">
             <div class="tool-box">
                 <h3 class="mb-1 fw-bold text-dark text-center">Transcripción y Fotogramas a Word</h3>
-                <p class="text-muted small mb-3 text-center">Extrae automáticamente la transcripción del video (sin interferencia de micrófono), captura las filminas completas y genera tu Word o PDF</p>
+                <p class="text-muted small mb-3 text-center">Lee automáticamente los subtítulos en pantalla y captura las filminas completas (sin usar micrófono) para generar tu Word o PDF</p>
 
                 <!-- Cajetín de enlace, video local y subtítulos opcionales -->
                 <div class="row g-2 mb-3 text-start">
@@ -147,13 +148,14 @@
                         <video id="videoPlayer" controls crossorigin="anonymous"></video>
                         <iframe id="youtubeFrame" style="display: none;" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
                         <canvas id="captureCanvas" style="display: none;"></canvas>
+                        <canvas id="ocrCanvas" style="display: none;"></canvas>
 
                         <div class="d-grid gap-2 mt-2">
                             <button id="liveTranscribeBtn" class="btn btn-danger btn-sm fw-bold" disabled>
-                                ▶️ Reproducir Video y Capturar Fotogramas Auto
+                                ▶️ Reproducir y Leer Subtítulos + Capturar Filminas
                             </button>
                             <button id="autoProcessBtn" class="btn btn-outline-primary btn-sm fw-bold" disabled>
-                                ⚡ Armar Secciones desde Transcripción / Subtítulos
+                                ⚡ Armar Secciones desde Archivo .SRT / .VTT
                             </button>
                             <button id="manualSnapBtn" class="btn btn-outline-secondary btn-sm fw-bold" disabled>
                                 📸 Capturar Diapositiva Ahora + Agregar Nota
@@ -164,15 +166,16 @@
                     <div class="col-md-7 text-start">
                         <!-- Panel superior: Transcripción del video -->
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label for="liveTranscriptBox" class="fw-bold small text-primary mb-0">📝 Transcripción del video (sin micrófono abierto):</label>
+                            <label for="liveTranscriptBox" class="fw-bold small text-primary mb-0">📝 Transcripción extraída del video:</label>
                             <div class="d-flex align-items-center gap-1">
+                                <span id="ocrStatusBadge" class="badge bg-info text-dark" style="display: none;">👁️ Leyendo subtítulos...</span>
                                 <button type="button" id="toggleMicBtn" class="btn btn-outline-secondary btn-sm py-0 px-2" title="Activar dictado por voz solo si deseas agregar notas habladas">
                                     🎙️ Dictar Nota: OFF
                                 </button>
                                 <span id="wordCountBadge" class="badge bg-light text-dark border">0 palabras</span>
                             </div>
                         </div>
-                        <textarea id="liveTranscriptBox" class="form-control mb-2" placeholder="Al cargar un enlace de YouTube o archivo de subtítulos (.srt/.vtt), aquí aparecerá automáticamente el texto completo del video sin que interfiera el sonido ambiente..."></textarea>
+                        <textarea id="liveTranscriptBox" class="form-control mb-2" placeholder="Activa los subtítulos (CC) en el reproductor de YouTube y presiona 'Reproducir y Leer Subtítulos + Capturar Filminas': el sistema irá leyendo el texto de pantalla y transcribiéndolo aquí automáticamente..."></textarea>
 
                         <!-- Panel inferior: Secciones y fotogramas capturados -->
                         <div class="d-flex justify-content-between align-items-center mb-1">
@@ -185,7 +188,7 @@
                         <div id="timelinePreview">
                             <p class="text-muted small text-center mt-4">
                                 Pega el link de la clase o sube el video arriba.<br>
-                                Al darle a <b>Reproducir Video y Capturar Fotogramas Auto</b>, el video arrancará solo y guardará cada filmina completa antes de cambiar.
+                                Asegúrate de tener encendido el botón <b>CC</b> en YouTube para que lea cada subtítulo y capture las filminas.
                             </p>
                         </div>
                     </div>
@@ -230,10 +233,12 @@
         const videoPlayer = document.getElementById('videoPlayer');
         const youtubeFrame = document.getElementById('youtubeFrame');
         const captureCanvas = document.getElementById('captureCanvas');
+        const ocrCanvas = document.getElementById('ocrCanvas');
         const liveTranscribeBtn = document.getElementById('liveTranscribeBtn');
         const autoProcessBtn = document.getElementById('autoProcessBtn');
         const manualSnapBtn = document.getElementById('manualSnapBtn');
         const liveTranscriptBox = document.getElementById('liveTranscriptBox');
+        const ocrStatusBadge = document.getElementById('ocrStatusBadge');
         const toggleMicBtn = document.getElementById('toggleMicBtn');
         const wordCountBadge = document.getElementById('wordCountBadge');
         const timelinePreview = document.getElementById('timelinePreview');
@@ -245,7 +250,7 @@
         const exportPdfBtn = document.getElementById('exportPdfBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
 
-        const STORAGE_KEY = "multimedia_doc_respaldo_v4";
+        const STORAGE_KEY = "multimedia_doc_respaldo_v5";
         let bloquesDocumento = [];
         let srtEntradas = [];
         let nombreVideoActual = "Clase_Transcripcion";
@@ -256,6 +261,10 @@
         let tabCaptureStream = null;
         let tabCaptureVideo = null;
         let sceneCheckTimer = null;
+        let ocrCheckTimer = null;
+        let ocrWorker = null;
+        let ocrOcupado = false;
+        let ultimaLineaOcr = "";
         let lastFrameSignature = null;
         let ultimoFotogramaEstable = null;
         let corsBloqueado = false;
@@ -338,68 +347,112 @@
                 : (videoPlayer.currentTime || 0);
         }
 
-        // Busca los subtítulos reales de YouTube desde captionTracks (vía puente CORS) o instancias Piped
-        async function obtenerSubtitulosYoutube(ytId) {
-            // Intento 1: Extraer captionTracks directos de la página de YouTube vía AllOrigins
+        // Inicializar motor OCR (Tesseract.js en español) en segundo plano
+        async function asegurarOcrWorker() {
+            if (ocrWorker) return ocrWorker;
+            if (!window.Tesseract) return null;
             try {
-                const ytPageUrl = encodeURIComponent(`https://www.youtube.com/watch?v=${ytId}`);
-                const proxyResp = await fetch(`https://api.allorigins.win/get?url=${ytPageUrl}`);
-                if (proxyResp.ok) {
-                    const wrapper = await proxyResp.json();
-                    const html = wrapper.contents || "";
-                    const matchTracks = html.match(/"captionTracks":(\[.*?\])/);
-                    if (matchTracks && matchTracks[1]) {
-                        const tracks = JSON.parse(matchTracks[1]);
-                        if (tracks.length > 0) {
-                            const elegido = tracks.find(t => t.languageCode && t.languageCode.startsWith('es')) || tracks[0];
-                            if (elegido && elegido.baseUrl) {
-                                const xmlUrl = encodeURIComponent(elegido.baseUrl);
-                                const xmlResp = await fetch(`https://api.allorigins.win/get?url=${xmlUrl}`);
-                                if (xmlResp.ok) {
-                                    const xmlWrapper = await xmlResp.json();
-                                    const parser = new DOMParser();
-                                    const xmlDoc = parser.parseFromString(xmlWrapper.contents || "", "text/xml");
-                                    const nodos = Array.from(xmlDoc.getElementsByTagName("text"));
-                                    const entradas = nodos.map(n => {
-                                        const start = parseFloat(n.getAttribute("start") || "0");
-                                        const tmp = document.createElement("textarea");
-                                        tmp.innerHTML = n.textContent || "";
-                                        const limpio = tmp.value.replace(/\s+/g, " ").trim();
-                                        return { tiempoSeg: start, texto: limpio };
-                                    }).filter(e => e.texto);
+                ocrStatusBadge.style.display = 'inline-block';
+                ocrStatusBadge.textContent = '⏳ Cargando lector OCR...';
+                ocrWorker = await Tesseract.createWorker('spa');
+                ocrStatusBadge.textContent = '👁️ Leyendo subtítulos...';
+                return ocrWorker;
+            } catch {
+                ocrStatusBadge.style.display = 'none';
+                return null;
+            }
+        }
 
-                                    if (entradas.length > 0) return entradas;
-                                }
-                            }
+        // Recorta la franja inferior donde aparecen los subtítulos del reproductor y extrae el texto limpio
+        async function leerSubtitulosEnPantalla() {
+            if (ocrOcupado || !capturandoEscenas) return;
+            const worker = await asegurarOcrWorker();
+            if (!worker) return;
+
+            ocrOcupado = true;
+            try {
+                let dibujado = false;
+                if (!modoYoutube && videoPlayer.videoWidth && !corsBloqueado) {
+                    const vw = videoPlayer.videoWidth;
+                    const vh = videoPlayer.videoHeight;
+                    const cropY = Math.floor(vh * 0.68);
+                    const cropH = Math.floor(vh * 0.25);
+                    ocrCanvas.width = vw;
+                    ocrCanvas.height = cropH;
+                    const ctx = ocrCanvas.getContext('2d');
+                    ctx.drawImage(videoPlayer, 0, cropY, vw, cropH, 0, 0, vw, cropH);
+                    dibujado = true;
+                } else if (tabCaptureVideo && tabCaptureVideo.videoWidth) {
+                    const targetEl = modoYoutube ? youtubeFrame : videoPlayer;
+                    const rect = targetEl.getBoundingClientRect();
+                    const scaleX = tabCaptureVideo.videoWidth / window.innerWidth;
+                    const scaleY = tabCaptureVideo.videoHeight / window.innerHeight;
+
+                    // Franja inferior (del 65% al 88% de alto del reproductor, evitando la barra de controles)
+                    const srcX = (rect.left + rect.width * 0.08) * scaleX;
+                    const srcY = (rect.top + rect.height * 0.65) * scaleY;
+                    const srcW = (rect.width * 0.84) * scaleX;
+                    const srcH = (rect.height * 0.23) * scaleY;
+
+                    ocrCanvas.width = Math.max(400, Math.round(srcW * 1.5));
+                    ocrCanvas.height = Math.max(80, Math.round(srcH * 1.5));
+                    const ctx = ocrCanvas.getContext('2d');
+                    ctx.drawImage(tabCaptureVideo, srcX, srcY, srcW, srcH, 0, 0, ocrCanvas.width, ocrCanvas.height);
+
+                    // Aumentar contraste (blanco sobre negro) para precisión máxima del OCR
+                    const imgData = ctx.getImageData(0, 0, ocrCanvas.width, ocrCanvas.height);
+                    const d = imgData.data;
+                    for (let i = 0; i < d.length; i += 4) {
+                        const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                        const val = lum > 175 ? 0 : 255; // Texto blanco -> negro sobre fondo blanco para Tesseract
+                        d[i] = val; d[i + 1] = val; d[i + 2] = val;
+                    }
+                    ctx.putImageData(imgData, 0, 0);
+                    dibujado = true;
+                }
+
+                if (!dibujado) return;
+
+                const { data: { text } } = await worker.recognize(ocrCanvas);
+                const limpio = text
+                    .replace(/[\r\n]+/g, ' ')
+                    .replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9.,;:¿?¡!()\-\s]/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+                if (limpio.length >= 6 && limpio !== ultimaLineaOcr && !ultimaLineaOcr.includes(limpio)) {
+                    // Evitar duplicar la parte superpuesta cuando YouTube desplaza la segunda línea hacia arriba
+                    let textoNuevo = limpio;
+                    const palabrasPrevias = ultimaLineaOcr.split(' ');
+                    if (palabrasPrevias.length >= 3) {
+                        const cola = palabrasPrevias.slice(-3).join(' ');
+                        const idxOverlap = limpio.indexOf(cola);
+                        if (idxOverlap !== -1) {
+                            textoNuevo = limpio.slice(idxOverlap + cola.length).trim();
+                        }
+                    }
+
+                    ultimaLineaOcr = limpio;
+
+                    if (textoNuevo.length >= 4) {
+                        const sep = liveTranscriptBox.value.trim() ? ' ' : '';
+                        liveTranscriptBox.value += sep + textoNuevo;
+                        liveTranscriptBox.scrollTop = liveTranscriptBox.scrollHeight;
+                        actualizarEstadoBotonesExportacion();
+
+                        // También asociar el texto al último bloque de filmina activo
+                        if (bloquesDocumento.length > 0) {
+                            const ultimo = bloquesDocumento[bloquesDocumento.length - 1];
+                            ultimo.textoConfirmado = ((ultimo.textoConfirmado || '') + ' ' + textoNuevo).trim();
+                            renderizarBloques();
+                        } else {
+                            guardarRespaldoLocal();
                         }
                     }
                 }
-            } catch {}
-
-            // Intento 2: Instancias Piped públicas
-            const instancias = [
-                'https://pipedapi.kavin.rocks',
-                'https://pipedapi.adminforge.de',
-                'https://api.piped.projectsegfau.lt'
-            ];
-            for (const host of instancias) {
-                try {
-                    const res = await fetch(`${host}/streams/${ytId}`);
-                    if (!res.ok) continue;
-                    const data = await res.json();
-                    if (data.subtitles && data.subtitles.length > 0) {
-                        const subEs = data.subtitles.find(s => s.code && s.code.startsWith('es')) || data.subtitles[0];
-                        if (subEs && subEs.url) {
-                            const vttResp = await fetch(subEs.url);
-                            if (vttResp.ok) {
-                                const parsed = parsearSubtitulos(await vttResp.text());
-                                if (parsed.length > 0) return parsed;
-                            }
-                        }
-                    }
-                } catch {}
+            } catch {} finally {
+                ocrOcupado = false;
             }
-            return [];
         }
 
         function capturarFotogramaActual() {
@@ -536,7 +589,7 @@
             if (srtEntradas.length > 0) autoProcessBtn.disabled = false;
         }
 
-        // 1A. Cargar link (YouTube o MP4 directo)
+        // 1A. Cargar link (YouTube con subtítulos activos por defecto cc_load_policy=1)
         loadUrlBtn.addEventListener('click', async () => {
             const url = videoUrlInput.value.trim();
             if (!url) {
@@ -561,13 +614,8 @@
                 videoPlayer.pause();
                 videoPlayer.style.display = 'none';
                 youtubeFrame.style.display = 'block';
-                // enablejsapi=1 permite arrancarlo automáticamente con postMessage sin doble clic ni eco
-                youtubeFrame.src = `https://www.youtube-nocookie.com/embed/${ytId}?enablejsapi=1&rel=0&modestbranding=1`;
+                youtubeFrame.src = `https://www.youtube-nocookie.com/embed/${ytId}?enablejsapi=1&cc_load_policy=1&cc_lang_pref=es&rel=0&modestbranding=1`;
                 activarControlesVideo();
-
-                const textoOriginalBtn = loadUrlBtn.innerHTML;
-                loadUrlBtn.disabled = true;
-                loadUrlBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
                 try {
                     const oembed = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${ytId}&format=json`);
@@ -581,21 +629,7 @@
                     nombreVideoActual = `YouTube_${ytId}`;
                 }
 
-                // Extraer transcripción real del video sin abrir micrófono
-                const entradas = await obtenerSubtitulosYoutube(ytId);
-                loadUrlBtn.disabled = false;
-                loadUrlBtn.innerHTML = textoOriginalBtn;
-
-                if (entradas.length > 0) {
-                    srtEntradas = entradas;
-                    autoProcessBtn.disabled = false;
-                    liveTranscriptBox.value = entradas.map(s => s.texto).join(' ');
-                    actualizarEstadoBotonesExportacion();
-                    guardarRespaldoLocal();
-                    Toast.fire({ icon: 'success', title: `¡Transcripción extraída (${entradas.length} líneas)!` });
-                } else {
-                    Toast.fire({ icon: 'info', title: 'Video cargado. No expone subtítulos públicos; puedes capturar filminas o dictar notas.' });
-                }
+                Toast.fire({ icon: 'success', title: 'YouTube cargado con subtítulos. Dale al botón rojo para leer y capturar.' });
                 return;
             }
 
@@ -668,7 +702,6 @@
             reader.readAsText(file, 'UTF-8');
         });
 
-        // Armar secciones sincronizadas desde subtítulos extraídos
         autoProcessBtn.addEventListener('click', async () => {
             if (srtEntradas.length === 0) return;
 
@@ -731,7 +764,7 @@
             Toast.fire({ icon: 'success', title: '¡Secciones de transcripción armadas!' });
         });
 
-        // Dictado manual OPCIONAL (apagado por defecto para que el micrófono NO capture conversación ambiente)
+        // Dictado manual OPCIONAL (apagado por defecto)
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = null;
         let dictadoManualActivo = false;
@@ -788,18 +821,12 @@
         function guardarFotogramaCapturado(imgBase64) {
             if (!imgBase64) return;
             const t = obtenerTiempoActual();
-            // Si ya hay un bloque de texto sin imagen en ese tramo, pegarle la imagen; si no, crear sección con imagen
-            const sinFoto = bloquesDocumento.find(b => !b.imagenBase64 && Math.abs(b.tiempoSeg - t) < 25);
-            if (sinFoto) {
-                sinFoto.imagenBase64 = imgBase64;
-            } else {
-                bloquesDocumento.push({
-                    tiempoSeg: t,
-                    tiempoTxt: formatearTiempo(t),
-                    textoConfirmado: "",
-                    imagenBase64: imgBase64
-                });
-            }
+            bloquesDocumento.push({
+                tiempoSeg: t,
+                tiempoTxt: formatearTiempo(t),
+                textoConfirmado: "",
+                imagenBase64: imgBase64
+            });
             renderizarBloques();
         }
 
@@ -810,9 +837,15 @@
             }
 
             capturandoEscenas = false;
+            ocrStatusBadge.style.display = 'none';
+
             if (sceneCheckTimer) {
                 clearInterval(sceneCheckTimer);
                 sceneCheckTimer = null;
+            }
+            if (ocrCheckTimer) {
+                clearInterval(ocrCheckTimer);
+                ocrCheckTimer = null;
             }
             if (tabCaptureStream) {
                 tabCaptureStream.getTracks().forEach(t => t.stop());
@@ -820,10 +853,10 @@
                 tabCaptureVideo = null;
             }
             liveTranscribeBtn.classList.remove('mic-active');
-            liveTranscribeBtn.innerHTML = '▶️ Reproducir Video y Capturar Fotogramas Auto';
+            liveTranscribeBtn.innerHTML = '▶️ Reproducir y Leer Subtítulos + Capturar Filminas';
         }
 
-        // Arranca reproducción automática (incluso en YouTube) y captura filminas completas sin eco ni micrófono
+        // Arranca reproducción, lee subtítulos con OCR en vivo y captura filminas completas
         liveTranscribeBtn.addEventListener('click', async () => {
             if (capturandoEscenas) {
                 if (modoYoutube) controlarReproductorYoutube('pauseVideo');
@@ -834,7 +867,6 @@
 
             if (modoYoutube || corsBloqueado) {
                 try {
-                    // audio: false evita duplicar el sonido y elimina cualquier eco
                     tabCaptureStream = await navigator.mediaDevices.getDisplayMedia({
                         video: { displaySurface: 'browser' },
                         audio: false,
@@ -844,7 +876,7 @@
                     tabCaptureVideo.srcObject = tabCaptureStream;
                     await tabCaptureVideo.play();
                 } catch {
-                    Swal.fire('Permiso requerido', 'Selecciona esta pestaña y dale a Permitir para que pueda capturar las filminas del reproductor.', 'info');
+                    Swal.fire('Permiso requerido', 'Selecciona esta pestaña y dale a Permitir para que pueda leer los subtítulos y capturar las filminas.', 'info');
                     return;
                 }
             }
@@ -853,18 +885,18 @@
             youtubeStartTime = Date.now();
             lastFrameSignature = null;
             ultimoFotogramaEstable = null;
+            ultimaLineaOcr = "";
 
             liveTranscribeBtn.classList.add('mic-active');
             liveTranscribeBtn.innerHTML = '⏹️ Detener Reproducción y Captura';
 
-            // Arrancar reproducción automática (YouTube o video local)
             if (modoYoutube) {
                 controlarReproductorYoutube('playVideo');
             } else {
                 videoPlayer.play();
             }
 
-            // Vigilante cada 1.5s: guarda la filmina completa justo antes de cambiar a la siguiente
+            // 1. Vigilante de filminas cada 1.5s
             sceneCheckTimer = setInterval(() => {
                 if (!capturandoEscenas) return;
                 if (!modoYoutube && videoPlayer.paused) return;
@@ -876,6 +908,14 @@
                     guardarFotogramaCapturado(filminaAnteriorCompleta);
                 }
             }, 1500);
+
+            // 2. Lector OCR de subtítulos en pantalla cada 2.2s (cero micrófono)
+            asegurarOcrWorker();
+            ocrCheckTimer = setInterval(() => {
+                if (!capturandoEscenas) return;
+                if (!modoYoutube && videoPlayer.paused) return;
+                leerSubtitulosEnPantalla();
+            }, 2200);
         });
 
         videoPlayer.addEventListener('ended', detenerCapturaFotogramas);
@@ -933,8 +973,7 @@
                     `;
                 }).join('');
 
-            const hayTextoEnSecciones = bloquesDocumento.some(b => (b.textoConfirmado && b.textoConfirmado.trim()));
-            const bloqueTextoCompletoHtml = (!hayTextoEnSecciones && textoGlobal)
+            const bloqueTextoCompletoHtml = textoGlobal
                 ? `<div style="margin-bottom: 16pt;"><p style="font-size: 11.5pt; text-align: justify; line-height: 1.6;">${textoGlobal.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</p></div>`
                 : '';
 
@@ -1004,6 +1043,7 @@
             youtubeIdActual = null;
             lastFrameSignature = null;
             ultimoFotogramaEstable = null;
+            ultimaLineaOcr = "";
             corsBloqueado = false;
             localStorage.removeItem(STORAGE_KEY);
 
