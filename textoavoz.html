@@ -15,6 +15,8 @@
     <link rel="icon" type="image/x-icon" href="img/principal.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+    <script src="https://unpkg.com/espeak-ng@1.0.2/dist/espeak-ng.js"></script>
     <style>
         html, body {
             height: 100%;
@@ -45,8 +47,8 @@
             margin: auto;
         }
         #textContent {
-            height: 155px;
-            max-height: 155px;
+            height: 165px;
+            max-height: 165px;
             overflow-y: auto;
             resize: none;
         }
@@ -68,7 +70,7 @@
         <div class="main-content">
             <div class="tts-box">
                 <h3 class="mb-1 fw-bold text-dark">Texto a Voz y Dictado</h3>
-                <p class="text-muted small mb-3">Dicta con tu voz, carga un archivo (.txt), escucha, baja en MP3 directo o guarda en Word y TXT</p>
+                <p class="text-muted small mb-3">Dicta con tu voz, carga un archivo (.txt), escucha la lectura en voz alta, baja en MP3 o guarda en Word y TXT</p>
 
                 <!-- Cargar archivo .txt -->
                 <div class="mb-2 text-start">
@@ -79,7 +81,7 @@
                 <!-- Barra de herramientas de texto + Dictado por Voz -->
                 <div class="mb-3 text-start">
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
-                        <label for="textContent" class="form-label fw-bold small text-secondary mb-0">✍️ Escribe, pega o dicta con tu voz (todo aparece adentro del cuadro):</label>
+                        <label for="textContent" class="form-label fw-bold small text-secondary mb-0">✍️ Escribe, pega o dicta con tu voz:</label>
                         <div class="d-flex align-items-center gap-2">
                             <button type="button" id="dictateButton" class="btn btn-outline-danger btn-sm fw-bold">
                                 🎙️ Dictar por Voz
@@ -106,30 +108,17 @@
 
                 <!-- Selector de voz y velocidad -->
                 <div class="row g-3 mb-3 text-start">
-                    <div class="col-md-5">
-                        <label for="voiceSelect" class="form-label fw-bold small text-secondary mb-1">🗣️ Voz para escuchar en vivo:</label>
+                    <div class="col-md-8">
+                        <label for="voiceSelect" class="form-label fw-bold small text-secondary mb-1">🗣️ Voz de lectura:</label>
                         <select id="voiceSelect" class="form-select form-select-sm"></select>
                     </div>
                     <div class="col-md-4">
-                        <label for="mp3VoiceSelect" class="form-label fw-bold small text-secondary mb-1">🎙️ Narrador para descarga MP3:</label>
-                        <select id="mp3VoiceSelect" class="form-select form-select-sm">
-                            <option value="Mia">Mia — Español Latino (Mujer)</option>
-                            <option value="Andres">Andrés — Español Latino (Hombre)</option>
-                            <option value="Lupe">Lupe — Español EE.UU. (Mujer)</option>
-                            <option value="Pedro">Pedro — Español EE.UU. (Hombre)</option>
-                            <option value="Lucia">Lucía — Español España (Mujer)</option>
-                            <option value="Sergio">Sergio — Español España (Hombre)</option>
-                            <option value="Matthew">Matthew — Inglés (Hombre)</option>
-                            <option value="Joanna">Joanna — Inglés (Mujer)</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="rateRange" class="form-label fw-bold small text-secondary mb-1">⚡ Velocidad lectura: <span id="rateValue">1.0x</span></label>
+                        <label for="rateRange" class="form-label fw-bold small text-secondary mb-1">⚡ Velocidad: <span id="rateValue">1.0x</span></label>
                         <input type="range" id="rateRange" class="form-range mt-1" min="0.6" max="1.6" step="0.1" value="1">
                     </div>
                 </div>
 
-                <!-- Botones de Audio y Exportación en una distribución amplia -->
+                <!-- Los 4 botones principales en fila -->
                 <div class="row g-2 mb-3">
                     <div class="col-md-3 col-sm-6">
                         <button id="speakButton" class="btn btn-primary w-100 fw-bold">
@@ -184,11 +173,9 @@
         const saveTxtButton = document.getElementById('saveTxtButton');
         const clearTextButton = document.getElementById('clearTextButton');
         const vuWrapper = document.getElementById('vuWrapper');
-        const vuLabel = document.getElementById('vuLabel');
         const vuPercent = document.getElementById('vuPercent');
         const vuBar = document.getElementById('vuBar');
         const voiceSelect = document.getElementById('voiceSelect');
-        const mp3VoiceSelect = document.getElementById('mp3VoiceSelect');
         const rateRange = document.getElementById('rateRange');
         const rateValue = document.getElementById('rateValue');
         const speakButton = document.getElementById('speakButton');
@@ -207,6 +194,17 @@
         let keepAliveTimer = null;
         let canceladoManual = false;
         let textoBaseConfirmado = "";
+
+        // Inicialización silenciosa del motor interno eSpeakNG en memoria
+        let ttsEngine = null;
+        let ttsReady = false;
+        if (window.eSpeakNG) {
+            try {
+                ttsEngine = new eSpeakNG('https://unpkg.com/espeak-ng@1.0.2/dist/espeak-ng.worker.js', () => {
+                    ttsReady = true;
+                });
+            } catch {}
+        }
 
         // ==========================================
         // ESTADO DE BOTONES DE EXPORTACIÓN (WORD/TXT)
@@ -326,8 +324,6 @@
                 source.connect(analyser);
 
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                vuLabel.textContent = '🎙️ Medidor de voz del micrófono:';
-                vuBar.className = 'progress-bar bg-danger';
                 vuWrapper.style.display = 'block';
 
                 function actualizarVu() {
@@ -384,7 +380,7 @@
                 dictateButton.classList.remove('btn-outline-danger');
                 dictateButton.classList.add('btn-danger', 'mic-active');
                 dictateButton.innerHTML = '⏹️ Detener Dictado';
-                statusDiv.textContent = '🎙️ Escuchando... todo se escribe directamente adentro del cuadro.';
+                statusDiv.textContent = '🎙️ Escuchando... habla claro cerca del micrófono.';
             };
 
             recognition.onresult = (event) => {
@@ -440,7 +436,7 @@
             dictateButton.classList.add('btn-outline-danger');
             dictateButton.innerHTML = '🎙️ Dictar por Voz';
             if (statusDiv.textContent.includes('Escuchando')) {
-                statusDiv.textContent = '✅ Dictado finalizado. Ya puedes guardarlo en Word, TXT o bajarlo en MP3.';
+                statusDiv.textContent = '✅ Dictado finalizado. Ya puedes escucharlo, bajarlo en MP3 o guardarlo en Word y TXT.';
             }
         }
 
@@ -465,7 +461,7 @@
         });
 
         // ==========================================
-        // 2. ESCUCHAR EN VOZ ALTA (LECTURA EN VIVO)
+        // 2. ESCUCHAR EN VOZ ALTA (LECTURA CONTINUA)
         // ==========================================
         function cargarVoces() {
             voices = synth.getVoices();
@@ -646,9 +642,36 @@
         });
 
         // ==========================================
-        // 3. DESCARGA DIRECTA DE MP3 CON VOZ NEURONAL NATURAL
+        // 3. BAJAR MP3 INTERNO EN MEMORIA (SIN COMPARTIR PANTALLA NI APIs EXTERNAS)
         // ==========================================
-        recordMp3Button.addEventListener('click', async () => {
+        function codificarFloat32AMp3(floatArrays, sampleRate) {
+            const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
+            const mp3Data = [];
+            const blockSize = 1152;
+
+            let totalLength = 0;
+            floatArrays.forEach(arr => totalLength += arr.length);
+            const samples = new Int16Array(totalLength);
+            let offset = 0;
+            for (const arr of floatArrays) {
+                for (let i = 0; i < arr.length; i++) {
+                    const s = Math.max(-1, Math.min(1, arr[i]));
+                    samples[offset++] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                }
+            }
+
+            for (let i = 0; i < samples.length; i += blockSize) {
+                const chunk = samples.subarray(i, i + blockSize);
+                const mp3buf = mp3encoder.encodeBuffer(chunk);
+                if (mp3buf.length > 0) mp3Data.push(mp3buf);
+            }
+            const endBuf = mp3encoder.flush();
+            if (endBuf.length > 0) mp3Data.push(endBuf);
+
+            return new Blob(mp3Data, { type: 'audio/mp3' });
+        }
+
+        recordMp3Button.addEventListener('click', () => {
             const texto = textContent.value.trim();
             if (!texto) {
                 Swal.fire({ title: 'Texto vacío', text: 'Escribe, dicta o carga un texto primero.', icon: 'warning', confirmButtonColor: '#0d6efd' });
@@ -661,55 +684,60 @@
                 restaurarBotonDictado();
             }
 
-            const vozElegida = mp3VoiceSelect.value;
-            const fragmentos = dividirEnFragmentos(texto, 260);
-            const buffersMp3 = [];
+            if (!ttsEngine || !ttsReady) {
+                // Inicialización al vuelo si aún no había terminado
+                try {
+                    ttsEngine = new eSpeakNG('https://unpkg.com/espeak-ng@1.0.2/dist/espeak-ng.worker.js', () => {
+                        ttsReady = true;
+                        recordMp3Button.click();
+                    });
+                } catch {}
+                statusDiv.textContent = '⏳ Preparando sintetizador interno de voz...';
+                return;
+            }
 
             recordMp3Button.disabled = true;
             speakButton.disabled = true;
             progressWrapper.style.display = 'block';
-            progressBar.style.width = '0%';
+            progressBar.style.width = '30%';
+            statusDiv.textContent = '⚙️ Sintetizando audio en memoria y convirtiendo a MP3...';
 
-            try {
-                for (let i = 0; i < fragmentos.length; i++) {
-                    const pct = Math.round(((i + 1) / fragmentos.length) * 100);
-                    progressBar.style.width = `${pct}%`;
-                    statusDiv.textContent = `⚙️ Generando pista MP3: bloque ${i + 1} de ${fragmentos.length} (${pct}%)...`;
+            const vozSel = voices.find(v => v.name === voiceSelect.value);
+            const esIngles = vozSel && vozSel.lang.toLowerCase().startsWith('en');
+            const rate = parseFloat(rateRange.value) || 1.0;
 
-                    const url = `https://api.streamelements.com/kappa/v2/speech?voice=${encodeURIComponent(vozElegida)}&text=${encodeURIComponent(fragmentos[i])}`;
-                    const resp = await fetch(url);
-                    if (!resp.ok) {
-                        throw new Error(`Error HTTP ${resp.status}`);
-                    }
-                    const arrayBuf = await resp.arrayBuffer();
-                    buffersMp3.push(arrayBuf);
+            ttsEngine.set_voice(esIngles ? 'en-us' : 'es-419');
+            ttsEngine.set_rate(Math.round(165 * rate));
+            ttsEngine.set_pitch(48);
+
+            const chunksPcm = [];
+            let rateDetectado = 22050;
+
+            ttsEngine.synthesize(texto, (samples, events) => {
+                if (samples && samples.length > 0) {
+                    chunksPcm.push(new Float32Array(samples));
+                } else {
+                    // Terminó la síntesis completa: codificar a MP3 y descargar
+                    progressBar.style.width = '90%';
+                    setTimeout(() => {
+                        const mp3Blob = codificarFloat32AMp3(chunksPcm, rateDetectado);
+                        const url = URL.createObjectURL(mp3Blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `voz_multimedia_${Date.now()}.mp3`;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        URL.revokeObjectURL(url);
+
+                        progressBar.style.width = '100%';
+                        statusDiv.textContent = '✅ ¡Pista MP3 descargada directamente en tu equipo!';
+                        recordMp3Button.disabled = false;
+                        speakButton.disabled = false;
+                        setTimeout(() => { progressWrapper.style.display = 'none'; }, 1500);
+                    }, 50);
                 }
-
-                const mp3FinalBlob = new Blob(buffersMp3, { type: 'audio/mpeg' });
-                const downloadUrl = URL.createObjectURL(mp3FinalBlob);
-                const a = document.createElement('a');
-                a.href = downloadUrl;
-                a.download = `voz_${vozElegida.toLowerCase()}_${Date.now()}.mp3`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                URL.revokeObjectURL(downloadUrl);
-
-                progressBar.style.width = '100%';
-                statusDiv.textContent = '✅ ¡Pista MP3 descargada con voz natural lista para tu editor!';
-            } catch (err) {
-                statusDiv.textContent = '⚠️ No se pudo conectar con el generador de voz MP3.';
-                Swal.fire({
-                    title: 'Error de conexión',
-                    text: 'Verifica tu conexión a internet o prueba cambiando el narrador MP3 en la lista.',
-                    icon: 'warning',
-                    confirmButtonColor: '#0d6efd'
-                });
-            } finally {
-                recordMp3Button.disabled = false;
-                speakButton.disabled = false;
-                setTimeout(() => { progressWrapper.style.display = 'none'; }, 1800);
-            }
+            });
         });
 
         pauseButton.addEventListener('click', () => {
