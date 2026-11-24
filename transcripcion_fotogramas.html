@@ -703,6 +703,12 @@
             if (capturaPrevia) {
                 bloqueActual.imagenBase64 = capturaPrevia;
             }
+            // Consolidar texto intermedio antes de abrir el siguiente bloque
+            if (bloqueActual.textoIntermedio && bloqueActual.textoIntermedio.trim()) {
+                const sep = bloqueActual.textoConfirmado ? ' ' : '';
+                bloqueActual.textoConfirmado += sep + bloqueActual.textoIntermedio.trim() + '.';
+                bloqueActual.textoIntermedio = '';
+            }
             // Abrir nuevo bloque vacío para la siguiente filmina
             const t = obtenerTiempoActual();
             bloquesDocumento.push({
@@ -716,10 +722,17 @@
         }
 
         function detenerCapturaEnVivo() {
-            // Al detener, guardar la última filmina que quedó en pantalla en el bloque final
+            // Al detener, guardar la última filmina que quedó en pantalla y consolidar cualquier texto pendiente
             const bloqueFinal = bloquesDocumento[bloquesDocumento.length - 1];
-            if (bloqueFinal && !bloqueFinal.imagenBase64) {
-                bloqueFinal.imagenBase64 = ultimoFotogramaEstable || capturarFotogramaActual();
+            if (bloqueFinal) {
+                if (bloqueFinal.textoIntermedio && bloqueFinal.textoIntermedio.trim()) {
+                    const sep = bloqueFinal.textoConfirmado ? ' ' : '';
+                    bloqueFinal.textoConfirmado += sep + bloqueFinal.textoIntermedio.trim() + '.';
+                    bloqueFinal.textoIntermedio = '';
+                }
+                if (!bloqueFinal.imagenBase64) {
+                    bloqueFinal.imagenBase64 = ultimoFotogramaEstable || capturarFotogramaActual();
+                }
                 renderizarBloques();
             }
 
@@ -809,7 +822,7 @@
             cerrarBloqueConCapturaPrevia(img);
         });
 
-        // Generar Documento Word (.doc) LIMPIO (sin minutos, solo título, transcripción y filminas)
+        // Generar Documento Word (.doc) con imágenes incrustadas vía MHTML multiparte (compatibilidad total en Word)
         exportWordBtn.addEventListener('click', () => {
             if (bloquesDocumento.length === 0) return;
 
@@ -817,40 +830,71 @@
                 year: 'numeric', month: 'long', day: 'numeric'
             });
 
+            const boundary = "----=_NextPart_MultimediaOnline_001";
+            let partesImagenesMhtml = "";
+            let imgIndex = 0;
+
             const seccionesHtml = bloquesDocumento
-                .filter(b => (b.textoConfirmado && b.textoConfirmado.trim()) || b.imagenBase64)
                 .map((b) => {
-                    const textoLimpio = (b.textoConfirmado || "").trim();
+                    const textoLimpio = ((b.textoConfirmado || "") + (b.textoIntermedio ? " " + b.textoIntermedio : "")).trim();
+                    let imgHtml = "";
+
+                    if (b.imagenBase64 && b.imagenBase64.startsWith("data:image/")) {
+                        imgIndex++;
+                        const nombreImg = `fotograma_${imgIndex}.jpg`;
+                        const base64Puro = b.imagenBase64.split(",")[1];
+                        const base64Formateado = base64Puro.match(/.{1,76}/g).join("\r\n");
+
+                        partesImagenesMhtml += `--${boundary}\r\n` +
+                            `Content-Location: file:///C:/multimedia/${nombreImg}\r\n` +
+                            `Content-Transfer-Encoding: base64\r\n` +
+                            `Content-Type: image/jpeg\r\n\r\n` +
+                            `${base64Formateado}\r\n\r\n`;
+
+                        imgHtml = `<p style="text-align: center; margin-top: 4pt; margin-bottom: 12pt;"><img src="file:///C:/multimedia/${nombreImg}" width="490" /></p>`;
+                    }
+
+                    if (!textoLimpio && !imgHtml) return "";
+
                     return `
                         <div style="margin-bottom: 16pt; page-break-inside: avoid;">
                             ${textoLimpio ? `<p style="font-size: 11.5pt; text-align: justify; margin-bottom: 8pt;">${textoLimpio.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>` : ''}
-                            ${b.imagenBase64 ? `<p style="text-align: center; margin-top: 4pt; margin-bottom: 12pt;"><img src="${b.imagenBase64}" width="490" /></p>` : ''}
+                            ${imgHtml}
                         </div>
                     `;
                 }).join('');
 
-            const docHtml = `
-                <html xmlns:o='urn:schemas-microsoft-com:office:office'
-                      xmlns:w='urn:schemas-microsoft-com:office:word'
-                      xmlns='http://www.w3.org/TR/REC-html40'>
-                <head>
-                    <meta charset='utf-8'>
-                    <title>${nombreVideoActual}</title>
-                    <style>
-                        body { font-family: 'Calibri', 'Arial', sans-serif; color: #111111; line-height: 1.55; }
-                        h1 { font-size: 16pt; color: #0d6efd; margin-bottom: 4pt; }
-                        .meta { font-size: 9pt; color: #666666; margin-bottom: 16pt; border-bottom: 1px solid #cccccc; padding-bottom: 6pt; }
-                    </style>
-                </head>
-                <body>
-                    <h1>${nombreVideoActual}</h1>
-                    <div class="meta">Generado el ${fechaHoy} · Multimedia Online</div>
-                    ${seccionesHtml}
-                </body>
-                </html>
-            `;
+            const htmlBody = `<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office'
+      xmlns:w='urn:schemas-microsoft-com:office:word'
+      xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+    <meta charset='utf-8'>
+    <title>${nombreVideoActual}</title>
+    <style>
+        body { font-family: 'Calibri', 'Arial', sans-serif; color: #111111; line-height: 1.55; }
+        h1 { font-size: 16pt; color: #0d6efd; margin-bottom: 4pt; }
+        .meta { font-size: 9pt; color: #666666; margin-bottom: 16pt; border-bottom: 1px solid #cccccc; padding-bottom: 6pt; }
+    </style>
+</head>
+<body>
+    <h1>${nombreVideoActual}</h1>
+    <div class="meta">Generado el ${fechaHoy} · Multimedia Online</div>
+    ${seccionesHtml}
+</body>
+</html>`;
 
-            const blob = new Blob(['\ufeff', docHtml], { type: 'application/msword;charset=utf-8' });
+            const mhtmlDoc =
+                `MIME-Version: 1.0\r\n` +
+                `Content-Type: multipart/related; boundary="${boundary}"\r\n\r\n` +
+                `--${boundary}\r\n` +
+                `Content-Type: text/html; charset="utf-8"\r\n` +
+                `Content-Transfer-Encoding: 8bit\r\n\r\n` +
+                `${htmlBody}\r\n\r\n` +
+                `${partesImagenesMhtml}` +
+                `--${boundary}--`;
+
+            const blob = new Blob([mhtmlDoc], { type: 'application/msword;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -859,7 +903,7 @@
             a.click();
             a.remove();
             URL.revokeObjectURL(url);
-            Toast.fire({ icon: 'success', title: 'Documento Word (.doc) limpio generado' });
+            Toast.fire({ icon: 'success', title: 'Documento Word (.doc) con texto e imágenes generado' });
         });
 
         exportPdfBtn.addEventListener('click', () => {
@@ -867,39 +911,36 @@
             window.print();
         });
 
-		clearAllBtn.addEventListener('click', () => {
-					detenerCapturaEnVivo();
-					bloquesDocumento = [];
-					srtEntradas = [];
-					nombreVideoActual = "Clase_Transcripcion";
-					modoYoutube = false;
-					youtubeIdActual = null;
-					lastFrameSignature = null;
-					ultimoFotogramaEstable = null;
-					corsBloqueado = false;
-					localStorage.removeItem(STORAGE_KEY);
+        clearAllBtn.addEventListener('click', () => {
+            detenerCapturaEnVivo();
+            bloquesDocumento = [];
+            srtEntradas = [];
+            nombreVideoActual = "Clase_Transcripcion";
+            modoYoutube = false;
+            youtubeIdActual = null;
+            lastFrameSignature = null;
+            ultimoFotogramaEstable = null;
+            corsBloqueado = false;
+            localStorage.removeItem(STORAGE_KEY);
 
-					// Limpiar campos de entrada
-					videoUrlInput.value = '';
-					videoFile.value = '';
-					srtFile.value = '';
+            videoUrlInput.value = '';
+            videoFile.value = '';
+            srtFile.value = '';
 
-					// Limpiar reproductores (YouTube y video local) y volver al cuadro negro inicial
-					youtubeFrame.src = '';
-					youtubeFrame.style.display = 'none';
-					videoPlayer.pause();
-					videoPlayer.removeAttribute('src');
-					videoPlayer.load();
-					videoPlayer.style.display = 'block';
+            youtubeFrame.src = '';
+            youtubeFrame.style.display = 'none';
+            videoPlayer.pause();
+            videoPlayer.removeAttribute('src');
+            videoPlayer.load();
+            videoPlayer.style.display = 'block';
 
-					// Deshabilitar botones de captura hasta que se cargue otro video o link
-					liveTranscribeBtn.disabled = true;
-					autoProcessBtn.disabled = true;
-					manualSnapBtn.disabled = true;
+            liveTranscribeBtn.disabled = true;
+            autoProcessBtn.disabled = true;
+            manualSnapBtn.disabled = true;
 
-					renderizarBloques();
-					Toast.fire({ icon: 'info', title: 'Pantalla y video limpiados por completo' });
-				});
+            renderizarBloques();
+            Toast.fire({ icon: 'info', title: 'Pantalla y video limpiados por completo' });
+        });
     </script>
 </body>
 </html>
