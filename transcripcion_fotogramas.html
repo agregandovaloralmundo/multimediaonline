@@ -120,7 +120,7 @@
         <div class="main-content">
             <div class="tool-box">
                 <h3 class="mb-1 fw-bold text-dark text-center">Transcripción y Fotogramas a Word</h3>
-                <p class="text-muted small mb-3 text-center">Pega un enlace (YouTube / .mp4) o sube el video de tu clase (hasta 3+ horas), visualiza la transcripción en vivo junto con las filminas y genera tu Word o PDF</p>
+                <p class="text-muted small mb-3 text-center">Extrae automáticamente la transcripción del video (sin interferencia de micrófono), captura las filminas completas y genera tu Word o PDF</p>
 
                 <!-- Cajetín de enlace, video local y subtítulos opcionales -->
                 <div class="row g-2 mb-3 text-start">
@@ -150,10 +150,10 @@
 
                         <div class="d-grid gap-2 mt-2">
                             <button id="liveTranscribeBtn" class="btn btn-danger btn-sm fw-bold" disabled>
-                                ▶️ Reproducir y Capturar Transcripción + Fotogramas
+                                ▶️ Reproducir Video y Capturar Fotogramas Auto
                             </button>
                             <button id="autoProcessBtn" class="btn btn-outline-primary btn-sm fw-bold" disabled>
-                                ⚡ Procesar Rápido desde Subtítulos (.srt / .vtt)
+                                ⚡ Armar Secciones desde Transcripción / Subtítulos
                             </button>
                             <button id="manualSnapBtn" class="btn btn-outline-secondary btn-sm fw-bold" disabled>
                                 📸 Capturar Diapositiva Ahora + Agregar Nota
@@ -162,15 +162,17 @@
                     </div>
 
                     <div class="col-md-7 text-start">
-                        <!-- Panel superior: Transcripción completa visible en tiempo real -->
+                        <!-- Panel superior: Transcripción del video -->
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label for="liveTranscriptBox" class="fw-bold small text-primary mb-0">📝 Transcripción en vivo (texto completo que irá al Word):</label>
-                            <div>
-                                <span id="micStatusBadge" class="badge bg-secondary me-1" style="display: none;">🎙️ Escuchando...</span>
+                            <label for="liveTranscriptBox" class="fw-bold small text-primary mb-0">📝 Transcripción del video (sin micrófono abierto):</label>
+                            <div class="d-flex align-items-center gap-1">
+                                <button type="button" id="toggleMicBtn" class="btn btn-outline-secondary btn-sm py-0 px-2" title="Activar dictado por voz solo si deseas agregar notas habladas">
+                                    🎙️ Dictar Nota: OFF
+                                </button>
                                 <span id="wordCountBadge" class="badge bg-light text-dark border">0 palabras</span>
                             </div>
                         </div>
-                        <textarea id="liveTranscriptBox" class="form-control mb-2" placeholder="Aquí irá apareciendo en vivo todo lo que se habla en el video... También puedes escribir o corregir texto directamente aquí."></textarea>
+                        <textarea id="liveTranscriptBox" class="form-control mb-2" placeholder="Al cargar un enlace de YouTube o archivo de subtítulos (.srt/.vtt), aquí aparecerá automáticamente el texto completo del video sin que interfiera el sonido ambiente..."></textarea>
 
                         <!-- Panel inferior: Secciones y fotogramas capturados -->
                         <div class="d-flex justify-content-between align-items-center mb-1">
@@ -183,7 +185,7 @@
                         <div id="timelinePreview">
                             <p class="text-muted small text-center mt-4">
                                 Pega el link de la clase o sube el video arriba.<br>
-                                Al darle a <b>Reproducir y Capturar</b>, verás la transcripción arriba y las capturas de cada filmina aquí abajo.
+                                Al darle a <b>Reproducir Video y Capturar Fotogramas Auto</b>, el video arrancará solo y guardará cada filmina completa antes de cambiar.
                             </p>
                         </div>
                     </div>
@@ -232,9 +234,9 @@
         const autoProcessBtn = document.getElementById('autoProcessBtn');
         const manualSnapBtn = document.getElementById('manualSnapBtn');
         const liveTranscriptBox = document.getElementById('liveTranscriptBox');
+        const toggleMicBtn = document.getElementById('toggleMicBtn');
         const wordCountBadge = document.getElementById('wordCountBadge');
         const timelinePreview = document.getElementById('timelinePreview');
-        const micStatusBadge = document.getElementById('micStatusBadge');
         const blockCount = document.getElementById('blockCount');
         const memoryBadge = document.getElementById('memoryBadge');
         const progressWrapper = document.getElementById('progressWrapper');
@@ -243,15 +245,14 @@
         const exportPdfBtn = document.getElementById('exportPdfBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
 
-        const STORAGE_KEY = "multimedia_doc_respaldo_v3";
-        let bloquesDocumento = []; // { tiempoSeg, tiempoTxt, textoConfirmado, textoIntermedio, imagenBase64 }
-        let textoGlobalConfirmado = "";
+        const STORAGE_KEY = "multimedia_doc_respaldo_v4";
+        let bloquesDocumento = [];
         let srtEntradas = [];
         let nombreVideoActual = "Clase_Transcripcion";
         let modoYoutube = false;
         let youtubeIdActual = null;
         let youtubeStartTime = 0;
-        let grabandoVivo = false;
+        let capturandoEscenas = false;
         let tabCaptureStream = null;
         let tabCaptureVideo = null;
         let sceneCheckTimer = null;
@@ -273,8 +274,7 @@
                 const parsed = JSON.parse(guardado);
                 if (parsed && Array.isArray(parsed.bloques)) {
                     bloquesDocumento = parsed.bloques;
-                    textoGlobalConfirmado = parsed.textoGlobal || "";
-                    liveTranscriptBox.value = textoGlobalConfirmado;
+                    liveTranscriptBox.value = parsed.textoGlobal || "";
                     renderizarBloques();
                 }
             }
@@ -303,9 +303,6 @@
         }
 
         liveTranscriptBox.addEventListener('input', () => {
-            if (!grabandoVivo) {
-                textoGlobalConfirmado = liveTranscriptBox.value;
-            }
             actualizarEstadoBotonesExportacion();
             guardarRespaldoLocal();
         });
@@ -326,10 +323,83 @@
             return match ? match[1] : null;
         }
 
+        function controlarReproductorYoutube(comando) {
+            if (!modoYoutube || !youtubeFrame.contentWindow) return;
+            youtubeFrame.contentWindow.postMessage(JSON.stringify({
+                event: 'command',
+                func: comando,
+                args: []
+            }), '*');
+        }
+
         function obtenerTiempoActual() {
             return modoYoutube
                 ? ((Date.now() - youtubeStartTime) / 1000)
                 : (videoPlayer.currentTime || 0);
+        }
+
+        // Busca los subtítulos reales de YouTube desde captionTracks (vía puente CORS) o instancias Piped
+        async function obtenerSubtitulosYoutube(ytId) {
+            // Intento 1: Extraer captionTracks directos de la página de YouTube vía AllOrigins
+            try {
+                const ytPageUrl = encodeURIComponent(`https://www.youtube.com/watch?v=${ytId}`);
+                const proxyResp = await fetch(`https://api.allorigins.win/get?url=${ytPageUrl}`);
+                if (proxyResp.ok) {
+                    const wrapper = await proxyResp.json();
+                    const html = wrapper.contents || "";
+                    const matchTracks = html.match(/"captionTracks":(\[.*?\])/);
+                    if (matchTracks && matchTracks[1]) {
+                        const tracks = JSON.parse(matchTracks[1]);
+                        if (tracks.length > 0) {
+                            const elegido = tracks.find(t => t.languageCode && t.languageCode.startsWith('es')) || tracks[0];
+                            if (elegido && elegido.baseUrl) {
+                                const xmlUrl = encodeURIComponent(elegido.baseUrl);
+                                const xmlResp = await fetch(`https://api.allorigins.win/get?url=${xmlUrl}`);
+                                if (xmlResp.ok) {
+                                    const xmlWrapper = await xmlResp.json();
+                                    const parser = new DOMParser();
+                                    const xmlDoc = parser.parseFromString(xmlWrapper.contents || "", "text/xml");
+                                    const nodos = Array.from(xmlDoc.getElementsByTagName("text"));
+                                    const entradas = nodos.map(n => {
+                                        const start = parseFloat(n.getAttribute("start") || "0");
+                                        const tmp = document.createElement("textarea");
+                                        tmp.innerHTML = n.textContent || "";
+                                        const limpio = tmp.value.replace(/\s+/g, " ").trim();
+                                        return { tiempoSeg: start, texto: limpio };
+                                    }).filter(e => e.texto);
+
+                                    if (entradas.length > 0) return entradas;
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch {}
+
+            // Intento 2: Instancias Piped públicas
+            const instancias = [
+                'https://pipedapi.kavin.rocks',
+                'https://pipedapi.adminforge.de',
+                'https://api.piped.projectsegfau.lt'
+            ];
+            for (const host of instancias) {
+                try {
+                    const res = await fetch(`${host}/streams/${ytId}`);
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    if (data.subtitles && data.subtitles.length > 0) {
+                        const subEs = data.subtitles.find(s => s.code && s.code.startsWith('es')) || data.subtitles[0];
+                        if (subEs && subEs.url) {
+                            const vttResp = await fetch(subEs.url);
+                            if (vttResp.ok) {
+                                const parsed = parsearSubtitulos(await vttResp.text());
+                                if (parsed.length > 0) return parsed;
+                            }
+                        }
+                    }
+                } catch {}
+            }
+            return [];
         }
 
         function capturarFotogramaActual() {
@@ -418,20 +488,6 @@
             }
         }
 
-        function asegurarBloqueActivo() {
-            if (bloquesDocumento.length === 0) {
-                const t = obtenerTiempoActual();
-                bloquesDocumento.push({
-                    tiempoSeg: t,
-                    tiempoTxt: formatearTiempo(t),
-                    textoConfirmado: "",
-                    textoIntermedio: "",
-                    imagenBase64: null
-                });
-            }
-            return bloquesDocumento[bloquesDocumento.length - 1];
-        }
-
         function renderizarBloques() {
             const conImagen = bloquesDocumento.filter(b => b.imagenBase64).length;
             blockCount.textContent = `${conImagen} ${conImagen === 1 ? 'captura' : 'capturas'}`;
@@ -446,14 +502,14 @@
             }
 
             timelinePreview.innerHTML = bloquesDocumento.map((b, idx) => {
-                const textoMostrar = ((b.textoConfirmado || "") + (b.textoIntermedio ? " " + b.textoIntermedio : "")).trim();
+                const textoMostrar = (b.textoConfirmado || "").trim();
                 return `
                     <div class="bloque-item">
                         <div class="d-flex justify-content-between align-items-center mb-1 no-print">
                             <span class="badge bg-light text-primary border">Minuto ${b.tiempoTxt}</span>
                             <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarBloque(${idx})">✕</button>
                         </div>
-                        <textarea class="form-control form-control-sm mt-1" rows="2" placeholder="Texto asociado a esta filmina..." onchange="actualizarTextoBloque(${idx}, this.value)">${textoMostrar}</textarea>
+                        <textarea class="form-control form-control-sm mt-1" rows="2" placeholder="Texto de esta filmina..." onchange="actualizarTextoBloque(${idx}, this.value)">${textoMostrar}</textarea>
                         ${b.imagenBase64 ? `<img src="${b.imagenBase64}" class="bloque-img" alt="Captura ${b.tiempoTxt}">` : ''}
                     </div>
                 `;
@@ -465,7 +521,6 @@
         window.actualizarTextoBloque = (idx, nuevoTexto) => {
             if (bloquesDocumento[idx]) {
                 bloquesDocumento[idx].textoConfirmado = nuevoTexto;
-                bloquesDocumento[idx].textoIntermedio = "";
                 guardarRespaldoLocal();
             }
         };
@@ -506,8 +561,13 @@
                 videoPlayer.pause();
                 videoPlayer.style.display = 'none';
                 youtubeFrame.style.display = 'block';
-                youtubeFrame.src = `https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`;
+                // enablejsapi=1 permite arrancarlo automáticamente con postMessage sin doble clic ni eco
+                youtubeFrame.src = `https://www.youtube-nocookie.com/embed/${ytId}?enablejsapi=1&rel=0&modestbranding=1`;
                 activarControlesVideo();
+
+                const textoOriginalBtn = loadUrlBtn.innerHTML;
+                loadUrlBtn.disabled = true;
+                loadUrlBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
                 try {
                     const oembed = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${ytId}&format=json`);
@@ -521,38 +581,21 @@
                     nombreVideoActual = `YouTube_${ytId}`;
                 }
 
-                // Intentar traer subtítulos automáticos de YouTube vía múltiples espejos públicos
-                const instancias = [
-                    'https://pipedapi.kavin.rocks',
-                    'https://pipedapi.adminforge.de',
-                    'https://api.piped.projectsegfau.lt'
-                ];
-                for (const host of instancias) {
-                    try {
-                        const res = await fetch(`${host}/streams/${ytId}`);
-                        if (!res.ok) continue;
-                        const data = await res.json();
-                        if (data.subtitles && data.subtitles.length > 0) {
-                            const subEs = data.subtitles.find(s => s.code && s.code.startsWith('es')) || data.subtitles[0];
-                            if (subEs && subEs.url) {
-                                const vttResp = await fetch(subEs.url);
-                                if (vttResp.ok) {
-                                    srtEntradas = parsearSubtitulos(await vttResp.text());
-                                    if (srtEntradas.length > 0) {
-                                        autoProcessBtn.disabled = false;
-                                        textoGlobalConfirmado = srtEntradas.map(s => s.texto).join(' ');
-                                        liveTranscriptBox.value = textoGlobalConfirmado;
-                                        actualizarEstadoBotonesExportacion();
-                                        Toast.fire({ icon: 'success', title: '¡Transcripción automática de YouTube cargada!' });
-                                        return;
-                                    }
-                                }
-                            }
-                        }
-                    } catch {}
-                }
+                // Extraer transcripción real del video sin abrir micrófono
+                const entradas = await obtenerSubtitulosYoutube(ytId);
+                loadUrlBtn.disabled = false;
+                loadUrlBtn.innerHTML = textoOriginalBtn;
 
-                Toast.fire({ icon: 'success', title: 'Video de YouTube listo. Dale a Reproducir y Capturar.' });
+                if (entradas.length > 0) {
+                    srtEntradas = entradas;
+                    autoProcessBtn.disabled = false;
+                    liveTranscriptBox.value = entradas.map(s => s.texto).join(' ');
+                    actualizarEstadoBotonesExportacion();
+                    guardarRespaldoLocal();
+                    Toast.fire({ icon: 'success', title: `¡Transcripción extraída (${entradas.length} líneas)!` });
+                } else {
+                    Toast.fire({ icon: 'info', title: 'Video cargado. No expone subtítulos públicos; puedes capturar filminas o dictar notas.' });
+                }
                 return;
             }
 
@@ -614,8 +657,7 @@
             reader.onload = (ev) => {
                 srtEntradas = parsearSubtitulos(ev.target.result);
                 if (srtEntradas.length > 0) {
-                    textoGlobalConfirmado = srtEntradas.map(s => s.texto).join(' ');
-                    liveTranscriptBox.value = textoGlobalConfirmado;
+                    liveTranscriptBox.value = srtEntradas.map(s => s.texto).join(' ');
                     actualizarEstadoBotonesExportacion();
                     if (videoPlayer.src || modoYoutube) {
                         autoProcessBtn.disabled = false;
@@ -626,7 +668,7 @@
             reader.readAsText(file, 'UTF-8');
         });
 
-        // MODO RÁPIDO: Procesar desde subtítulos + capturas al final de cada tramo
+        // Armar secciones sincronizadas desde subtítulos extraídos
         autoProcessBtn.addEventListener('click', async () => {
             if (srtEntradas.length === 0) return;
 
@@ -660,7 +702,6 @@
                                 tiempoSeg: g.tiempoSeg,
                                 tiempoTxt: formatearTiempo(g.tiempoSeg),
                                 textoConfirmado: g.texto,
-                                textoIntermedio: "",
                                 imagenBase64: img
                             });
                             renderizarBloques();
@@ -675,7 +716,6 @@
                         tiempoSeg: g.tiempoSeg,
                         tiempoTxt: formatearTiempo(g.tiempoSeg),
                         textoConfirmado: g.texto,
-                        textoIntermedio: "",
                         imagenBase64: null
                     });
                     renderizarBloques();
@@ -688,122 +728,88 @@
             autoProcessBtn.disabled = false;
             liveTranscribeBtn.disabled = false;
             setTimeout(() => { progressWrapper.style.display = 'none'; }, 1000);
-            Toast.fire({ icon: 'success', title: '¡Transcripción completa generada!' });
+            Toast.fire({ icon: 'success', title: '¡Secciones de transcripción armadas!' });
         });
 
-        // MODO EN VIVO: Transcripción continua en cuadro superior + Captura de filminas en cuadro inferior
+        // Dictado manual OPCIONAL (apagado por defecto para que el micrófono NO capture conversación ambiente)
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = null;
+        let dictadoManualActivo = false;
 
         if (SpeechRecognition) {
             recognition = new SpeechRecognition();
             recognition.lang = 'es-CR';
             recognition.continuous = true;
-            recognition.interimResults = true;
-
-            recognition.onstart = () => {
-                micStatusBadge.style.display = 'inline-block';
-                micStatusBadge.className = 'badge bg-danger me-1';
-                micStatusBadge.textContent = '🎙️ Transcribiendo en vivo...';
-            };
+            recognition.interimResults = false;
 
             recognition.onresult = (event) => {
-                let textoFinalNuevo = '';
-                let textoIntermedio = '';
-
                 for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const transcripcion = event.results[i][0].transcript;
                     if (event.results[i].isFinal) {
-                        textoFinalNuevo += transcripcion;
-                    } else {
-                        textoIntermedio += transcripcion;
-                    }
-                }
-
-                const bloqueActual = asegurarBloqueActivo();
-
-                if (textoFinalNuevo) {
-                    let limpio = textoFinalNuevo.trim();
-                    if (limpio) {
-                        if (!textoGlobalConfirmado || /[.?!\n]\s*$/.test(textoGlobalConfirmado)) {
-                            limpio = limpio.charAt(0).toUpperCase() + limpio.slice(1);
+                        const frase = event.results[i][0].transcript.trim();
+                        if (frase) {
+                            const limpio = frase.charAt(0).toUpperCase() + frase.slice(1) + '.';
+                            const sep = liveTranscriptBox.value.trim() ? ' ' : '';
+                            liveTranscriptBox.value += sep + limpio;
+                            liveTranscriptBox.scrollTop = liveTranscriptBox.scrollHeight;
+                            actualizarEstadoBotonesExportacion();
+                            guardarRespaldoLocal();
                         }
-                        const sepGlobal = textoGlobalConfirmado && !textoGlobalConfirmado.endsWith(' ') && !textoGlobalConfirmado.endsWith('\n') ? ' ' : '';
-                        textoGlobalConfirmado += sepGlobal + limpio + '.';
-
-                        const sepBloque = bloqueActual.textoConfirmado ? ' ' : '';
-                        bloqueActual.textoConfirmado += sepBloque + limpio + '.';
                     }
-                }
-
-                // Actualizar cuadro superior en vivo palabra por palabra
-                const sepInt = textoGlobalConfirmado && textoIntermedio && !textoGlobalConfirmado.endsWith(' ') ? ' ' : '';
-                liveTranscriptBox.value = textoGlobalConfirmado + sepInt + textoIntermedio.trim();
-                liveTranscriptBox.scrollTop = liveTranscriptBox.scrollHeight;
-                actualizarEstadoBotonesExportacion();
-
-                bloqueActual.textoIntermedio = textoIntermedio.trim();
-                renderizarBloques();
-            };
-
-            recognition.onerror = (event) => {
-                if (event.error === 'not-allowed') {
-                    Swal.fire('Micrófono bloqueado', 'Activa el permiso del micrófono en Chrome para que transcriba lo que habla el video.', 'warning');
                 }
             };
 
             recognition.onend = () => {
-                if (grabandoVivo) {
+                if (dictadoManualActivo) {
                     try { recognition.start(); } catch {}
-                } else {
-                    micStatusBadge.style.display = 'none';
                 }
             };
         }
 
-        function cerrarBloqueConCapturaPrevia(capturaPrevia) {
-            const bloqueActual = asegurarBloqueActivo();
-            if (capturaPrevia) {
-                bloqueActual.imagenBase64 = capturaPrevia;
+        toggleMicBtn.addEventListener('click', () => {
+            if (!SpeechRecognition) {
+                Swal.fire('No compatible', 'Usa Google Chrome o Microsoft Edge para dictado por voz.', 'info');
+                return;
             }
-            if (bloqueActual.textoIntermedio && bloqueActual.textoIntermedio.trim()) {
-                const sep = bloqueActual.textoConfirmado ? ' ' : '';
-                bloqueActual.textoConfirmado += sep + bloqueActual.textoIntermedio.trim() + '.';
-                bloqueActual.textoIntermedio = '';
+            if (dictadoManualActivo) {
+                dictadoManualActivo = false;
+                try { recognition.stop(); } catch {}
+                toggleMicBtn.classList.remove('btn-danger', 'mic-active');
+                toggleMicBtn.classList.add('btn-outline-secondary');
+                toggleMicBtn.innerHTML = '🎙️ Dictar Nota: OFF';
+            } else {
+                dictadoManualActivo = true;
+                toggleMicBtn.classList.remove('btn-outline-secondary');
+                toggleMicBtn.classList.add('btn-danger', 'mic-active');
+                toggleMicBtn.innerHTML = '🎙️ Dictando Nota: ON';
+                try { recognition.start(); } catch {}
             }
+        });
+
+        function guardarFotogramaCapturado(imgBase64) {
+            if (!imgBase64) return;
             const t = obtenerTiempoActual();
-            bloquesDocumento.push({
-                tiempoSeg: t,
-                tiempoTxt: formatearTiempo(t),
-                textoConfirmado: "",
-                textoIntermedio: "",
-                imagenBase64: null
-            });
+            // Si ya hay un bloque de texto sin imagen en ese tramo, pegarle la imagen; si no, crear sección con imagen
+            const sinFoto = bloquesDocumento.find(b => !b.imagenBase64 && Math.abs(b.tiempoSeg - t) < 25);
+            if (sinFoto) {
+                sinFoto.imagenBase64 = imgBase64;
+            } else {
+                bloquesDocumento.push({
+                    tiempoSeg: t,
+                    tiempoTxt: formatearTiempo(t),
+                    textoConfirmado: "",
+                    imagenBase64: imgBase64
+                });
+            }
             renderizarBloques();
         }
 
-        function detenerCapturaEnVivo() {
-            const bloqueFinal = bloquesDocumento[bloquesDocumento.length - 1];
-            if (bloqueFinal) {
-                if (bloqueFinal.textoIntermedio && bloqueFinal.textoIntermedio.trim()) {
-                    const sep = bloqueFinal.textoConfirmado ? ' ' : '';
-                    bloqueFinal.textoConfirmado += sep + bloqueFinal.textoIntermedio.trim() + '.';
-                    bloqueFinal.textoIntermedio = '';
-                }
-                if (!bloqueFinal.imagenBase64) {
-                    bloqueFinal.imagenBase64 = ultimoFotogramaEstable || capturarFotogramaActual();
-                }
-                renderizarBloques();
+        function detenerCapturaFotogramas() {
+            if (ultimoFotogramaEstable) {
+                guardarFotogramaCapturado(ultimoFotogramaEstable);
+                ultimoFotogramaEstable = null;
             }
 
-            liveTranscriptBox.value = textoGlobalConfirmado;
-            actualizarEstadoBotonesExportacion();
-
-            grabandoVivo = false;
-            micStatusBadge.style.display = 'none';
-            if (recognition) {
-                try { recognition.stop(); } catch {}
-            }
+            capturandoEscenas = false;
             if (sceneCheckTimer) {
                 clearInterval(sceneCheckTimer);
                 sceneCheckTimer = null;
@@ -814,74 +820,74 @@
                 tabCaptureVideo = null;
             }
             liveTranscribeBtn.classList.remove('mic-active');
-            liveTranscribeBtn.innerHTML = '▶️ Reproducir y Capturar Transcripción + Fotogramas';
+            liveTranscribeBtn.innerHTML = '▶️ Reproducir Video y Capturar Fotogramas Auto';
         }
 
+        // Arranca reproducción automática (incluso en YouTube) y captura filminas completas sin eco ni micrófono
         liveTranscribeBtn.addEventListener('click', async () => {
-            if (!SpeechRecognition) {
-                Swal.fire('No compatible', 'Usa Google Chrome o Microsoft Edge para transcripción automática.', 'info');
-                return;
-            }
-            if (grabandoVivo) {
-                if (!modoYoutube) videoPlayer.pause();
-                detenerCapturaEnVivo();
+            if (capturandoEscenas) {
+                if (modoYoutube) controlarReproductorYoutube('pauseVideo');
+                else videoPlayer.pause();
+                detenerCapturaFotogramas();
                 return;
             }
 
             if (modoYoutube || corsBloqueado) {
                 try {
+                    // audio: false evita duplicar el sonido y elimina cualquier eco
                     tabCaptureStream = await navigator.mediaDevices.getDisplayMedia({
                         video: { displaySurface: 'browser' },
-                        audio: true,
+                        audio: false,
                         preferCurrentTab: true
                     });
                     tabCaptureVideo = document.createElement('video');
                     tabCaptureVideo.srcObject = tabCaptureStream;
                     await tabCaptureVideo.play();
                 } catch {
-                    Toast.fire({ icon: 'info', title: 'Continuando con transcripción de voz.' });
+                    Swal.fire('Permiso requerido', 'Selecciona esta pestaña y dale a Permitir para que pueda capturar las filminas del reproductor.', 'info');
+                    return;
                 }
             }
 
-            grabandoVivo = true;
-            textoGlobalConfirmado = liveTranscriptBox.value;
+            capturandoEscenas = true;
             youtubeStartTime = Date.now();
             lastFrameSignature = null;
             ultimoFotogramaEstable = null;
-            asegurarBloqueActivo();
-            renderizarBloques();
 
             liveTranscribeBtn.classList.add('mic-active');
-            liveTranscribeBtn.innerHTML = '⏹️ Detener Captura y Transcripción';
+            liveTranscribeBtn.innerHTML = '⏹️ Detener Reproducción y Captura';
 
-            if (!modoYoutube) {
+            // Arrancar reproducción automática (YouTube o video local)
+            if (modoYoutube) {
+                controlarReproductorYoutube('playVideo');
+            } else {
                 videoPlayer.play();
             }
 
-            try { recognition.start(); } catch {}
-
+            // Vigilante cada 1.5s: guarda la filmina completa justo antes de cambiar a la siguiente
             sceneCheckTimer = setInterval(() => {
-                if (!grabandoVivo) return;
+                if (!capturandoEscenas) return;
                 if (!modoYoutube && videoPlayer.paused) return;
 
                 const filminaAnteriorCompleta = ultimoFotogramaEstable;
                 const estado = evaluarEstadoVisual();
 
                 if (estado.cambio && filminaAnteriorCompleta) {
-                    const bloqueActual = asegurarBloqueActivo();
-                    const tActual = obtenerTiempoActual();
-                    if ((tActual - bloqueActual.tiempoSeg) > 4) {
-                        cerrarBloqueConCapturaPrevia(filminaAnteriorCompleta);
-                    }
+                    guardarFotogramaCapturado(filminaAnteriorCompleta);
                 }
             }, 1500);
         });
 
-        videoPlayer.addEventListener('ended', detenerCapturaEnVivo);
+        videoPlayer.addEventListener('ended', detenerCapturaFotogramas);
 
         manualSnapBtn.addEventListener('click', () => {
             const img = capturarFotogramaActual();
-            cerrarBloqueConCapturaPrevia(img);
+            if (img) {
+                guardarFotogramaCapturado(img);
+                Toast.fire({ icon: 'success', title: 'Diapositiva capturada' });
+            } else {
+                Toast.fire({ icon: 'warning', title: 'Inicia primero la captura para tomar fotos de YouTube' });
+            }
         });
 
         // Generar Documento Word (.doc) con transcripción completa + imágenes MHTML incrustadas
@@ -899,7 +905,7 @@
 
             const seccionesHtml = bloquesDocumento
                 .map((b) => {
-                    const textoLimpio = ((b.textoConfirmado || "") + (b.textoIntermedio ? " " + b.textoIntermedio : "")).trim();
+                    const textoLimpio = (b.textoConfirmado || "").trim();
                     let imgHtml = "";
 
                     if (b.imagenBase64 && b.imagenBase64.startsWith("data:image/")) {
@@ -927,7 +933,6 @@
                     `;
                 }).join('');
 
-            // Si hay texto en el cuadro superior que no quedó en secciones individuales, incluirlo completo arriba
             const hayTextoEnSecciones = bloquesDocumento.some(b => (b.textoConfirmado && b.textoConfirmado.trim()));
             const bloqueTextoCompletoHtml = (!hayTextoEnSecciones && textoGlobal)
                 ? `<div style="margin-bottom: 16pt;"><p style="font-size: 11.5pt; text-align: justify; line-height: 1.6;">${textoGlobal.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</p></div>`
@@ -982,9 +987,16 @@
         });
 
         clearAllBtn.addEventListener('click', () => {
-            detenerCapturaEnVivo();
+            if (dictadoManualActivo) {
+                dictadoManualActivo = false;
+                try { recognition.stop(); } catch {}
+                toggleMicBtn.classList.remove('btn-danger', 'mic-active');
+                toggleMicBtn.classList.add('btn-outline-secondary');
+                toggleMicBtn.innerHTML = '🎙️ Dictar Nota: OFF';
+            }
+
+            detenerCapturaFotogramas();
             bloquesDocumento = [];
-            textoGlobalConfirmado = "";
             liveTranscriptBox.value = "";
             srtEntradas = [];
             nombreVideoActual = "Clase_Transcripcion";
