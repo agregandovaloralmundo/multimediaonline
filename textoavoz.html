@@ -33,17 +33,23 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            padding: 1rem;
+            padding: 0.85rem 1.25rem;
         }
         .tts-box {
-            width: 100%;
-            max-width: 740px;
+            width: 95%;
+            max-width: 1140px;
             background: #ffffff;
             border: 3px solid #0d6efd;
             border-radius: 20px;
-            padding: 22px 26px;
+            padding: 20px 30px;
             box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
             margin: auto;
+        }
+        #textContent {
+            height: 155px;
+            max-height: 155px;
+            overflow-y: auto;
+            resize: none;
         }
         .mic-active {
             animation: pulsoMic 1.2s infinite;
@@ -72,10 +78,10 @@
                 </div>
 
                 <!-- Barra de herramientas de texto + Dictado por Voz -->
-                <div class="mb-2 text-start">
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 mb-1">
-                        <label for="textContent" class="form-label fw-bold small text-secondary mb-0">✍️ Escribe, pega o dicta con tu voz:</label>
-                        <div class="d-flex align-items-center gap-1">
+                <div class="mb-3 text-start">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+                        <label for="textContent" class="form-label fw-bold small text-secondary mb-0">✍️ Escribe, pega o dicta con tu voz (todo aparece adentro del cuadro):</label>
+                        <div class="d-flex align-items-center gap-2">
                             <button type="button" id="dictateButton" class="btn btn-outline-danger btn-sm fw-bold">
                                 🎙️ Dictar por Voz
                             </button>
@@ -85,8 +91,7 @@
                             <span id="textStats" class="badge bg-light text-dark border">0 palabras · ~0 min</span>
                         </div>
                     </div>
-                    <textarea id="textContent" class="form-control" rows="4" placeholder="Escribe aquí, carga un archivo .txt o presiona 'Dictar por Voz' para hablar y escribir automáticamente..."></textarea>
-                    <div id="interimPreview" class="small text-muted fst-italic mt-1" style="min-height: 18px;"></div>
+                    <textarea id="textContent" class="form-control" placeholder="Escribe aquí, carga un archivo .txt o presiona 'Dictar por Voz' para hablar y escribir directamente adentro de este cuadro..."></textarea>
                 </div>
 
                 <!-- Medidor de nivel de audio / voz en vivo -->
@@ -101,7 +106,7 @@
                 </div>
 
                 <!-- Selector de voz y velocidad -->
-                <div class="row g-2 mb-3 text-start">
+                <div class="row g-3 mb-3 text-start">
                     <div class="col-md-8">
                         <label for="voiceSelect" class="form-label fw-bold small text-secondary mb-1">🗣️ Voz de lectura <span class="text-muted fw-normal">(usa Online/Google o captura audio del sistema)</span>:</label>
                         <select id="voiceSelect" class="form-select form-select-sm"></select>
@@ -112,30 +117,26 @@
                     </div>
                 </div>
 
-                <!-- Botones de Audio (Escuchar y MP3) -->
-                <div class="row g-2 mb-2">
-                    <div class="col-sm-6">
-                        <button id="speakButton" class="btn btn-primary w-100 fw-bold">
-                            🔊 Escuchar en Voz Alta
-                        </button>
-                    </div>
-                    <div class="col-sm-6">
-                        <button id="recordMp3Button" class="btn btn-success w-100 fw-bold">
-                            ⬇️ Grabar y Bajar MP3
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Botones de Exportación de Documento (inician apagados hasta que haya texto) -->
+                <!-- Botones de Audio y Exportación en una distribución amplia -->
                 <div class="row g-2 mb-3">
-                    <div class="col-sm-6">
-                        <button id="saveWordButton" class="btn btn-outline-primary w-100 fw-bold" disabled>
-                            📘 Guardar a Word (.doc)
+                    <div class="col-md-3 col-sm-6">
+                        <button id="speakButton" class="btn btn-primary w-100 fw-bold">
+                            🔊 Escuchar Voz
                         </button>
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-md-3 col-sm-6">
+                        <button id="recordMp3Button" class="btn btn-success w-100 fw-bold">
+                            ⬇️ Bajar MP3
+                        </button>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <button id="saveWordButton" class="btn btn-outline-primary w-100 fw-bold" disabled>
+                            📘 Guardar Word (.doc)
+                        </button>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
                         <button id="saveTxtButton" class="btn btn-outline-secondary w-100 fw-bold" disabled>
-                            📄 Guardar a TXT (.txt)
+                            📄 Guardar TXT (.txt)
                         </button>
                     </div>
                 </div>
@@ -148,7 +149,7 @@
                 </div>
 
                 <!-- Barra de progreso de lectura -->
-                <div id="progressWrapper" class="progress mt-3" style="height: 10px; display: none;">
+                <div id="progressWrapper" class="progress mt-2" style="height: 8px; display: none;">
                     <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%;"></div>
                 </div>
 
@@ -165,7 +166,6 @@
         const synth = window.speechSynthesis;
         const textFileInput = document.getElementById('textFile');
         const textContent = document.getElementById('textContent');
-        const interimPreview = document.getElementById('interimPreview');
         const textStats = document.getElementById('textStats');
         const dictateButton = document.getElementById('dictateButton');
         const saveWordButton = document.getElementById('saveWordButton');
@@ -198,6 +198,7 @@
         let picoMaximoGrabacion = 0;
         let keepAliveTimer = null;
         let canceladoManual = false;
+        let textoBaseConfirmado = "";
 
         // ==========================================
         // ESTADO DE BOTONES DE EXPORTACIÓN (WORD/TXT)
@@ -222,7 +223,12 @@
             textStats.textContent = `${palabras.toLocaleString()} palabras · ~${minutos} min`;
         }
 
-        textContent.addEventListener('input', actualizarEstadisticas);
+        textContent.addEventListener('input', () => {
+            if (!dictando) {
+                textoBaseConfirmado = textContent.value;
+            }
+            actualizarEstadisticas();
+        });
 
         // ==========================================
         // EXPORTAR A WORD (.DOC) Y A TXT (.TXT)
@@ -293,7 +299,7 @@
 
         clearTextButton.addEventListener('click', () => {
             textContent.value = '';
-            interimPreview.textContent = '';
+            textoBaseConfirmado = '';
             actualizarEstadisticas();
             statusDiv.textContent = '';
             textContent.focus();
@@ -352,7 +358,7 @@
         }
 
         // ==========================================
-        // 1. DICTADO POR VOZ A TEXTO (SPEECH TO TEXT)
+        // 1. DICTADO POR VOZ DIRECTO ADENTRO DEL CUADRO
         // ==========================================
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = null;
@@ -366,10 +372,11 @@
 
             recognition.onstart = () => {
                 dictando = true;
+                textoBaseConfirmado = textContent.value;
                 dictateButton.classList.remove('btn-outline-danger');
                 dictateButton.classList.add('btn-danger', 'mic-active');
                 dictateButton.innerHTML = '⏹️ Detener Dictado';
-                statusDiv.textContent = '🎙️ Escuchando... habla claro cerca del micrófono.';
+                statusDiv.textContent = '🎙️ Escuchando... todo se escribe directamente adentro del cuadro.';
             };
 
             recognition.onresult = (event) => {
@@ -386,18 +393,19 @@
                 }
 
                 if (textoFinalNuevo) {
-                    const actual = textContent.value;
-                    const separador = actual && !actual.endsWith(' ') && !actual.endsWith('\n') ? ' ' : '';
+                    const separador = textoBaseConfirmado && !textoBaseConfirmado.endsWith(' ') && !textoBaseConfirmado.endsWith('\n') ? ' ' : '';
                     let limpio = textoFinalNuevo.trim();
-                    if (!actual || /[.?!\n]\s*$/.test(actual)) {
+                    if (!textoBaseConfirmado || /[.?!\n]\s*$/.test(textoBaseConfirmado)) {
                         limpio = limpio.charAt(0).toUpperCase() + limpio.slice(1);
                     }
-                    textContent.value = actual + separador + limpio;
-                    textContent.scrollTop = textContent.scrollHeight;
-                    actualizarEstadisticas();
+                    textoBaseConfirmado = textoBaseConfirmado + separador + limpio;
                 }
 
-                interimPreview.textContent = textoIntermedio ? `✍️ ${textoIntermedio}...` : '';
+                // Todo se escribe adentro del textarea en tiempo real (sin líneas afuera)
+                const sepInt = textoBaseConfirmado && textoIntermedio && !textoBaseConfirmado.endsWith(' ') && !textoBaseConfirmado.endsWith('\n') ? ' ' : '';
+                textContent.value = textoBaseConfirmado + sepInt + textoIntermedio.trim();
+                textContent.scrollTop = textContent.scrollHeight;
+                actualizarEstadisticas();
             };
 
             recognition.onerror = (event) => {
@@ -419,10 +427,11 @@
 
         function restaurarBotonDictado() {
             detenerMedidorMicrofono();
+            textContent.value = textoBaseConfirmado;
+            actualizarEstadisticas();
             dictateButton.classList.remove('btn-danger', 'mic-active');
             dictateButton.classList.add('btn-outline-danger');
             dictateButton.innerHTML = '🎙️ Dictar por Voz';
-            interimPreview.textContent = '';
             if (statusDiv.textContent.includes('Escuchando')) {
                 statusDiv.textContent = '✅ Dictado finalizado. Ya puedes guardarlo en Word, TXT o bajarlo en MP3.';
             }
@@ -489,6 +498,7 @@
             const reader = new FileReader();
             reader.onload = (event) => {
                 textContent.value = event.target.result;
+                textoBaseConfirmado = textContent.value;
                 actualizarEstadisticas();
                 statusDiv.textContent = `✅ Archivo cargado: ${file.name}`;
             };
@@ -690,7 +700,7 @@
                     statusDiv.textContent = '⚠️ Lectura terminada, pero el audio llegó en silencio.';
                     Swal.fire({
                         title: 'El audio de la pestaña llegó en silencio',
-                        html: 'En tu equipo, esta voz sale por el audio general de Windows en vez de la pestaña.<br><br><b>Cómo grabarla con sonido:</b><br>1. Dale de nuevo a <b>Grabar y Bajar MP3</b>.<br>2. En el cuadro del navegador, cambia arriba a <b>"Toda la pantalla"</b>.<br>3. Activa el interruptor <b>"Compartir también el audio del sistema"</b> y dale a <b>Compartir</b>.',
+                        html: 'En tu equipo, esta voz sale por el audio general de Windows en vez de la pestaña.<br><br><b>Cómo grabarla con sonido:</b><br>1. Dale de nuevo a <b>Bajar MP3</b>.<br>2. En el cuadro del navegador, cambia arriba a <b>"Toda la pantalla"</b>.<br>3. Activa el interruptor <b>"Compartir también el audio del sistema"</b> y dale a <b>Compartir</b>.',
                         icon: 'info',
                         confirmButtonColor: '#0d6efd'
                     });
