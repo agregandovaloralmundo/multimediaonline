@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+        if (localStorage.getItem("grabando") === "true") {
+            alert("⛔ Esta función está deshabilitada temporalmente porque hay una grabación en curso. Detén la grabación o espera a que finalice.");
+            window.history.back();
+        }
+    </script>
+    <title>Multimedia Online - Texto a Voz, Dictado y Exportación</title>
+    <meta name="description" content="Dicta texto con tu voz, convierte guiones en voz alta, descarga la pista en MP3 y guarda tus textos en Word o TXT gratis en Multimedia Online." />
+    <meta name="author" content="Lic. Antonio Ramírez Bogantes" />
+    <link rel="icon" type="image/x-icon" href="img/principal.ico" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        .main-wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 1rem;
+        }
+        .tts-box {
+            width: 100%;
+            max-width: 740px;
+            background: #ffffff;
+            border: 3px solid #0d6efd;
+            border-radius: 20px;
+            padding: 22px 26px;
+            box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
+            margin: auto;
+        }
+        .mic-active {
+            animation: pulsoMic 1.2s infinite;
+        }
+        @keyframes pulsoMic {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.6); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+        <div id="navbar-placeholder"></div>
+        <script src="navbar.js"></script>
+
+        <div class="main-content">
+            <div class="tts-box">
+                <h3 class="mb-1 fw-bold text-dark">Texto a Voz y Dictado</h3>
+                <p class="text-muted small mb-3">Dicta con tu voz, carga un archivo (.txt), escucha en MP3 o guarda tu texto en Word y TXT</p>
+
+                <!-- Cargar archivo .txt -->
+                <div class="mb-2 text-start">
+                    <label for="textFile" class="form-label fw-bold small text-secondary mb-1">📄 Cargar archivo de texto (.txt):</label>
+                    <input type="file" id="textFile" class="form-control form-control-sm" accept=".txt">
+                </div>
+
+                <!-- Barra de herramientas de texto + Dictado por Voz -->
+                <div class="mb-2 text-start">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 mb-1">
+                        <label for="textContent" class="form-label fw-bold small text-secondary mb-0">✍️ Escribe, pega o dicta con tu voz:</label>
+                        <div class="d-flex align-items-center gap-1">
+                            <button type="button" id="dictateButton" class="btn btn-outline-danger btn-sm fw-bold">
+                                🎙️ Dictar por Voz
+                            </button>
+                            <button type="button" id="clearTextButton" class="btn btn-outline-dark btn-sm" title="Limpiar texto">
+                                🗑️ Limpiar
+                            </button>
+                            <span id="textStats" class="badge bg-light text-dark border">0 palabras · ~0 min</span>
+                        </div>
+                    </div>
+                    <textarea id="textContent" class="form-control" rows="4" placeholder="Escribe aquí, carga un archivo .txt o presiona 'Dictar por Voz' para hablar y escribir automáticamente..."></textarea>
+                    <div id="interimPreview" class="small text-muted fst-italic mt-1" style="min-height: 18px;"></div>
+                </div>
+
+                <!-- Medidor de nivel de audio / voz en vivo -->
+                <div id="vuWrapper" class="mb-3 text-start" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small id="vuLabel" class="fw-bold text-secondary">🎚️ Nivel de señal de voz / audio:</small>
+                        <small id="vuPercent" class="text-muted">0%</small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div id="vuBar" class="progress-bar bg-success" style="width: 0%; transition: width 0.08s linear;"></div>
+                    </div>
+                </div>
+
+                <!-- Selector de voz y velocidad -->
+                <div class="row g-2 mb-3 text-start">
+                    <div class="col-md-8">
+                        <label for="voiceSelect" class="form-label fw-bold small text-secondary mb-1">🗣️ Voz de lectura <span class="text-muted fw-normal">(usa Online/Google para grabar MP3)</span>:</label>
+                        <select id="voiceSelect" class="form-select form-select-sm"></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="rateRange" class="form-label fw-bold small text-secondary mb-1">⚡ Velocidad: <span id="rateValue">1.0x</span></label>
+                        <input type="range" id="rateRange" class="form-range mt-1" min="0.6" max="1.6" step="0.1" value="1">
+                    </div>
+                </div>
+
+                <!-- Botones de Audio (Escuchar y MP3) -->
+                <div class="row g-2 mb-2">
+                    <div class="col-sm-6">
+                        <button id="speakButton" class="btn btn-primary w-100 fw-bold">
+                            🔊 Escuchar en Voz Alta
+                        </button>
+                    </div>
+                    <div class="col-sm-6">
+                        <button id="recordMp3Button" class="btn btn-success w-100 fw-bold">
+                            ⬇️ Grabar y Bajar MP3
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botones de Exportación de Documento (inician apagados hasta que haya texto) -->
+                <div class="row g-2 mb-3">
+                    <div class="col-sm-6">
+                        <button id="saveWordButton" class="btn btn-outline-primary w-100 fw-bold" disabled>
+                            📘 Guardar a Word (.doc)
+                        </button>
+                    </div>
+                    <div class="col-sm-6">
+                        <button id="saveTxtButton" class="btn btn-outline-secondary w-100 fw-bold" disabled>
+                            📄 Guardar a TXT (.txt)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Controles de reproducción -->
+                <div class="d-flex justify-content-center gap-2">
+                    <button id="pauseButton" class="btn btn-warning btn-sm fw-bold px-3" disabled>⏸️ Pausar</button>
+                    <button id="resumeButton" class="btn btn-info btn-sm text-white fw-bold px-3" disabled>▶️ Reanudar</button>
+                    <button id="cancelButton" class="btn btn-danger btn-sm fw-bold px-3" disabled>⏹️ Cancelar</button>
+                </div>
+
+                <!-- Barra de progreso de lectura -->
+                <div id="progressWrapper" class="progress mt-3" style="height: 10px; display: none;">
+                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%;"></div>
+                </div>
+
+                <div id="status" class="mt-2 small fw-bold text-primary"></div>
+            </div>
+        </div>
+
+        <div id="footer-placeholder"></div>
+        <script src="footer.js"></script>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const synth = window.speechSynthesis;
+        const textFileInput = document.getElementById('textFile');
+        const textContent = document.getElementById('textContent');
+        const interimPreview = document.getElementById('interimPreview');
+        const textStats = document.getElementById('textStats');
+        const dictateButton = document.getElementById('dictateButton');
+        const saveWordButton = document.getElementById('saveWordButton');
+        const saveTxtButton = document.getElementById('saveTxtButton');
+        const clearTextButton = document.getElementById('clearTextButton');
+        const vuWrapper = document.getElementById('vuWrapper');
+        const vuLabel = document.getElementById('vuLabel');
+        const vuPercent = document.getElementById('vuPercent');
+        const vuBar = document.getElementById('vuBar');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const rateRange = document.getElementById('rateRange');
+        const rateValue = document.getElementById('rateValue');
+        const speakButton = document.getElementById('speakButton');
+        const recordMp3Button = document.getElementById('recordMp3Button');
+        const pauseButton = document.getElementById('pauseButton');
+        const resumeButton = document.getElementById('resumeButton');
+        const cancelButton = document.getElementById('cancelButton');
+        const progressWrapper = document.getElementById('progressWrapper');
+        const progressBar = document.getElementById('progressBar');
+        const statusDiv = document.getElementById('status');
+
+        let voices = [];
+        let activeStream = null;
+        let micStream = null;
+        let micAudioCtx = null;
+        let micAnimId = null;
+        let audioCtx = null;
+        let processor = null;
+        let recordedBuffers = [];
+        let keepAliveTimer = null;
+        let canceladoManual = false;
+
+        // ==========================================
+        // ESTADO DE BOTONES DE EXPORTACIÓN (WORD/TXT)
+        // ==========================================
+        function actualizarEstadoExportacion() {
+            const hayTexto = textContent.value.trim().length > 0;
+            saveWordButton.disabled = !hayTexto;
+            saveTxtButton.disabled = !hayTexto;
+        }
+
+        function actualizarEstadisticas() {
+            const texto = textContent.value.trim();
+            actualizarEstadoExportacion();
+
+            if (!texto) {
+                textStats.textContent = "0 palabras · ~0 min";
+                return;
+            }
+            const palabras = texto.split(/\s+/).length;
+            const rate = parseFloat(rateRange.value) || 1.0;
+            const minutos = (palabras / (145 * rate)).toFixed(1);
+            textStats.textContent = `${palabras.toLocaleString()} palabras · ~${minutos} min`;
+        }
+
+        textContent.addEventListener('input', actualizarEstadisticas);
+
+        // ==========================================
+        // EXPORTAR A WORD (.DOC) Y A TXT (.TXT)
+        // ==========================================
+        saveWordButton.addEventListener('click', () => {
+            const texto = textContent.value.trim();
+            if (!texto) return;
+
+            const fechaHoy = new Date().toLocaleDateString('es-CR', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            });
+
+            const parrafosHtml = texto
+                .split(/\r?\n/)
+                .map(linea => linea.trim()
+                    ? `<p style="margin-bottom: 10pt; text-align: justify;">${linea.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
+                    : `<p style="margin-bottom: 10pt;">&nbsp;</p>`)
+                .join('');
+
+            const contenidoWord = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office'
+                      xmlns:w='urn:schemas-microsoft-com:office:word'
+                      xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <title>Documento - Multimedia Online</title>
+                    <style>
+                        body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 12pt; line-height: 1.5; color: #111111; }
+                        h1 { font-size: 16pt; color: #0d6efd; margin-bottom: 4pt; }
+                        .meta { font-size: 9pt; color: #666666; margin-bottom: 16pt; border-bottom: 1px solid #cccccc; padding-bottom: 6pt; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Transcripción / Guion — Multimedia Online</h1>
+                    <div class="meta">Generado el ${fechaHoy} · Agregando Valor al Mundo</div>
+                    ${parrafosHtml}
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob(['\ufeff', contenidoWord], { type: 'application/msword;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `documento_multimedia_${Date.now()}.doc`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            statusDiv.textContent = '✅ Documento guardado en Word (.doc) en Descargas.';
+        });
+
+        saveTxtButton.addEventListener('click', () => {
+            const texto = textContent.value.trim();
+            if (!texto) return;
+
+            const blob = new Blob([texto], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `texto_multimedia_${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            statusDiv.textContent = '✅ Archivo de texto (.txt) guardado en Descargas.';
+        });
+
+        clearTextButton.addEventListener('click', () => {
+            textContent.value = '';
+            interimPreview.textContent = '';
+            actualizarEstadisticas();
+            statusDiv.textContent = '';
+            textContent.focus();
+        });
+
+        // ==========================================
+        // MEDIDOR DE AUDIO (VÚMETRO) PARA MICRÓFONO
+        // ==========================================
+        async function iniciarMedidorMicrofono() {
+            try {
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                micAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const source = micAudioCtx.createMediaStreamSource(micStream);
+                const analyser = micAudioCtx.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                vuLabel.textContent = '🎙️ Medidor de voz del micrófono:';
+                vuBar.className = 'progress-bar bg-danger';
+                vuWrapper.style.display = 'block';
+
+                function actualizarVu() {
+                    if (!micStream) return;
+                    analyser.getByteTimeDomainData(dataArray);
+                    let max = 0;
+                    for (let i = 0; i < dataArray.length; i++) {
+                        const val = Math.abs(dataArray[i] - 128) / 128;
+                        if (val > max) max = val;
+                    }
+                    const pct = Math.min(100, Math.round(max * 300));
+                    vuBar.style.width = `${pct}%`;
+                    vuPercent.textContent = `${pct}%`;
+                    micAnimId = requestAnimationFrame(actualizarVu);
+                }
+                actualizarVu();
+            } catch {}
+        }
+
+        function detenerMedidorMicrofono() {
+            if (micAnimId) {
+                cancelAnimationFrame(micAnimId);
+                micAnimId = null;
+            }
+            if (micStream) {
+                micStream.getTracks().forEach(t => t.stop());
+                micStream = null;
+            }
+            if (micAudioCtx) {
+                micAudioCtx.close();
+                micAudioCtx = null;
+            }
+            vuWrapper.style.display = 'none';
+            vuBar.style.width = '0%';
+            vuPercent.textContent = '0%';
+        }
+
+        // ==========================================
+        // 1. DICTADO POR VOZ A TEXTO (SPEECH TO TEXT)
+        // ==========================================
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let dictando = false;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'es-CR';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onstart = () => {
+                dictando = true;
+                dictateButton.classList.remove('btn-outline-danger');
+                dictateButton.classList.add('btn-danger', 'mic-active');
+                dictateButton.innerHTML = '⏹️ Detener Dictado';
+                statusDiv.textContent = '🎙️ Escuchando... habla claro cerca del micrófono.';
+            };
+
+            recognition.onresult = (event) => {
+                let textoIntermedio = '';
+                let textoFinalNuevo = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcripcion = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        textoFinalNuevo += transcripcion;
+                    } else {
+                        textoIntermedio += transcripcion;
+                    }
+                }
+
+                if (textoFinalNuevo) {
+                    const actual = textContent.value;
+                    const separador = actual && !actual.endsWith(' ') && !actual.endsWith('\n') ? ' ' : '';
+                    let limpio = textoFinalNuevo.trim();
+                    if (!actual || /[.?!\n]\s*$/.test(actual)) {
+                        limpio = limpio.charAt(0).toUpperCase() + limpio.slice(1);
+                    }
+                    textContent.value = actual + separador + limpio;
+                    textContent.scrollTop = textContent.scrollHeight;
+                    actualizarEstadisticas();
+                }
+
+                interimPreview.textContent = textoIntermedio ? `✍️ ${textoIntermedio}...` : '';
+            };
+
+            recognition.onerror = (event) => {
+                if (event.error === 'not-allowed') {
+                    dictando = false;
+                    restaurarBotonDictado();
+                    Swal.fire('Permiso denegado', 'Permite el acceso al micrófono en el navegador para usar el dictado por voz.', 'warning');
+                }
+            };
+
+            recognition.onend = () => {
+                if (dictando) {
+                    try { recognition.start(); } catch {}
+                } else {
+                    restaurarBotonDictado();
+                }
+            };
+        }
+
+        function restaurarBotonDictado() {
+            detenerMedidorMicrofono();
+            dictateButton.classList.remove('btn-danger', 'mic-active');
+            dictateButton.classList.add('btn-outline-danger');
+            dictateButton.innerHTML = '🎙️ Dictar por Voz';
+            interimPreview.textContent = '';
+            if (statusDiv.textContent.includes('Escuchando')) {
+                statusDiv.textContent = '✅ Dictado finalizado. Ya puedes guardarlo en Word, TXT o bajarlo en MP3.';
+            }
+        }
+
+        dictateButton.addEventListener('click', async () => {
+            if (!SpeechRecognition) {
+                Swal.fire('No compatible', 'Tu navegador no soporta dictado por voz nativo. Usa Google Chrome o Microsoft Edge.', 'info');
+                return;
+            }
+            if (dictando) {
+                dictando = false;
+                recognition.stop();
+                restaurarBotonDictado();
+            } else {
+                synth.cancel();
+                const vozSel = voices.find(v => v.name === voiceSelect.value);
+                recognition.lang = vozSel ? vozSel.lang : 'es-CR';
+                await iniciarMedidorMicrofono();
+                try {
+                    recognition.start();
+                } catch {}
+            }
+        });
+
+        // ==========================================
+        // 2. TEXTO A VOZ Y GRABACIÓN MP3
+        // ==========================================
+        function cargarVoces() {
+            voices = synth.getVoices();
+            voiceSelect.innerHTML = '';
+
+            const ordenadas = [...voices].sort((a, b) => {
+                const aEs = a.lang.toLowerCase().startsWith('es') ? 0 : 1;
+                const bEs = b.lang.toLowerCase().startsWith('es') ? 0 : 1;
+                if (aEs !== bEs) return aEs - bEs;
+                const aOnline = /online|google|natural/i.test(a.name) ? 0 : 1;
+                const bOnline = /online|google|natural/i.test(b.name) ? 0 : 1;
+                return aOnline - bOnline;
+            });
+
+            ordenadas.forEach((voice) => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.value = voice.name;
+                voiceSelect.appendChild(option);
+            });
+        }
+
+        cargarVoces();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = cargarVoces;
+        }
+
+        rateRange.addEventListener('input', () => {
+            rateValue.textContent = `${parseFloat(rateRange.value).toFixed(1)}x`;
+            actualizarEstadisticas();
+        });
+
+        textFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                textContent.value = event.target.result;
+                actualizarEstadisticas();
+                statusDiv.textContent = `✅ Archivo cargado: ${file.name}`;
+            };
+            reader.onerror = () => {
+                Swal.fire('Error', 'No se pudo leer el archivo seleccionado.', 'error');
+            };
+            reader.readAsText(file, 'UTF-8');
+        });
+
+        function actualizarBotones(leyendo, pausado = false) {
+            speakButton.disabled = leyendo && !pausado;
+            recordMp3Button.disabled = leyendo;
+            pauseButton.disabled = !leyendo || pausado;
+            resumeButton.disabled = !pausado;
+            cancelButton.disabled = !leyendo;
+        }
+
+        function dividirEnFragmentos(texto, maxLen = 180) {
+            const oraciones = texto
+                .replace(/\r\n/g, '\n')
+                .split(/(?<=[.?!;\n])\s+/);
+
+            const fragmentos = [];
+            let actual = "";
+
+            for (const oracion of oraciones) {
+                const limpia = oracion.trim();
+                if (!limpia) continue;
+
+                if (limpia.length > maxLen) {
+                    if (actual) {
+                        fragmentos.push(actual);
+                        actual = "";
+                    }
+                    const palabras = limpia.split(/\s+/);
+                    let sub = "";
+                    for (const p of palabras) {
+                        if ((sub + " " + p).trim().length > maxLen) {
+                            if (sub) fragmentos.push(sub.trim());
+                            sub = p;
+                        } else {
+                            sub = (sub + " " + p).trim();
+                        }
+                    }
+                    if (sub) fragmentos.push(sub.trim());
+                } else if ((actual + " " + limpia).trim().length > maxLen) {
+                    fragmentos.push(actual.trim());
+                    actual = limpia;
+                } else {
+                    actual = (actual + " " + limpia).trim();
+                }
+            }
+            if (actual) fragmentos.push(actual.trim());
+            return fragmentos;
+        }
+
+        function iniciarKeepAlive() {
+            detenerKeepAlive();
+            keepAliveTimer = setInterval(() => {
+                if (synth.speaking && !synth.paused) {
+                    synth.pause();
+                    synth.resume();
+                }
+            }, 10000);
+        }
+
+        function detenerKeepAlive() {
+            if (keepAliveTimer) {
+                clearInterval(keepAliveTimer);
+                keepAliveTimer = null;
+            }
+        }
+
+        function reproducirSecuencia(fragmentos, esGrabacion) {
+            if (dictando) {
+                dictando = false;
+                recognition.stop();
+                restaurarBotonDictado();
+            }
+
+            canceladoManual = false;
+            let indice = 0;
+
+            progressWrapper.style.display = 'block';
+            progressBar.style.width = '0%';
+            actualizarBotones(true, false);
+            iniciarKeepAlive();
+
+            function leerSiguiente() {
+                if (canceladoManual) {
+                    detenerKeepAlive();
+                    progressWrapper.style.display = 'none';
+                    actualizarBotones(false, false);
+                    return;
+                }
+
+                if (indice >= fragmentos.length) {
+                    detenerKeepAlive();
+                    progressBar.style.width = '100%';
+                    actualizarBotones(false, false);
+
+                    if (esGrabacion) {
+                        setTimeout(() => detenerCapturaAudio(true), 350);
+                    } else {
+                        statusDiv.textContent = '✅ Lectura completa finalizada.';
+                    }
+                    return;
+                }
+
+                const pct = Math.round(((indice + 1) / fragmentos.length) * 100);
+                progressBar.style.width = `${pct}%`;
+                statusDiv.textContent = esGrabacion
+                    ? `🔴 Grabando MP3: parte ${indice + 1} de ${fragmentos.length} (${pct}%)...`
+                    : `🔊 Leyendo parte ${indice + 1} de ${fragmentos.length} (${pct}%)...`;
+
+                const utterance = new SpeechSynthesisUtterance(fragmentos[indice]);
+                const selectedVoice = voices.find(v => v.name === voiceSelect.value);
+                if (selectedVoice) utterance.voice = selectedVoice;
+                utterance.lang = selectedVoice ? selectedVoice.lang : 'es-ES';
+                utterance.rate = parseFloat(rateRange.value);
+
+                utterance.onend = () => {
+                    indice++;
+                    leerSiguiente();
+                };
+
+                utterance.onerror = (ev) => {
+                    if (ev.error === 'interrupted' || ev.error === 'canceled') return;
+                    indice++;
+                    leerSiguiente();
+                };
+
+                synth.speak(utterance);
+            }
+
+            synth.cancel();
+            leerSiguiente();
+        }
+
+        speakButton.addEventListener('click', () => {
+            const texto = textContent.value.trim();
+            if (!texto) {
+                Swal.fire({ title: 'Texto vacío', text: 'Escribe, dicta o carga un texto primero.', icon: 'warning', confirmButtonColor: '#0d6efd' });
+                return;
+            }
+            const fragmentos = dividirEnFragmentos(texto);
+            reproducirSecuencia(fragmentos, false);
+        });
+
+        function exportarMp3(buffers, sampleRate) {
+            const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
+            const mp3Data = [];
+            const sampleBlockSize = 1152;
+
+            let totalLength = 0;
+            buffers.forEach(b => totalLength += b.length);
+            const samples = new Int16Array(totalLength);
+            let offset = 0;
+            buffers.forEach(b => {
+                for (let i = 0; i < b.length; i++) {
+                    const s = Math.max(-1, Math.min(1, b[i]));
+                    samples[offset++] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                }
+            });
+
+            for (let i = 0; i < samples.length; i += sampleBlockSize) {
+                const chunk = samples.subarray(i, i + sampleBlockSize);
+                const mp3buf = mp3encoder.encodeBuffer(chunk);
+                if (mp3buf.length > 0) mp3Data.push(mp3buf);
+            }
+            const endBuf = mp3encoder.flush();
+            if (endBuf.length > 0) mp3Data.push(endBuf);
+
+            return new Blob(mp3Data, { type: 'audio/mp3' });
+        }
+
+        function detenerCapturaAudio(descargar = false) {
+            vuWrapper.style.display = 'none';
+            vuBar.style.width = '0%';
+            vuPercent.textContent = '0%';
+
+            if (processor) {
+                processor.disconnect();
+                processor = null;
+            }
+            if (activeStream) {
+                activeStream.getTracks().forEach(t => t.stop());
+                activeStream = null;
+            }
+            const rate = audioCtx ? audioCtx.sampleRate : 44100;
+            if (audioCtx) {
+                audioCtx.close();
+                audioCtx = null;
+            }
+
+            if (descargar && recordedBuffers.length > 0) {
+                statusDiv.textContent = '⏳ Codificando pista MP3...';
+                setTimeout(() => {
+                    const mp3Blob = exportarMp3(recordedBuffers, rate);
+                    const url = URL.createObjectURL(mp3Blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `voz_multimedia_${Date.now()}.mp3`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                    statusDiv.textContent = '✅ ¡Pista MP3 descargada lista para tu editor!';
+                    recordedBuffers = [];
+                }, 150);
+            } else {
+                recordedBuffers = [];
+            }
+        }
+
+        recordMp3Button.addEventListener('click', async () => {
+            const texto = textContent.value.trim();
+            if (!texto) {
+                Swal.fire({ title: 'Texto vacío', text: 'Escribe, dicta o carga un texto primero.', icon: 'warning', confirmButtonColor: '#0d6efd' });
+                return;
+            }
+
+            await Swal.fire({
+                title: 'Verifica el Audio antes de Grabar',
+                html: '1. Selecciona <b>esta pestaña</b>.<br>2. Activa el interruptor azul <b>"Compartir también el audio de la pestaña"</b>.<br>3. Asegúrate de tener elegida una voz <b>Online / Google</b> en la lista.',
+                icon: 'info',
+                confirmButtonColor: '#198754',
+                confirmButtonText: 'Iniciar Grabación MP3'
+            });
+
+            try {
+                activeStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false
+                    },
+                    preferCurrentTab: true
+                });
+
+                const audioTracks = activeStream.getAudioTracks();
+                if (audioTracks.length === 0) {
+                    activeStream.getTracks().forEach(t => t.stop());
+                    Swal.fire('No activaste el audio', 'Debes marcar el interruptor "Compartir también el audio de la pestaña" para que se grabe la voz.', 'warning');
+                    return;
+                }
+
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') {
+                    await audioCtx.resume();
+                }
+
+                const source = audioCtx.createMediaStreamSource(new MediaStream(audioTracks));
+                processor = audioCtx.createScriptProcessor(4096, 1, 1);
+                recordedBuffers = [];
+
+                vuLabel.textContent = '🎚️ Nivel de audio capturado para MP3:';
+                vuBar.className = 'progress-bar bg-success';
+                vuWrapper.style.display = 'block';
+
+                let picoMaximo = 0;
+
+                processor.onaudioprocess = (e) => {
+                    const input = e.inputBuffer.getChannelData(0);
+                    recordedBuffers.push(new Float32Array(input));
+
+                    let max = 0;
+                    for (let i = 0; i < input.length; i++) {
+                        const abs = Math.abs(input[i]);
+                        if (abs > max) max = abs;
+                    }
+                    if (max > picoMaximo) picoMaximo = max;
+                    const pct = Math.min(100, Math.round(max * 350));
+                    vuBar.style.width = `${pct}%`;
+                    vuPercent.textContent = `${pct}%`;
+                };
+
+                source.connect(processor);
+                processor.connect(audioCtx.destination);
+
+                setTimeout(() => {
+                    if (picoMaximo < 0.001 && activeStream) {
+                        canceladoManual = true;
+                        detenerKeepAlive();
+                        synth.cancel();
+                        detenerCapturaAudio(false);
+                        progressWrapper.style.display = 'none';
+                        actualizarBotones(false, false);
+                        Swal.fire({
+                            title: 'Sin señal de audio en la pestaña',
+                            html: 'Esta voz local de Windows sale directo a los parlantes sin pasar por la pestaña.<br><br><b>Solución:</b> Selecciona en el menú una voz que diga <b>Online (Natural)</b> o <b>Google</b>, o activa el interruptor de audio al compartir la pestaña.',
+                            icon: 'warning',
+                            confirmButtonColor: '#0d6efd'
+                        });
+                    }
+                }, 3500);
+
+                const fragmentos = dividirEnFragmentos(texto);
+                reproducirSecuencia(fragmentos, true);
+            } catch (err) {
+                detenerCapturaAudio(false);
+            }
+        });
+
+        pauseButton.addEventListener('click', () => {
+            if (synth.speaking && !synth.paused) {
+                synth.pause();
+                statusDiv.textContent = '⏸️ Lectura en pausa.';
+                actualizarBotones(true, true);
+            }
+        });
+
+        resumeButton.addEventListener('click', () => {
+            if (synth.paused) {
+                synth.resume();
+                statusDiv.textContent = '🔊 Reanudando...';
+                actualizarBotones(true, false);
+            }
+        });
+
+        cancelButton.addEventListener('click', () => {
+            canceladoManual = true;
+            detenerKeepAlive();
+            synth.cancel();
+            detenerCapturaAudio(false);
+            progressWrapper.style.display = 'none';
+            statusDiv.textContent = '⏹️ Operación cancelada.';
+            actualizarBotones(false, false);
+        });
+    </script>
+</body>
+</html>
