@@ -867,12 +867,39 @@
             window.print();
         });
 
-        clearAllBtn.addEventListener('click', () => {
-            detenerCapturaEnVivo();
-            bloquesDocumento = [];
-            localStorage.removeItem(STORAGE_KEY);
-            renderizarBloques();
-        });
+		clearAllBtn.addEventListener('click', () => {
+					detenerCapturaEnVivo();
+					bloquesDocumento = [];
+					srtEntradas = [];
+					nombreVideoActual = "Clase_Transcripcion";
+					modoYoutube = false;
+					youtubeIdActual = null;
+					lastFrameSignature = null;
+					ultimoFotogramaEstable = null;
+					corsBloqueado = false;
+					localStorage.removeItem(STORAGE_KEY);
+
+					// Limpiar campos de entrada
+					videoUrlInput.value = '';
+					videoFile.value = '';
+					srtFile.value = '';
+
+					// Limpiar reproductores (YouTube y video local) y volver al cuadro negro inicial
+					youtubeFrame.src = '';
+					youtubeFrame.style.display = 'none';
+					videoPlayer.pause();
+					videoPlayer.removeAttribute('src');
+					videoPlayer.load();
+					videoPlayer.style.display = 'block';
+
+					// Deshabilitar botones de captura hasta que se cargue otro video o link
+					liveTranscribeBtn.disabled = true;
+					autoProcessBtn.disabled = true;
+					manualSnapBtn.disabled = true;
+
+					renderizarBloques();
+					Toast.fire({ icon: 'info', title: 'Pantalla y video limpiados por completo' });
+				});
     </script>
 </body>
 </html>
