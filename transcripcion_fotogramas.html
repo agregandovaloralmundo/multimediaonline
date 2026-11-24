@@ -98,6 +98,7 @@
                 border: none;
                 background: #fff;
             }
+            .no-print { display: none !important; }
         }
     </style>
 </head>
@@ -109,7 +110,7 @@
         <div class="main-content">
             <div class="tool-box">
                 <h3 class="mb-1 fw-bold text-dark text-center">Transcripción y Fotogramas a Word</h3>
-                <p class="text-muted small mb-3 text-center">Pega un enlace (YouTube / .mp4) o sube el video de tu clase (hasta 3+ horas), captura diapositivas y transcripción en tiempo real y genera tu Word o PDF</p>
+                <p class="text-muted small mb-3 text-center">Pega un enlace (YouTube / .mp4) o sube el video de tu clase (hasta 3+ horas), captura diapositivas completas y transcripción en tiempo real y genera tu Word o PDF</p>
 
                 <!-- Cajetín de enlace, video local y subtítulos opcionales -->
                 <div class="row g-2 mb-3 text-start">
@@ -134,7 +135,7 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-5 text-start">
                         <video id="videoPlayer" controls crossorigin="anonymous"></video>
-                        <iframe id="youtubeFrame" style="display: none;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        <iframe id="youtubeFrame" style="display: none;" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
                         <canvas id="captureCanvas" style="display: none;"></canvas>
 
                         <div class="d-grid gap-2 mt-2">
@@ -152,8 +153,9 @@
 
                     <div class="col-md-7">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-bold small text-secondary">📑 Documento en construcción (texto y capturas sincronizadas):</span>
+                            <span class="fw-bold small text-secondary">📑 Documento en construcción (transcripción + filminas completas):</span>
                             <div>
+                                <span id="micStatusBadge" class="badge bg-secondary me-1" style="display: none;">🎙️ Escuchando...</span>
                                 <span id="memoryBadge" class="badge bg-light text-secondary border me-1">0 MB</span>
                                 <span id="blockCount" class="badge bg-primary">0 secciones</span>
                             </div>
@@ -161,7 +163,7 @@
                         <div id="timelinePreview">
                             <p class="text-muted small text-center mt-5">
                                 Pega el link de la clase o sube el video arriba.<br>
-                                Al darle a <b>Reproducir y Capturar</b>, se irá escribiendo todo lo hablado junto con las capturas automáticas cada vez que cambie la imagen o diapositiva.
+                                Al darle a <b>Reproducir y Capturar</b>, se irá escribiendo en vivo todo lo hablado y, justo antes de cambiar cada filmina, se guardará su captura completa.
                             </p>
                         </div>
                     </div>
@@ -210,6 +212,7 @@
         const autoProcessBtn = document.getElementById('autoProcessBtn');
         const manualSnapBtn = document.getElementById('manualSnapBtn');
         const timelinePreview = document.getElementById('timelinePreview');
+        const micStatusBadge = document.getElementById('micStatusBadge');
         const blockCount = document.getElementById('blockCount');
         const memoryBadge = document.getElementById('memoryBadge');
         const progressWrapper = document.getElementById('progressWrapper');
@@ -218,8 +221,8 @@
         const exportPdfBtn = document.getElementById('exportPdfBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
 
-        const STORAGE_KEY = "multimedia_doc_respaldo_v1";
-        let bloquesDocumento = [];
+        const STORAGE_KEY = "multimedia_doc_respaldo_v2";
+        let bloquesDocumento = []; // { tiempoSeg, tiempoTxt, textoConfirmado, textoIntermedio, imagenBase64 }
         let srtEntradas = [];
         let nombreVideoActual = "Clase_Transcripcion";
         let modoYoutube = false;
@@ -230,6 +233,7 @@
         let tabCaptureVideo = null;
         let sceneCheckTimer = null;
         let lastFrameSignature = null;
+        let ultimoFotogramaEstable = null; // Guarda la filmina completa antes de que cambie a la siguiente
         let corsBloqueado = false;
 
         const Toast = Swal.mixin({
@@ -240,7 +244,6 @@
             timerProgressBar: true
         });
 
-        // Recuperar respaldo automático si hubo corte de energía
         try {
             const guardado = localStorage.getItem(STORAGE_KEY);
             if (guardado) {
@@ -254,7 +257,6 @@
 
         function guardarRespaldoLocal() {
             try {
-                // Guardar últimos 60 bloques con imagen en localStorage como seguro ante cortes de luz
                 const reciente = bloquesDocumento.slice(-60);
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(reciente));
             } catch {}
@@ -276,9 +278,14 @@
             return match ? match[1] : null;
         }
 
-        // Captura optimizada (640px ancho, JPEG 0.68) para soportar 2-3 horas sin saturar memoria
+        function obtenerTiempoActual() {
+            return modoYoutube
+                ? ((Date.now() - youtubeStartTime) / 1000)
+                : (videoPlayer.currentTime || 0);
+        }
+
+        // Captura optimizada (640px ancho, JPEG 0.68)
         function capturarFotogramaActual() {
-            // 1. Si es video local o MP4 sin bloqueo CORS
             if (!modoYoutube && videoPlayer.videoWidth && !corsBloqueado) {
                 try {
                     const maxW = 640;
@@ -293,7 +300,6 @@
                 }
             }
 
-            // 2. Si es YouTube o enlace con CORS, recortar directo desde el stream de pestaña activo
             if (tabCaptureVideo && tabCaptureVideo.videoWidth) {
                 try {
                     const targetEl = modoYoutube ? youtubeFrame : videoPlayer;
@@ -315,8 +321,8 @@
             return null;
         }
 
-        // Detecta cambio de diapositiva o escena comparando firma visual reducida
-        function detectarCambioDeEscena() {
+        // Evalúa si cambió la filmina y actualiza el búfer de la filmina estable previa
+        function evaluarEstadoVisual() {
             const tmpCanvas = document.createElement('canvas');
             tmpCanvas.width = 32;
             tmpCanvas.height = 18;
@@ -336,13 +342,14 @@
                         0, 0, 32, 18
                     );
                 } else {
-                    return false;
+                    return { cambio: false, diff: 0 };
                 }
 
                 const data = ctx.getImageData(0, 0, 32, 18).data;
                 if (!lastFrameSignature) {
                     lastFrameSignature = data;
-                    return true;
+                    ultimoFotogramaEstable = capturarFotogramaActual();
+                    return { cambio: false, diff: 0 };
                 }
 
                 let diff = 0;
@@ -352,14 +359,33 @@
                           + Math.abs(data[i + 2] - lastFrameSignature[i + 2]);
                 }
                 const promedioDiff = diff / (32 * 18 * 3);
-                if (promedioDiff > 20) {
+
+                if (promedioDiff > 18) {
+                    // Hubo cambio a una nueva filmina: la foto que estaba en ultimoFotogramaEstable es la filmina anterior completa
                     lastFrameSignature = data;
-                    return true;
+                    return { cambio: true, diff: promedioDiff };
+                } else {
+                    // La filmina sigue siendo la misma: actualizar ultimoFotogramaEstable para capturar cualquier texto que haya aparecido al final de ella
+                    ultimoFotogramaEstable = capturarFotogramaActual();
+                    return { cambio: false, diff: promedioDiff };
                 }
-                return false;
             } catch {
-                return false;
+                return { cambio: false, diff: 0 };
             }
+        }
+
+        function asegurarBloqueActivo() {
+            if (bloquesDocumento.length === 0) {
+                const t = obtenerTiempoActual();
+                bloquesDocumento.push({
+                    tiempoSeg: t,
+                    tiempoTxt: formatearTiempo(t),
+                    textoConfirmado: "",
+                    textoIntermedio: "",
+                    imagenBase64: null
+                });
+            }
+            return bloquesDocumento[bloquesDocumento.length - 1];
         }
 
         function renderizarBloques() {
@@ -377,23 +403,27 @@
                 return;
             }
 
-            timelinePreview.innerHTML = bloquesDocumento.map((b, idx) => `
-                <div class="bloque-item">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="badge bg-primary">⏱️ ${b.tiempoTxt}</span>
-                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarBloque(${idx})">✕</button>
+            timelinePreview.innerHTML = bloquesDocumento.map((b, idx) => {
+                const textoMostrar = ((b.textoConfirmado || "") + (b.textoIntermedio ? " " + b.textoIntermedio : "")).trim();
+                return `
+                    <div class="bloque-item">
+                        <div class="d-flex justify-content-between align-items-center mb-1 no-print">
+                            <span class="badge bg-light text-primary border">Control: ${b.tiempoTxt}</span>
+                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarBloque(${idx})">✕</button>
+                        </div>
+                        <textarea class="form-control form-control-sm mt-1" rows="3" placeholder="Transcripción de esta sección..." onchange="actualizarTextoBloque(${idx}, this.value)">${textoMostrar}</textarea>
+                        ${b.imagenBase64 ? `<img src="${b.imagenBase64}" class="bloque-img" alt="Captura ${b.tiempoTxt}">` : ''}
                     </div>
-                    <textarea class="form-control form-control-sm mt-1" rows="2" onchange="actualizarTextoBloque(${idx}, this.value)">${b.texto}</textarea>
-                    ${b.imagenBase64 ? `<img src="${b.imagenBase64}" class="bloque-img" alt="Captura ${b.tiempoTxt}">` : ''}
-                </div>
-            `).join('');
+                `;
+            }).join('');
             timelinePreview.scrollTop = timelinePreview.scrollHeight;
             guardarRespaldoLocal();
         }
 
         window.actualizarTextoBloque = (idx, nuevoTexto) => {
             if (bloquesDocumento[idx]) {
-                bloquesDocumento[idx].texto = nuevoTexto;
+                bloquesDocumento[idx].textoConfirmado = nuevoTexto;
+                bloquesDocumento[idx].textoIntermedio = "";
                 guardarRespaldoLocal();
             }
         };
@@ -419,12 +449,22 @@
 
             const ytId = extraerYoutubeId(url);
             if (ytId) {
+                if (window.location.protocol === 'file:') {
+                    Swal.fire({
+                        title: 'Estás abriendo el archivo desde disco (file://)',
+                        html: 'YouTube bloquea (<b>Error 153</b>) los reproductores incrustados cuando se abren directo desde una carpeta local.<br><br>Ábrelo desde tu página en GitHub Pages.',
+                        icon: 'warning',
+                        confirmButtonColor: '#0d6efd'
+                    });
+                    return;
+                }
+
                 modoYoutube = true;
                 youtubeIdActual = ytId;
                 videoPlayer.pause();
                 videoPlayer.style.display = 'none';
                 youtubeFrame.style.display = 'block';
-                youtubeFrame.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&enablejsapi=1`;
+                youtubeFrame.src = `https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`;
                 activarControlesVideo();
 
                 try {
@@ -439,7 +479,6 @@
                     nombreVideoActual = `YouTube_${ytId}`;
                 }
 
-                // Buscar subtítulos públicos del video si existen
                 const instancias = ['https://pipedapi.kavin.rocks', 'https://pipedapi.adminforge.de'];
                 for (const host of instancias) {
                     try {
@@ -454,7 +493,7 @@
                                     srtEntradas = parsearSubtitulos(await vttResp.text());
                                     if (srtEntradas.length > 0) {
                                         autoProcessBtn.disabled = false;
-                                        Toast.fire({ icon: 'success', title: '¡Subtítulos encontrados! También puedes usar Procesar Rápido.' });
+                                        Toast.fire({ icon: 'success', title: '¡Subtítulos detectados! También puedes usar Procesar Rápido.' });
                                         return;
                                     }
                                 }
@@ -467,7 +506,6 @@
                 return;
             }
 
-            // Enlace directo .mp4 / .webm
             modoYoutube = false;
             youtubeIdActual = null;
             corsBloqueado = false;
@@ -481,7 +519,7 @@
             Toast.fire({ icon: 'info', title: 'Enlace de video cargado.' });
         });
 
-        // 1B. Cargar video local (soporta 2-3+ horas en streaming directo desde disco)
+        // 1B. Cargar video local
         videoFile.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -498,7 +536,6 @@
             Toast.fire({ icon: 'success', title: 'Video local cargado listo para procesar' });
         });
 
-        // Parsear subtítulos .srt / .vtt
         function parsearSubtitulos(contenido) {
             const bloquesRaw = contenido.replace(/\r\n/g, '\n').trim().split(/\n\n+/);
             const resultado = [];
@@ -534,7 +571,7 @@
             reader.readAsText(file, 'UTF-8');
         });
 
-        // MODO RÁPIDO: Procesar toda la clase desde subtítulos + capturas automáticas
+        // MODO RÁPIDO: Procesar toda la clase desde subtítulos + capturas al final de cada tramo (antes de que cambie de filmina)
         autoProcessBtn.addEventListener('click', async () => {
             if (srtEntradas.length === 0) return;
 
@@ -547,11 +584,12 @@
             const grupos = [];
             let grupoActual = null;
             for (const item of srtEntradas) {
-                if (!grupoActual || (item.tiempoSeg - grupoActual.tiempoSeg) >= 18) {
+                if (!grupoActual || (item.tiempoSeg - grupoActual.tiempoSeg) >= 20) {
                     if (grupoActual) grupos.push(grupoActual);
-                    grupoActual = { tiempoSeg: item.tiempoSeg, texto: item.texto };
+                    grupoActual = { tiempoSeg: item.tiempoSeg, tiempoFin: item.tiempoSeg + 18, texto: item.texto };
                 } else {
                     grupoActual.texto += ' ' + item.texto;
+                    grupoActual.tiempoFin = item.tiempoSeg + 2;
                 }
             }
             if (grupoActual) grupos.push(grupoActual);
@@ -566,20 +604,24 @@
                             bloquesDocumento.push({
                                 tiempoSeg: g.tiempoSeg,
                                 tiempoTxt: formatearTiempo(g.tiempoSeg),
-                                texto: g.texto,
+                                textoConfirmado: g.texto,
+                                textoIntermedio: "",
                                 imagenBase64: img
                             });
                             renderizarBloques();
                             resolve();
                         };
                         videoPlayer.addEventListener('seeked', onSeeked);
-                        videoPlayer.currentTime = Math.min(g.tiempoSeg + 0.5, videoPlayer.duration || g.tiempoSeg);
+                        // Posicionar justo antes del cierre de ese bloque para capturar la filmina ya completa
+                        const targetTime = Math.max(g.tiempoSeg, (g.tiempoFin || g.tiempoSeg) - 1.0);
+                        videoPlayer.currentTime = Math.min(targetTime, videoPlayer.duration || targetTime);
                     });
                 } else {
                     bloquesDocumento.push({
                         tiempoSeg: g.tiempoSeg,
                         tiempoTxt: formatearTiempo(g.tiempoSeg),
-                        texto: g.texto,
+                        textoConfirmado: g.texto,
+                        textoIntermedio: "",
                         imagenBase64: null
                     });
                     renderizarBloques();
@@ -595,7 +637,7 @@
             Toast.fire({ icon: 'success', title: '¡Transcripción completa generada!' });
         });
 
-        // MODO EN VIVO: Reproduce el video / YouTube y captura transcripción + fotogramas al mismo tiempo
+        // MODO EN VIVO: Transcripción continua en tiempo real + Captura de filmina completa ANTES de cambiar
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = null;
 
@@ -603,45 +645,86 @@
             recognition = new SpeechRecognition();
             recognition.lang = 'es-CR';
             recognition.continuous = true;
-            recognition.interimResults = false;
+            recognition.interimResults = true;
+
+            recognition.onstart = () => {
+                micStatusBadge.style.display = 'inline-block';
+                micStatusBadge.className = 'badge bg-danger me-1';
+                micStatusBadge.textContent = '🎙️ Transcribiendo voz...';
+            };
 
             recognition.onresult = (event) => {
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    if (event.results[i].isFinal) {
-                        const frase = event.results[i][0].transcript.trim();
-                        if (!frase) continue;
-                        const tActual = modoYoutube
-                            ? ((Date.now() - youtubeStartTime) / 1000)
-                            : (videoPlayer.currentTime || 0);
+                let textoFinalNuevo = '';
+                let textoIntermedio = '';
 
-                        // Adjuntar texto al último bloque si fue hace menos de 15s, o crear bloque nuevo con captura
-                        const ultimo = bloquesDocumento[bloquesDocumento.length - 1];
-                        if (ultimo && (tActual - ultimo.tiempoSeg) < 15 && !ultimo.texto.startsWith('[')) {
-                            ultimo.texto += ' ' + frase.charAt(0).toUpperCase() + frase.slice(1) + '.';
-                            renderizarBloques();
-                        } else {
-                            const img = capturarFotogramaActual();
-                            bloquesDocumento.push({
-                                tiempoSeg: tActual,
-                                tiempoTxt: formatearTiempo(tActual),
-                                texto: frase.charAt(0).toUpperCase() + frase.slice(1) + '.',
-                                imagenBase64: img
-                            });
-                            renderizarBloques();
-                        }
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcripcion = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        textoFinalNuevo += transcripcion;
+                    } else {
+                        textoIntermedio += transcripcion;
                     }
+                }
+
+                const bloqueActual = asegurarBloqueActivo();
+
+                if (textoFinalNuevo) {
+                    let limpio = textoFinalNuevo.trim();
+                    if (limpio) {
+                        if (!bloqueActual.textoConfirmado || /[.?!]\s*$/.test(bloqueActual.textoConfirmado)) {
+                            limpio = limpio.charAt(0).toUpperCase() + limpio.slice(1);
+                        }
+                        const sep = bloqueActual.textoConfirmado ? ' ' : '';
+                        bloqueActual.textoConfirmado += sep + limpio + '.';
+                    }
+                }
+
+                bloqueActual.textoIntermedio = textoIntermedio.trim();
+                renderizarBloques();
+            };
+
+            recognition.onerror = (event) => {
+                if (event.error === 'not-allowed') {
+                    Swal.fire('Micrófono bloqueado', 'Activa el permiso del micrófono en Chrome para que transcriba lo que habla el video.', 'warning');
                 }
             };
 
             recognition.onend = () => {
                 if (grabandoVivo) {
                     try { recognition.start(); } catch {}
+                } else {
+                    micStatusBadge.style.display = 'none';
                 }
             };
         }
 
+        function cerrarBloqueConCapturaPrevia(capturaPrevia) {
+            const bloqueActual = asegurarBloqueActivo();
+            if (capturaPrevia) {
+                bloqueActual.imagenBase64 = capturaPrevia;
+            }
+            // Abrir nuevo bloque vacío para la siguiente filmina
+            const t = obtenerTiempoActual();
+            bloquesDocumento.push({
+                tiempoSeg: t,
+                tiempoTxt: formatearTiempo(t),
+                textoConfirmado: "",
+                textoIntermedio: "",
+                imagenBase64: null
+            });
+            renderizarBloques();
+        }
+
         function detenerCapturaEnVivo() {
+            // Al detener, guardar la última filmina que quedó en pantalla en el bloque final
+            const bloqueFinal = bloquesDocumento[bloquesDocumento.length - 1];
+            if (bloqueFinal && !bloqueFinal.imagenBase64) {
+                bloqueFinal.imagenBase64 = ultimoFotogramaEstable || capturarFotogramaActual();
+                renderizarBloques();
+            }
+
             grabandoVivo = false;
+            micStatusBadge.style.display = 'none';
             if (recognition) {
                 try { recognition.stop(); } catch {}
             }
@@ -669,7 +752,6 @@
                 return;
             }
 
-            // Si es YouTube o enlace externo, pedir permiso de vista de pestaña una sola vez para capturar fotogramas de diapositivas
             if (modoYoutube || corsBloqueado) {
                 try {
                     tabCaptureStream = await navigator.mediaDevices.getDisplayMedia({
@@ -681,13 +763,17 @@
                     tabCaptureVideo.srcObject = tabCaptureStream;
                     await tabCaptureVideo.play();
                 } catch {
-                    Toast.fire({ icon: 'info', title: 'Continuando solo con transcripción de texto.' });
+                    Toast.fire({ icon: 'info', title: 'Continuando con transcripción de voz.' });
                 }
             }
 
             grabandoVivo = true;
             youtubeStartTime = Date.now();
             lastFrameSignature = null;
+            ultimoFotogramaEstable = null;
+            asegurarBloqueActivo();
+            renderizarBloques();
+
             liveTranscribeBtn.classList.add('mic-active');
             liveTranscribeBtn.innerHTML = '⏹️ Detener Captura y Transcripción';
 
@@ -697,50 +783,33 @@
 
             try { recognition.start(); } catch {}
 
-            // Vigilante automático de cambio de diapositiva cada 3 segundos
+            // Revisar cada 1.5 segundos: mantiene actualizada la filmina estable y, justo cuando detecta el cambio a una nueva, guarda la anterior completa
             sceneCheckTimer = setInterval(() => {
                 if (!grabandoVivo) return;
                 if (!modoYoutube && videoPlayer.paused) return;
 
-                if (detectarCambioDeEscena()) {
-                    const tActual = modoYoutube
-                        ? ((Date.now() - youtubeStartTime) / 1000)
-                        : (videoPlayer.currentTime || 0);
-                    const ultimo = bloquesDocumento[bloquesDocumento.length - 1];
-                    if (!ultimo || (tActual - ultimo.tiempoSeg) > 5) {
-                        const img = capturarFotogramaActual();
-                        if (img) {
-                            bloquesDocumento.push({
-                                tiempoSeg: tActual,
-                                tiempoTxt: formatearTiempo(tActual),
-                                texto: 'Diapositiva / escena capturada automáticamente.',
-                                imagenBase64: img
-                            });
-                            renderizarBloques();
-                        }
+                const filminaAnteriorCompleta = ultimoFotogramaEstable;
+                const estado = evaluarEstadoVisual();
+
+                if (estado.cambio && filminaAnteriorCompleta) {
+                    const bloqueActual = asegurarBloqueActivo();
+                    const tActual = obtenerTiempoActual();
+                    if ((tActual - bloqueActual.tiempoSeg) > 4) {
+                        cerrarBloqueConCapturaPrevia(filminaAnteriorCompleta);
                     }
                 }
-            }, 3000);
+            }, 1500);
         });
 
         videoPlayer.addEventListener('ended', detenerCapturaEnVivo);
 
-        // Captura manual en cualquier instante
+        // Captura manual en cualquier momento
         manualSnapBtn.addEventListener('click', () => {
-            const tActual = modoYoutube
-                ? ((Date.now() - youtubeStartTime) / 1000)
-                : (videoPlayer.currentTime || 0);
             const img = capturarFotogramaActual();
-            bloquesDocumento.push({
-                tiempoSeg: tActual,
-                tiempoTxt: formatearTiempo(tActual),
-                texto: 'Nota sobre esta imagen...',
-                imagenBase64: img
-            });
-            renderizarBloques();
+            cerrarBloqueConCapturaPrevia(img);
         });
 
-        // Generar Documento Word (.doc) con transcripción + imágenes intercaladas
+        // Generar Documento Word (.doc) LIMPIO (sin minutos, solo título, transcripción y filminas)
         exportWordBtn.addEventListener('click', () => {
             if (bloquesDocumento.length === 0) return;
 
@@ -748,17 +817,17 @@
                 year: 'numeric', month: 'long', day: 'numeric'
             });
 
-            const seccionesHtml = bloquesDocumento.map((b) => `
-                <div style="margin-bottom: 18pt; page-break-inside: avoid;">
-                    <p style="font-size: 9.5pt; color: #0d6efd; font-weight: bold; margin-bottom: 4pt;">
-                        [${b.tiempoTxt}]
-                    </p>
-                    <p style="font-size: 11.5pt; text-align: justify; margin-bottom: 8pt;">
-                        ${b.texto.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-                    </p>
-                    ${b.imagenBase64 ? `<p style="text-align: center;"><img src="${b.imagenBase64}" width="480" /></p>` : ''}
-                </div>
-            `).join('');
+            const seccionesHtml = bloquesDocumento
+                .filter(b => (b.textoConfirmado && b.textoConfirmado.trim()) || b.imagenBase64)
+                .map((b) => {
+                    const textoLimpio = (b.textoConfirmado || "").trim();
+                    return `
+                        <div style="margin-bottom: 16pt; page-break-inside: avoid;">
+                            ${textoLimpio ? `<p style="font-size: 11.5pt; text-align: justify; margin-bottom: 8pt;">${textoLimpio.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>` : ''}
+                            ${b.imagenBase64 ? `<p style="text-align: center; margin-top: 4pt; margin-bottom: 12pt;"><img src="${b.imagenBase64}" width="490" /></p>` : ''}
+                        </div>
+                    `;
+                }).join('');
 
             const docHtml = `
                 <html xmlns:o='urn:schemas-microsoft-com:office:office'
@@ -768,14 +837,14 @@
                     <meta charset='utf-8'>
                     <title>${nombreVideoActual}</title>
                     <style>
-                        body { font-family: 'Calibri', 'Arial', sans-serif; color: #111111; line-height: 1.5; }
+                        body { font-family: 'Calibri', 'Arial', sans-serif; color: #111111; line-height: 1.55; }
                         h1 { font-size: 16pt; color: #0d6efd; margin-bottom: 4pt; }
                         .meta { font-size: 9pt; color: #666666; margin-bottom: 16pt; border-bottom: 1px solid #cccccc; padding-bottom: 6pt; }
                     </style>
                 </head>
                 <body>
                     <h1>${nombreVideoActual}</h1>
-                    <div class="meta">Transcripción y fotogramas generados el ${fechaHoy} · Multimedia Online</div>
+                    <div class="meta">Generado el ${fechaHoy} · Multimedia Online</div>
                     ${seccionesHtml}
                 </body>
                 </html>
@@ -790,7 +859,7 @@
             a.click();
             a.remove();
             URL.revokeObjectURL(url);
-            Toast.fire({ icon: 'success', title: 'Documento Word (.doc) generado con éxito' });
+            Toast.fire({ icon: 'success', title: 'Documento Word (.doc) limpio generado' });
         });
 
         exportPdfBtn.addEventListener('click', () => {
