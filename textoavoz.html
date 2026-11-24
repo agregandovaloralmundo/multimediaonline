@@ -103,7 +103,7 @@
                 <!-- Selector de voz y velocidad -->
                 <div class="row g-2 mb-3 text-start">
                     <div class="col-md-8">
-                        <label for="voiceSelect" class="form-label fw-bold small text-secondary mb-1">🗣️ Voz de lectura <span class="text-muted fw-normal">(usa Online/Google para grabar MP3)</span>:</label>
+                        <label for="voiceSelect" class="form-label fw-bold small text-secondary mb-1">🗣️ Voz de lectura <span class="text-muted fw-normal">(usa Online/Google o captura audio del sistema)</span>:</label>
                         <select id="voiceSelect" class="form-select form-select-sm"></select>
                     </div>
                     <div class="col-md-4">
@@ -195,6 +195,7 @@
         let audioCtx = null;
         let processor = null;
         let recordedBuffers = [];
+        let picoMaximoGrabacion = 0;
         let keepAliveTimer = null;
         let canceladoManual = false;
 
@@ -590,7 +591,7 @@
                     actualizarBotones(false, false);
 
                     if (esGrabacion) {
-                        setTimeout(() => detenerCapturaAudio(true), 350);
+                        setTimeout(() => detenerCapturaAudio(true), 450);
                     } else {
                         statusDiv.textContent = '✅ Lectura completa finalizada.';
                     }
@@ -684,6 +685,18 @@
             }
 
             if (descargar && recordedBuffers.length > 0) {
+                if (picoMaximoGrabacion < 0.001) {
+                    recordedBuffers = [];
+                    statusDiv.textContent = '⚠️ Lectura terminada, pero el audio llegó en silencio.';
+                    Swal.fire({
+                        title: 'El audio de la pestaña llegó en silencio',
+                        html: 'En tu equipo, esta voz sale por el audio general de Windows en vez de la pestaña.<br><br><b>Cómo grabarla con sonido:</b><br>1. Dale de nuevo a <b>Grabar y Bajar MP3</b>.<br>2. En el cuadro del navegador, cambia arriba a <b>"Toda la pantalla"</b>.<br>3. Activa el interruptor <b>"Compartir también el audio del sistema"</b> y dale a <b>Compartir</b>.',
+                        icon: 'info',
+                        confirmButtonColor: '#0d6efd'
+                    });
+                    return;
+                }
+
                 statusDiv.textContent = '⏳ Codificando pista MP3...';
                 setTimeout(() => {
                     const mp3Blob = exportarMp3(recordedBuffers, rate);
@@ -711,8 +724,8 @@
             }
 
             await Swal.fire({
-                title: 'Verifica el Audio antes de Grabar',
-                html: '1. Selecciona <b>esta pestaña</b>.<br>2. Activa el interruptor azul <b>"Compartir también el audio de la pestaña"</b>.<br>3. Asegúrate de tener elegida una voz <b>Online / Google</b> en la lista.',
+                title: 'Captura de Audio para MP3',
+                html: 'En la ventana que aparecerá:<br>1. Selecciona <b>esta pestaña</b> (o <b>Toda la pantalla</b> si usas voces locales de Windows).<br>2. Verifica que esté encendido el interruptor <b>"Compartir también el audio"</b>.',
                 icon: 'info',
                 confirmButtonColor: '#198754',
                 confirmButtonText: 'Iniciar Grabación MP3'
@@ -726,13 +739,13 @@
                         noiseSuppression: false,
                         autoGainControl: false
                     },
-                    preferCurrentTab: true
+                    systemAudio: 'include'
                 });
 
                 const audioTracks = activeStream.getAudioTracks();
                 if (audioTracks.length === 0) {
                     activeStream.getTracks().forEach(t => t.stop());
-                    Swal.fire('No activaste el audio', 'Debes marcar el interruptor "Compartir también el audio de la pestaña" para que se grabe la voz.', 'warning');
+                    Swal.fire('No activaste el audio', 'Debes marcar el interruptor "Compartir también el audio" para que se grabe la voz.', 'warning');
                     return;
                 }
 
@@ -744,12 +757,11 @@
                 const source = audioCtx.createMediaStreamSource(new MediaStream(audioTracks));
                 processor = audioCtx.createScriptProcessor(4096, 1, 1);
                 recordedBuffers = [];
+                picoMaximoGrabacion = 0;
 
                 vuLabel.textContent = '🎚️ Nivel de audio capturado para MP3:';
                 vuBar.className = 'progress-bar bg-success';
                 vuWrapper.style.display = 'block';
-
-                let picoMaximo = 0;
 
                 processor.onaudioprocess = (e) => {
                     const input = e.inputBuffer.getChannelData(0);
@@ -760,7 +772,7 @@
                         const abs = Math.abs(input[i]);
                         if (abs > max) max = abs;
                     }
-                    if (max > picoMaximo) picoMaximo = max;
+                    if (max > picoMaximoGrabacion) picoMaximoGrabacion = max;
                     const pct = Math.min(100, Math.round(max * 350));
                     vuBar.style.width = `${pct}%`;
                     vuPercent.textContent = `${pct}%`;
@@ -768,23 +780,6 @@
 
                 source.connect(processor);
                 processor.connect(audioCtx.destination);
-
-                setTimeout(() => {
-                    if (picoMaximo < 0.001 && activeStream) {
-                        canceladoManual = true;
-                        detenerKeepAlive();
-                        synth.cancel();
-                        detenerCapturaAudio(false);
-                        progressWrapper.style.display = 'none';
-                        actualizarBotones(false, false);
-                        Swal.fire({
-                            title: 'Sin señal de audio en la pestaña',
-                            html: 'Esta voz local de Windows sale directo a los parlantes sin pasar por la pestaña.<br><br><b>Solución:</b> Selecciona en el menú una voz que diga <b>Online (Natural)</b> o <b>Google</b>, o activa el interruptor de audio al compartir la pestaña.',
-                            icon: 'warning',
-                            confirmButtonColor: '#0d6efd'
-                        });
-                    }
-                }, 3500);
 
                 const fragmentos = dividirEnFragmentos(texto);
                 reproducirSecuencia(fragmentos, true);
