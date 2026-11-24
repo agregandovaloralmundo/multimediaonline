@@ -35,7 +35,7 @@
         }
         .tool-box {
             width: 96%;
-            max-width: 1220px;
+            max-width: 1240px;
             background: #ffffff;
             border: 3px solid #0d6efd;
             border-radius: 20px;
@@ -45,45 +45,36 @@
         }
         #videoPlayer, #youtubeFrame {
             width: 100%;
-            height: 260px;
+            height: 255px;
             background: #000000;
             border-radius: 12px;
             border: none;
         }
-        #liveTranscriptBox {
-            width: 100%;
-            height: 145px;
-            resize: none;
-            font-size: 0.95rem;
-            line-height: 1.5;
-            border-radius: 10px;
-            border: 1.5px solid #0d6efd;
-            background: #ffffff;
-        }
         #timelinePreview {
-            height: 215px;
-            max-height: 215px;
+            height: 395px;
+            max-height: 395px;
             overflow-y: auto;
-            border: 1px solid #dee2e6;
+            border: 1.5px solid #0d6efd;
             border-radius: 12px;
-            padding: 10px;
+            padding: 12px;
             background: #f8f9fa;
             text-align: left;
         }
         .bloque-item {
             background: #ffffff;
             border: 1px solid #dee2e6;
-            border-left: 4px solid #0d6efd;
+            border-left: 5px solid #0d6efd;
             border-radius: 10px;
-            padding: 8px 10px;
-            margin-bottom: 10px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
         }
         .bloque-img {
             max-width: 100%;
-            max-height: 165px;
+            max-height: 195px;
             border-radius: 8px;
             border: 1px solid #ced4da;
-            margin-top: 6px;
+            margin-top: 8px;
             display: block;
         }
         .mic-active {
@@ -120,7 +111,7 @@
         <div class="main-content">
             <div class="tool-box">
                 <h3 class="mb-1 fw-bold text-dark text-center">Transcripción IA y Fotogramas a Word</h3>
-                <p class="text-muted small mb-3 text-center">Escucha directamente el audio interno del video con IA Whisper (sin usar micrófono ni ruido ambiente), captura filminas y genera tu Word o PDF</p>
+                <p class="text-muted small mb-3 text-center">Escucha directamente el audio interno del video con IA Whisper (sin ruido ambiente ni bucles), sincroniza cada párrafo con su filmina y genera tu Word o PDF</p>
 
                 <!-- Cajetín de enlace, video local y subtítulos opcionales -->
                 <div class="row g-2 mb-3 text-start">
@@ -141,12 +132,18 @@
                     </div>
                 </div>
 
-                <!-- Dos columnas: Reproductor a la izquierda, Transcripción + Fotogramas a la derecha -->
+                <!-- Dos columnas: Reproductor + Reloj a la izquierda, Vista completa de secciones a la derecha -->
                 <div class="row g-3 mb-3">
                     <div class="col-md-5 text-start">
                         <video id="videoPlayer" controls crossorigin="anonymous"></video>
                         <iframe id="youtubeFrame" style="display: none;" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
                         <canvas id="captureCanvas" style="display: none;"></canvas>
+
+                        <!-- Barra de tiempo de reproducción visible -->
+                        <div class="d-flex justify-content-between align-items-center bg-light border rounded px-3 py-1 mt-2">
+                            <span class="small fw-bold text-secondary">⏱️ Tiempo de reproducción:</span>
+                            <span id="playbackClock" class="badge bg-dark fs-6 font-monospace">00:00</span>
+                        </div>
 
                         <div class="d-grid gap-2 mt-2">
                             <button id="liveTranscribeBtn" class="btn btn-danger btn-sm fw-bold" disabled>
@@ -162,28 +159,19 @@
                     </div>
 
                     <div class="col-md-7 text-start">
-                        <!-- Panel superior: Transcripción IA del audio del video -->
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label for="liveTranscriptBox" class="fw-bold small text-primary mb-0">📝 Transcripción IA del audio del video (cero ruido ambiente):</label>
+                            <span class="fw-bold small text-primary">📑 Vista previa del documento Word (texto + filminas en orden):</span>
                             <div class="d-flex align-items-center gap-1">
-                                <span id="aiStatusBadge" class="badge bg-warning text-dark" style="display: none;">⏳ Cargando IA Whisper...</span>
+                                <span id="aiStatusBadge" class="badge bg-warning text-dark" style="display: none;">⏳ Cargando IA...</span>
                                 <span id="wordCountBadge" class="badge bg-light text-dark border">0 palabras</span>
-                            </div>
-                        </div>
-                        <textarea id="liveTranscriptBox" class="form-control mb-2" placeholder="Al presionar 'Reproducir y Transcribir Audio Interno + Filminas' (marcando 'Compartir audio de la pestaña'), la IA escuchará directamente el sonido del video y escribirá aquí la transcripción limpia en bloques cada 12 segundos..."></textarea>
-
-                        <!-- Panel inferior: Secciones y fotogramas capturados -->
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-bold small text-secondary">🖼️ Fotogramas y secciones sincronizadas:</span>
-                            <div>
-                                <span id="memoryBadge" class="badge bg-light text-secondary border me-1">0 MB</span>
-                                <span id="blockCount" class="badge bg-primary">0 capturas</span>
+                                <span id="memoryBadge" class="badge bg-light text-secondary border">0 MB</span>
+                                <span id="blockCount" class="badge bg-primary">0 filminas</span>
                             </div>
                         </div>
                         <div id="timelinePreview">
-                            <p class="text-muted small text-center mt-4">
+                            <p class="text-muted small text-center mt-5">
                                 Pega el link de la clase o sube el video arriba.<br>
-                                Funciona con <b>cualquier video</b> (tenga o no subtítulos) capturando el audio interno de la pestaña.
+                                Al darle a <b>Reproducir y Transcribir</b>, verás avanzar el reloj a la izquierda y aquí aparecerá cada filmina con su transcripción limpia debajo.
                             </p>
                         </div>
                     </div>
@@ -225,8 +213,8 @@
         env.allowLocalModels = false;
         window.whisperPipelineLoader = async (onStatus) => {
             if (window._whisperInstance) return window._whisperInstance;
-            if (onStatus) onStatus('⏳ Descargando modelo Whisper IA (solo 1ra vez)...');
-            window._whisperInstance = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
+            if (onStatus) onStatus('⏳ Descargando Whisper Base IA...');
+            window._whisperInstance = await pipeline('automatic-speech-recognition', 'Xenova/whisper-base', {
                 quantized: true
             });
             return window._whisperInstance;
@@ -240,10 +228,10 @@
         const videoPlayer = document.getElementById('videoPlayer');
         const youtubeFrame = document.getElementById('youtubeFrame');
         const captureCanvas = document.getElementById('captureCanvas');
+        const playbackClock = document.getElementById('playbackClock');
         const liveTranscribeBtn = document.getElementById('liveTranscribeBtn');
         const autoProcessBtn = document.getElementById('autoProcessBtn');
         const manualSnapBtn = document.getElementById('manualSnapBtn');
-        const liveTranscriptBox = document.getElementById('liveTranscriptBox');
         const aiStatusBadge = document.getElementById('aiStatusBadge');
         const wordCountBadge = document.getElementById('wordCountBadge');
         const timelinePreview = document.getElementById('timelinePreview');
@@ -255,13 +243,14 @@
         const exportPdfBtn = document.getElementById('exportPdfBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
 
-        const STORAGE_KEY = "multimedia_doc_respaldo_v6";
-        let bloquesDocumento = [];
+        const STORAGE_KEY = "multimedia_doc_respaldo_v8";
+        let bloquesDocumento = []; // { tiempoSeg, tiempoTxt, textoConfirmado, imagenBase64 }
         let srtEntradas = [];
         let nombreVideoActual = "Clase_Transcripcion";
         let modoYoutube = false;
         let youtubeIdActual = null;
         let youtubeStartTime = 0;
+        let clockTimer = null;
         let capturandoEscenas = false;
         let tabCaptureStream = null;
         let tabCaptureVideo = null;
@@ -287,9 +276,8 @@
             const guardado = localStorage.getItem(STORAGE_KEY);
             if (guardado) {
                 const parsed = JSON.parse(guardado);
-                if (parsed && Array.isArray(parsed.bloques)) {
-                    bloquesDocumento = parsed.bloques;
-                    liveTranscriptBox.value = parsed.textoGlobal || "";
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    bloquesDocumento = parsed;
                     renderizarBloques();
                 }
             }
@@ -297,30 +285,9 @@
 
         function guardarRespaldoLocal() {
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                    textoGlobal: liveTranscriptBox.value,
-                    bloques: bloquesDocumento.slice(-60)
-                }));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(bloquesDocumento.slice(-80)));
             } catch {}
         }
-
-        function actualizarEstadoBotonesExportacion() {
-            const hayTexto = liveTranscriptBox.value.trim().length > 0;
-            const hayBloques = bloquesDocumento.length > 0;
-            const hayContenido = hayTexto || hayBloques;
-
-            exportWordBtn.disabled = !hayContenido;
-            exportPdfBtn.disabled = !hayContenido;
-            clearAllBtn.disabled = !hayContenido;
-
-            const palabras = hayTexto ? liveTranscriptBox.value.trim().split(/\s+/).length : 0;
-            wordCountBadge.textContent = `${palabras} palabras`;
-        }
-
-        liveTranscriptBox.addEventListener('input', () => {
-            actualizarEstadoBotonesExportacion();
-            guardarRespaldoLocal();
-        });
 
         function formatearTiempo(segundos) {
             const hrs = Math.floor(segundos / 3600);
@@ -353,7 +320,69 @@
                 : (videoPlayer.currentTime || 0);
         }
 
-        // Remuestrear audio capturado (44100/48000 Hz) a 16000 Hz mono que exige Whisper IA
+        function iniciarRelojReproduccion() {
+            detenerRelojReproduccion();
+            clockTimer = setInterval(() => {
+                playbackClock.textContent = formatearTiempo(obtenerTiempoActual());
+            }, 500);
+        }
+
+        function detenerRelojReproduccion() {
+            if (clockTimer) {
+                clearInterval(clockTimer);
+                clockTimer = null;
+            }
+        }
+
+        videoPlayer.addEventListener('timeupdate', () => {
+            if (!modoYoutube) {
+                playbackClock.textContent = formatearTiempo(videoPlayer.currentTime || 0);
+            }
+        });
+
+        // Filtro blindado contra bucles de repetición ("¡Vamos! ¡Vamos!...", "1, 1, 1...", etiquetas de música, etc.)
+        function limpiarTextoWhisper(raw) {
+            if (!raw) return "";
+            let limpio = raw
+                .replace(/[\[\(]\s*(música|music|risas|aplausos|sonido|silencio|inaudible|murmullos|suspiro|tos)[^\]\)]*[\]\)]/gi, '')
+                .replace(/¡?\s*Subtítulos\s+(realizados|creados|por)[^.?!]*[.?!]?/gi, '')
+                .replace(/¡?\s*Amara\.org[^.?!]*[.?!]?/gi, '')
+                .replace(/¡?\s*Gracias por ver el video[^.?!]*[.?!]?/gi, '')
+                // Cortar cualquier token/palabra repetida 3 o más veces seguidas incluso con signos (ej. "¡Vamos! ¡Vamos! ¡Vamos!")
+                .replace(/([¡¿]?\s*[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]+[!?.,;:]*)(\s*\1){2,}/gi, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            // Verificar diversidad de palabras: si una misma palabra ocupa más del 45% del bloque, es un bucle
+            const palabras = limpio.toLowerCase().match(/[a-zA-Záéíóúüñ]{2,}/g) || [];
+            if (palabras.length < 2) return "";
+
+            const conteo = {};
+            let maxRep = 0;
+            for (const p of palabras) {
+                conteo[p] = (conteo[p] || 0) + 1;
+                if (conteo[p] > maxRep) maxRep = conteo[p];
+            }
+            if (palabras.length >= 5 && (maxRep / palabras.length) > 0.45) {
+                return "";
+            }
+
+            return limpio;
+        }
+
+        function asegurarBloqueActivo() {
+            if (bloquesDocumento.length === 0) {
+                const t = obtenerTiempoActual();
+                bloquesDocumento.push({
+                    tiempoSeg: t,
+                    tiempoTxt: formatearTiempo(t),
+                    textoConfirmado: "",
+                    imagenBase64: null
+                });
+            }
+            return bloquesDocumento[bloquesDocumento.length - 1];
+        }
+
         function remuestrearA16k(float32Buffers, inputSampleRate) {
             let totalLen = 0;
             for (const b of float32Buffers) totalLen += b.length;
@@ -363,7 +392,6 @@
             const outLen = Math.floor(totalLen / ratio);
             const result = new Float32Array(outLen);
 
-            // Aplanar buffers
             const flat = new Float32Array(totalLen);
             let offset = 0;
             for (const b of float32Buffers) {
@@ -386,13 +414,12 @@
             const sampleRateOrigen = audioCaptureCtx ? audioCaptureCtx.sampleRate : 44100;
             const audio16k = remuestrearA16k(buffersAProcesar, sampleRateOrigen);
 
-            // Ignorar si es silencio (< 1 segundo o energía muy baja)
-            if (audio16k.length < 16000) return;
+            if (audio16k.length < 24000) return;
             let energia = 0;
             for (let i = 0; i < audio16k.length; i += 10) {
                 energia += Math.abs(audio16k[i]);
             }
-            if ((energia / (audio16k.length / 10)) < 0.004) return;
+            if ((energia / (audio16k.length / 10)) < 0.006) return;
 
             whisperOcupado = true;
             aiStatusBadge.style.display = 'inline-block';
@@ -407,24 +434,18 @@
                 const output = await transcriber(audio16k, {
                     language: 'spanish',
                     task: 'transcribe',
-                    chunk_length_s: 15,
-                    stride_length_s: 2
+                    chunk_length_s: 25,
+                    stride_length_s: 5,
+                    repetition_penalty: 1.25,
+                    no_repeat_ngram_size: 3
                 });
 
-                const textoLimpio = (output && output.text ? output.text : '').trim();
-                if (textoLimpio && textoLimpio.length > 2) {
-                    const sep = liveTranscriptBox.value.trim() ? ' ' : '';
-                    liveTranscriptBox.value += sep + textoLimpio;
-                    liveTranscriptBox.scrollTop = liveTranscriptBox.scrollHeight;
-                    actualizarEstadoBotonesExportacion();
-
-                    if (bloquesDocumento.length > 0) {
-                        const ultimo = bloquesDocumento[bloquesDocumento.length - 1];
-                        ultimo.textoConfirmado = ((ultimo.textoConfirmado || '') + ' ' + textoLimpio).trim();
-                        renderizarBloques();
-                    } else {
-                        guardarRespaldoLocal();
-                    }
+                const textoLimpio = limpiarTextoWhisper(output && output.text ? output.text : '');
+                if (textoLimpio && textoLimpio.length > 3) {
+                    const bloqueActual = asegurarBloqueActivo();
+                    const sep = bloqueActual.textoConfirmado ? ' ' : '';
+                    bloqueActual.textoConfirmado = (bloqueActual.textoConfirmado + sep + textoLimpio).trim();
+                    renderizarBloques();
                 }
             } catch (err) {
                 console.warn('Error Whisper:', err);
@@ -513,7 +534,7 @@
                 }
                 const promedioDiff = diff / (32 * 18 * 3);
 
-                if (promedioDiff > 18) {
+                if (promedioDiff > 24) {
                     lastFrameSignature = data;
                     return { cambio: true, diff: promedioDiff };
                 } else {
@@ -527,14 +548,22 @@
 
         function renderizarBloques() {
             const conImagen = bloquesDocumento.filter(b => b.imagenBase64).length;
-            blockCount.textContent = `${conImagen} ${conImagen === 1 ? 'captura' : 'capturas'}`;
+            blockCount.textContent = `${conImagen} ${conImagen === 1 ? 'filmina' : 'filminas'}`;
+
+            const textoTotal = bloquesDocumento.map(b => b.textoConfirmado || "").join(" ").trim();
+            const palabras = textoTotal ? textoTotal.split(/\s+/).length : 0;
+            wordCountBadge.textContent = `${palabras} palabras`;
+
             const bytesAprox = JSON.stringify(bloquesDocumento).length;
             memoryBadge.textContent = `${(bytesAprox / (1024 * 1024)).toFixed(1)} MB`;
 
-            actualizarEstadoBotonesExportacion();
+            const hayContenido = bloquesDocumento.length > 0;
+            exportWordBtn.disabled = !hayContenido;
+            exportPdfBtn.disabled = !hayContenido;
+            clearAllBtn.disabled = !hayContenido;
 
-            if (bloquesDocumento.length === 0) {
-                timelinePreview.innerHTML = `<p class="text-muted small text-center mt-4">Aún no hay capturas generadas.</p>`;
+            if (!hayContenido) {
+                timelinePreview.innerHTML = `<p class="text-muted small text-center mt-5">Aún no hay secciones generadas.</p>`;
                 return;
             }
 
@@ -543,11 +572,11 @@
                 return `
                     <div class="bloque-item">
                         <div class="d-flex justify-content-between align-items-center mb-1 no-print">
-                            <span class="badge bg-light text-primary border">Minuto ${b.tiempoTxt}</span>
+                            <span class="badge bg-light text-primary border">Sección ${idx + 1} · ⏱️ ${b.tiempoTxt}</span>
                             <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarBloque(${idx})">✕</button>
                         </div>
-                        <textarea class="form-control form-control-sm mt-1" rows="2" placeholder="Texto de esta filmina..." onchange="actualizarTextoBloque(${idx}, this.value)">${textoMostrar}</textarea>
-                        ${b.imagenBase64 ? `<img src="${b.imagenBase64}" class="bloque-img" alt="Captura ${b.tiempoTxt}">` : ''}
+                        <textarea class="form-control form-control-sm mt-1" rows="3" placeholder="Transcripción de esta sección..." onchange="actualizarTextoBloque(${idx}, this.value)">${textoMostrar}</textarea>
+                        ${b.imagenBase64 ? `<img src="${b.imagenBase64}" class="bloque-img" alt="Filmina ${idx + 1}">` : ''}
                     </div>
                 `;
             }).join('');
@@ -558,7 +587,7 @@
         window.actualizarTextoBloque = (idx, nuevoTexto) => {
             if (bloquesDocumento[idx]) {
                 bloquesDocumento[idx].textoConfirmado = nuevoTexto;
-                guardarRespaldoLocal();
+                renderizarBloques();
             }
         };
 
@@ -595,6 +624,7 @@
 
                 modoYoutube = true;
                 youtubeIdActual = ytId;
+                playbackClock.textContent = "00:00";
                 videoPlayer.pause();
                 videoPlayer.style.display = 'none';
                 youtubeFrame.style.display = 'block';
@@ -620,6 +650,7 @@
             modoYoutube = false;
             youtubeIdActual = null;
             corsBloqueado = false;
+            playbackClock.textContent = "00:00";
             youtubeFrame.style.display = 'none';
             youtubeFrame.src = '';
             videoPlayer.style.display = 'block';
@@ -637,6 +668,7 @@
             modoYoutube = false;
             youtubeIdActual = null;
             corsBloqueado = false;
+            playbackClock.textContent = "00:00";
             youtubeFrame.style.display = 'none';
             youtubeFrame.src = '';
             videoPlayer.style.display = 'block';
@@ -674,12 +706,8 @@
             const reader = new FileReader();
             reader.onload = (ev) => {
                 srtEntradas = parsearSubtitulos(ev.target.result);
-                if (srtEntradas.length > 0) {
-                    liveTranscriptBox.value = srtEntradas.map(s => s.texto).join(' ');
-                    actualizarEstadoBotonesExportacion();
-                    if (videoPlayer.src || modoYoutube) {
-                        autoProcessBtn.disabled = false;
-                    }
+                if (srtEntradas.length > 0 && (videoPlayer.src || modoYoutube)) {
+                    autoProcessBtn.disabled = false;
                 }
                 Toast.fire({ icon: 'success', title: `${srtEntradas.length} bloques de subtítulos cargados` });
             };
@@ -748,23 +776,29 @@
             Toast.fire({ icon: 'success', title: '¡Secciones de transcripción armadas!' });
         });
 
-        function guardarFotogramaCapturado(imgBase64) {
+        function cerrarSeccionConFilmina(imgBase64) {
             if (!imgBase64) return;
+            const bloqueActual = asegurarBloqueActivo();
+            bloqueActual.imagenBase64 = imgBase64;
+
             const t = obtenerTiempoActual();
             bloquesDocumento.push({
                 tiempoSeg: t,
                 tiempoTxt: formatearTiempo(t),
                 textoConfirmado: "",
-                imagenBase64: imgBase64
+                imagenBase64: null
             });
             renderizarBloques();
         }
 
         function detenerCapturaFotogramas() {
-            if (ultimoFotogramaEstable) {
-                guardarFotogramaCapturado(ultimoFotogramaEstable);
-                ultimoFotogramaEstable = null;
+            detenerRelojReproduccion();
+            const ultimo = bloquesDocumento[bloquesDocumento.length - 1];
+            if (ultimo && !ultimo.imagenBase64) {
+                ultimo.imagenBase64 = ultimoFotogramaEstable || capturarFotogramaActual();
+                renderizarBloques();
             }
+            ultimoFotogramaEstable = null;
 
             capturandoEscenas = false;
             if (sceneCheckTimer) {
@@ -775,7 +809,6 @@
                 clearInterval(whisperTimer);
                 whisperTimer = null;
             }
-            // Procesar el último tramo de audio pendiente
             procesarBloqueAudioConWhisper();
 
             if (audioProcessor) {
@@ -796,7 +829,6 @@
             liveTranscribeBtn.innerHTML = '▶️ Reproducir y Transcribir Audio Interno + Filminas';
         }
 
-        // Captura el audio interno de la pestaña (sin micrófono) para transcribir con Whisper IA + filminas
         liveTranscribeBtn.addEventListener('click', async () => {
             if (capturandoEscenas) {
                 if (modoYoutube) controlarReproductorYoutube('pauseVideo');
@@ -817,7 +849,7 @@
                 });
 
                 tabCaptureVideo = document.createElement('video');
-                tabCaptureVideo.muted = true; // Importante: muteado en este elemento oculto para que NO haga eco
+                tabCaptureVideo.muted = true;
                 tabCaptureVideo.srcObject = tabCaptureStream;
                 await tabCaptureVideo.play();
 
@@ -838,7 +870,7 @@
                     source.connect(audioProcessor);
                     audioProcessor.connect(audioCaptureCtx.destination);
                 } else {
-                    Swal.fire('Audio de pestaña no compartido', 'Para que la IA transcriba el audio del video, asegúrate de dejar marcado el interruptor "Compartir también el audio de la pestaña".', 'warning');
+                    Swal.fire('Audio de pestaña no compartido', 'Para que la IA transcriba el audio del video, deja encendido "Compartir también el audio de la pestaña".', 'warning');
                 }
             } catch {
                 Swal.fire('Permiso requerido', 'Selecciona esta pestaña y dale a Permitir para capturar el audio interno y las filminas.', 'info');
@@ -847,8 +879,11 @@
 
             capturandoEscenas = true;
             youtubeStartTime = Date.now();
+            iniciarRelojReproduccion();
             lastFrameSignature = null;
             ultimoFotogramaEstable = null;
+            asegurarBloqueActivo();
+            renderizarBloques();
 
             aiStatusBadge.style.display = 'inline-block';
             aiStatusBadge.className = 'badge bg-warning text-dark';
@@ -857,7 +892,6 @@
             liveTranscribeBtn.classList.add('mic-active');
             liveTranscribeBtn.innerHTML = '⏹️ Detener Reproducción y Transcripción';
 
-            // Pre-cargar modelo Whisper de inmediato
             if (window.whisperPipelineLoader) {
                 window.whisperPipelineLoader((msg) => {
                     aiStatusBadge.textContent = msg;
@@ -875,7 +909,6 @@
                 videoPlayer.play();
             }
 
-            // 1. Vigilante de filminas cada 1.5s
             sceneCheckTimer = setInterval(() => {
                 if (!capturandoEscenas) return;
                 if (!modoYoutube && videoPlayer.paused) return;
@@ -884,16 +917,19 @@
                 const estado = evaluarEstadoVisual();
 
                 if (estado.cambio && filminaAnteriorCompleta) {
-                    guardarFotogramaCapturado(filminaAnteriorCompleta);
+                    const bloqueActual = asegurarBloqueActivo();
+                    const tActual = obtenerTiempoActual();
+                    if ((tActual - bloqueActual.tiempoSeg) >= 6) {
+                        cerrarSeccionConFilmina(filminaAnteriorCompleta);
+                    }
                 }
-            }, 1500);
+            }, 2000);
 
-            // 2. Transcripción IA Whisper cada 12 segundos con el audio digital interno de la pestaña
             whisperTimer = setInterval(() => {
                 if (!capturandoEscenas) return;
                 if (!modoYoutube && videoPlayer.paused) return;
                 procesarBloqueAudioConWhisper();
-            }, 12000);
+            }, 18000);
         });
 
         videoPlayer.addEventListener('ended', detenerCapturaFotogramas);
@@ -901,17 +937,15 @@
         manualSnapBtn.addEventListener('click', () => {
             const img = capturarFotogramaActual();
             if (img) {
-                guardarFotogramaCapturado(img);
+                cerrarSeccionConFilmina(img);
                 Toast.fire({ icon: 'success', title: 'Diapositiva capturada' });
             } else {
                 Toast.fire({ icon: 'warning', title: 'Inicia primero la captura para tomar fotos' });
             }
         });
 
-        // Generar Documento Word (.doc) con transcripción completa + imágenes MHTML incrustadas
         exportWordBtn.addEventListener('click', () => {
-            const textoGlobal = liveTranscriptBox.value.trim();
-            if (bloquesDocumento.length === 0 && !textoGlobal) return;
+            if (bloquesDocumento.length === 0) return;
 
             const fechaHoy = new Date().toLocaleDateString('es-CR', {
                 year: 'numeric', month: 'long', day: 'numeric'
@@ -951,10 +985,6 @@
                     `;
                 }).join('');
 
-            const bloqueTextoCompletoHtml = textoGlobal
-                ? `<div style="margin-bottom: 16pt;"><p style="font-size: 11.5pt; text-align: justify; line-height: 1.6;">${textoGlobal.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</p></div>`
-                : '';
-
             const htmlBody = `<!DOCTYPE html>
 <html xmlns:o='urn:schemas-microsoft-com:office:office'
       xmlns:w='urn:schemas-microsoft-com:office:word'
@@ -971,7 +1001,6 @@
 <body>
     <h1>${nombreVideoActual}</h1>
     <div class="meta">Generado el ${fechaHoy} · Multimedia Online</div>
-    ${bloqueTextoCompletoHtml}
     ${seccionesHtml}
 </body>
 </html>`;
@@ -999,14 +1028,14 @@
         });
 
         exportPdfBtn.addEventListener('click', () => {
-            if (bloquesDocumento.length === 0 && !liveTranscriptBox.value.trim()) return;
+            if (bloquesDocumento.length === 0) return;
             window.print();
         });
 
         clearAllBtn.addEventListener('click', () => {
             detenerCapturaFotogramas();
+            playbackClock.textContent = "00:00";
             bloquesDocumento = [];
-            liveTranscriptBox.value = "";
             srtEntradas = [];
             nombreVideoActual = "Clase_Transcripcion";
             modoYoutube = false;
