@@ -45,18 +45,28 @@
         }
         #videoPlayer, #youtubeFrame {
             width: 100%;
-            height: 265px;
+            height: 260px;
             background: #000000;
             border-radius: 12px;
             border: none;
         }
+        #liveTranscriptBox {
+            width: 100%;
+            height: 145px;
+            resize: none;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            border-radius: 10px;
+            border: 1.5px solid #0d6efd;
+            background: #ffffff;
+        }
         #timelinePreview {
-            height: 365px;
-            max-height: 365px;
+            height: 215px;
+            max-height: 215px;
             overflow-y: auto;
             border: 1px solid #dee2e6;
             border-radius: 12px;
-            padding: 12px;
+            padding: 10px;
             background: #f8f9fa;
             text-align: left;
         }
@@ -65,15 +75,15 @@
             border: 1px solid #dee2e6;
             border-left: 4px solid #0d6efd;
             border-radius: 10px;
-            padding: 10px 12px;
-            margin-bottom: 12px;
+            padding: 8px 10px;
+            margin-bottom: 10px;
         }
         .bloque-img {
             max-width: 100%;
-            max-height: 195px;
+            max-height: 165px;
             border-radius: 8px;
             border: 1px solid #ced4da;
-            margin-top: 8px;
+            margin-top: 6px;
             display: block;
         }
         .mic-active {
@@ -110,7 +120,7 @@
         <div class="main-content">
             <div class="tool-box">
                 <h3 class="mb-1 fw-bold text-dark text-center">Transcripción y Fotogramas a Word</h3>
-                <p class="text-muted small mb-3 text-center">Pega un enlace (YouTube / .mp4) o sube el video de tu clase (hasta 3+ horas), captura diapositivas completas y transcripción en tiempo real y genera tu Word o PDF</p>
+                <p class="text-muted small mb-3 text-center">Pega un enlace (YouTube / .mp4) o sube el video de tu clase (hasta 3+ horas), visualiza la transcripción en vivo junto con las filminas y genera tu Word o PDF</p>
 
                 <!-- Cajetín de enlace, video local y subtítulos opcionales -->
                 <div class="row g-2 mb-3 text-start">
@@ -131,7 +141,7 @@
                     </div>
                 </div>
 
-                <!-- Dos columnas: Reproductor a la izquierda, Documento armado a la derecha -->
+                <!-- Dos columnas: Reproductor a la izquierda, Transcripción + Fotogramas a la derecha -->
                 <div class="row g-3 mb-3">
                     <div class="col-md-5 text-start">
                         <video id="videoPlayer" controls crossorigin="anonymous"></video>
@@ -151,19 +161,29 @@
                         </div>
                     </div>
 
-                    <div class="col-md-7">
+                    <div class="col-md-7 text-start">
+                        <!-- Panel superior: Transcripción completa visible en tiempo real -->
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-bold small text-secondary">📑 Documento en construcción (transcripción + filminas completas):</span>
+                            <label for="liveTranscriptBox" class="fw-bold small text-primary mb-0">📝 Transcripción en vivo (texto completo que irá al Word):</label>
                             <div>
                                 <span id="micStatusBadge" class="badge bg-secondary me-1" style="display: none;">🎙️ Escuchando...</span>
+                                <span id="wordCountBadge" class="badge bg-light text-dark border">0 palabras</span>
+                            </div>
+                        </div>
+                        <textarea id="liveTranscriptBox" class="form-control mb-2" placeholder="Aquí irá apareciendo en vivo todo lo que se habla en el video... También puedes escribir o corregir texto directamente aquí."></textarea>
+
+                        <!-- Panel inferior: Secciones y fotogramas capturados -->
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold small text-secondary">🖼️ Fotogramas y secciones sincronizadas:</span>
+                            <div>
                                 <span id="memoryBadge" class="badge bg-light text-secondary border me-1">0 MB</span>
-                                <span id="blockCount" class="badge bg-primary">0 secciones</span>
+                                <span id="blockCount" class="badge bg-primary">0 capturas</span>
                             </div>
                         </div>
                         <div id="timelinePreview">
-                            <p class="text-muted small text-center mt-5">
+                            <p class="text-muted small text-center mt-4">
                                 Pega el link de la clase o sube el video arriba.<br>
-                                Al darle a <b>Reproducir y Capturar</b>, se irá escribiendo en vivo todo lo hablado y, justo antes de cambiar cada filmina, se guardará su captura completa.
+                                Al darle a <b>Reproducir y Capturar</b>, verás la transcripción arriba y las capturas de cada filmina aquí abajo.
                             </p>
                         </div>
                     </div>
@@ -211,6 +231,8 @@
         const liveTranscribeBtn = document.getElementById('liveTranscribeBtn');
         const autoProcessBtn = document.getElementById('autoProcessBtn');
         const manualSnapBtn = document.getElementById('manualSnapBtn');
+        const liveTranscriptBox = document.getElementById('liveTranscriptBox');
+        const wordCountBadge = document.getElementById('wordCountBadge');
         const timelinePreview = document.getElementById('timelinePreview');
         const micStatusBadge = document.getElementById('micStatusBadge');
         const blockCount = document.getElementById('blockCount');
@@ -221,8 +243,9 @@
         const exportPdfBtn = document.getElementById('exportPdfBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
 
-        const STORAGE_KEY = "multimedia_doc_respaldo_v2";
+        const STORAGE_KEY = "multimedia_doc_respaldo_v3";
         let bloquesDocumento = []; // { tiempoSeg, tiempoTxt, textoConfirmado, textoIntermedio, imagenBase64 }
+        let textoGlobalConfirmado = "";
         let srtEntradas = [];
         let nombreVideoActual = "Clase_Transcripcion";
         let modoYoutube = false;
@@ -233,7 +256,7 @@
         let tabCaptureVideo = null;
         let sceneCheckTimer = null;
         let lastFrameSignature = null;
-        let ultimoFotogramaEstable = null; // Guarda la filmina completa antes de que cambie a la siguiente
+        let ultimoFotogramaEstable = null;
         let corsBloqueado = false;
 
         const Toast = Swal.mixin({
@@ -248,8 +271,10 @@
             const guardado = localStorage.getItem(STORAGE_KEY);
             if (guardado) {
                 const parsed = JSON.parse(guardado);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    bloquesDocumento = parsed;
+                if (parsed && Array.isArray(parsed.bloques)) {
+                    bloquesDocumento = parsed.bloques;
+                    textoGlobalConfirmado = parsed.textoGlobal || "";
+                    liveTranscriptBox.value = textoGlobalConfirmado;
                     renderizarBloques();
                 }
             }
@@ -257,10 +282,33 @@
 
         function guardarRespaldoLocal() {
             try {
-                const reciente = bloquesDocumento.slice(-60);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(reciente));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    textoGlobal: liveTranscriptBox.value,
+                    bloques: bloquesDocumento.slice(-60)
+                }));
             } catch {}
         }
+
+        function actualizarEstadoBotonesExportacion() {
+            const hayTexto = liveTranscriptBox.value.trim().length > 0;
+            const hayBloques = bloquesDocumento.length > 0;
+            const hayContenido = hayTexto || hayBloques;
+
+            exportWordBtn.disabled = !hayContenido;
+            exportPdfBtn.disabled = !hayContenido;
+            clearAllBtn.disabled = !hayContenido;
+
+            const palabras = hayTexto ? liveTranscriptBox.value.trim().split(/\s+/).length : 0;
+            wordCountBadge.textContent = `${palabras} palabras`;
+        }
+
+        liveTranscriptBox.addEventListener('input', () => {
+            if (!grabandoVivo) {
+                textoGlobalConfirmado = liveTranscriptBox.value;
+            }
+            actualizarEstadoBotonesExportacion();
+            guardarRespaldoLocal();
+        });
 
         function formatearTiempo(segundos) {
             const hrs = Math.floor(segundos / 3600);
@@ -284,7 +332,6 @@
                 : (videoPlayer.currentTime || 0);
         }
 
-        // Captura optimizada (640px ancho, JPEG 0.68)
         function capturarFotogramaActual() {
             if (!modoYoutube && videoPlayer.videoWidth && !corsBloqueado) {
                 try {
@@ -321,7 +368,6 @@
             return null;
         }
 
-        // Evalúa si cambió la filmina y actualiza el búfer de la filmina estable previa
         function evaluarEstadoVisual() {
             const tmpCanvas = document.createElement('canvas');
             tmpCanvas.width = 32;
@@ -361,11 +407,9 @@
                 const promedioDiff = diff / (32 * 18 * 3);
 
                 if (promedioDiff > 18) {
-                    // Hubo cambio a una nueva filmina: la foto que estaba en ultimoFotogramaEstable es la filmina anterior completa
                     lastFrameSignature = data;
                     return { cambio: true, diff: promedioDiff };
                 } else {
-                    // La filmina sigue siendo la misma: actualizar ultimoFotogramaEstable para capturar cualquier texto que haya aparecido al final de ella
                     ultimoFotogramaEstable = capturarFotogramaActual();
                     return { cambio: false, diff: promedioDiff };
                 }
@@ -389,17 +433,15 @@
         }
 
         function renderizarBloques() {
-            blockCount.textContent = `${bloquesDocumento.length} ${bloquesDocumento.length === 1 ? 'sección' : 'secciones'}`;
+            const conImagen = bloquesDocumento.filter(b => b.imagenBase64).length;
+            blockCount.textContent = `${conImagen} ${conImagen === 1 ? 'captura' : 'capturas'}`;
             const bytesAprox = JSON.stringify(bloquesDocumento).length;
             memoryBadge.textContent = `${(bytesAprox / (1024 * 1024)).toFixed(1)} MB`;
 
-            const hayBloques = bloquesDocumento.length > 0;
-            exportWordBtn.disabled = !hayBloques;
-            exportPdfBtn.disabled = !hayBloques;
-            clearAllBtn.disabled = !hayBloques;
+            actualizarEstadoBotonesExportacion();
 
-            if (!hayBloques) {
-                timelinePreview.innerHTML = `<p class="text-muted small text-center mt-5">Aún no hay secciones generadas.</p>`;
+            if (bloquesDocumento.length === 0) {
+                timelinePreview.innerHTML = `<p class="text-muted small text-center mt-4">Aún no hay capturas generadas.</p>`;
                 return;
             }
 
@@ -408,10 +450,10 @@
                 return `
                     <div class="bloque-item">
                         <div class="d-flex justify-content-between align-items-center mb-1 no-print">
-                            <span class="badge bg-light text-primary border">Control: ${b.tiempoTxt}</span>
+                            <span class="badge bg-light text-primary border">Minuto ${b.tiempoTxt}</span>
                             <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarBloque(${idx})">✕</button>
                         </div>
-                        <textarea class="form-control form-control-sm mt-1" rows="3" placeholder="Transcripción de esta sección..." onchange="actualizarTextoBloque(${idx}, this.value)">${textoMostrar}</textarea>
+                        <textarea class="form-control form-control-sm mt-1" rows="2" placeholder="Texto asociado a esta filmina..." onchange="actualizarTextoBloque(${idx}, this.value)">${textoMostrar}</textarea>
                         ${b.imagenBase64 ? `<img src="${b.imagenBase64}" class="bloque-img" alt="Captura ${b.tiempoTxt}">` : ''}
                     </div>
                 `;
@@ -479,7 +521,12 @@
                     nombreVideoActual = `YouTube_${ytId}`;
                 }
 
-                const instancias = ['https://pipedapi.kavin.rocks', 'https://pipedapi.adminforge.de'];
+                // Intentar traer subtítulos automáticos de YouTube vía múltiples espejos públicos
+                const instancias = [
+                    'https://pipedapi.kavin.rocks',
+                    'https://pipedapi.adminforge.de',
+                    'https://api.piped.projectsegfau.lt'
+                ];
                 for (const host of instancias) {
                     try {
                         const res = await fetch(`${host}/streams/${ytId}`);
@@ -493,7 +540,10 @@
                                     srtEntradas = parsearSubtitulos(await vttResp.text());
                                     if (srtEntradas.length > 0) {
                                         autoProcessBtn.disabled = false;
-                                        Toast.fire({ icon: 'success', title: '¡Subtítulos detectados! También puedes usar Procesar Rápido.' });
+                                        textoGlobalConfirmado = srtEntradas.map(s => s.texto).join(' ');
+                                        liveTranscriptBox.value = textoGlobalConfirmado;
+                                        actualizarEstadoBotonesExportacion();
+                                        Toast.fire({ icon: 'success', title: '¡Transcripción automática de YouTube cargada!' });
                                         return;
                                     }
                                 }
@@ -563,15 +613,20 @@
             const reader = new FileReader();
             reader.onload = (ev) => {
                 srtEntradas = parsearSubtitulos(ev.target.result);
-                if (srtEntradas.length > 0 && (videoPlayer.src || modoYoutube)) {
-                    autoProcessBtn.disabled = false;
+                if (srtEntradas.length > 0) {
+                    textoGlobalConfirmado = srtEntradas.map(s => s.texto).join(' ');
+                    liveTranscriptBox.value = textoGlobalConfirmado;
+                    actualizarEstadoBotonesExportacion();
+                    if (videoPlayer.src || modoYoutube) {
+                        autoProcessBtn.disabled = false;
+                    }
                 }
                 Toast.fire({ icon: 'success', title: `${srtEntradas.length} bloques de subtítulos cargados` });
             };
             reader.readAsText(file, 'UTF-8');
         });
 
-        // MODO RÁPIDO: Procesar toda la clase desde subtítulos + capturas al final de cada tramo (antes de que cambie de filmina)
+        // MODO RÁPIDO: Procesar desde subtítulos + capturas al final de cada tramo
         autoProcessBtn.addEventListener('click', async () => {
             if (srtEntradas.length === 0) return;
 
@@ -612,7 +667,6 @@
                             resolve();
                         };
                         videoPlayer.addEventListener('seeked', onSeeked);
-                        // Posicionar justo antes del cierre de ese bloque para capturar la filmina ya completa
                         const targetTime = Math.max(g.tiempoSeg, (g.tiempoFin || g.tiempoSeg) - 1.0);
                         videoPlayer.currentTime = Math.min(targetTime, videoPlayer.duration || targetTime);
                     });
@@ -637,7 +691,7 @@
             Toast.fire({ icon: 'success', title: '¡Transcripción completa generada!' });
         });
 
-        // MODO EN VIVO: Transcripción continua en tiempo real + Captura de filmina completa ANTES de cambiar
+        // MODO EN VIVO: Transcripción continua en cuadro superior + Captura de filminas en cuadro inferior
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = null;
 
@@ -650,7 +704,7 @@
             recognition.onstart = () => {
                 micStatusBadge.style.display = 'inline-block';
                 micStatusBadge.className = 'badge bg-danger me-1';
-                micStatusBadge.textContent = '🎙️ Transcribiendo voz...';
+                micStatusBadge.textContent = '🎙️ Transcribiendo en vivo...';
             };
 
             recognition.onresult = (event) => {
@@ -671,13 +725,22 @@
                 if (textoFinalNuevo) {
                     let limpio = textoFinalNuevo.trim();
                     if (limpio) {
-                        if (!bloqueActual.textoConfirmado || /[.?!]\s*$/.test(bloqueActual.textoConfirmado)) {
+                        if (!textoGlobalConfirmado || /[.?!\n]\s*$/.test(textoGlobalConfirmado)) {
                             limpio = limpio.charAt(0).toUpperCase() + limpio.slice(1);
                         }
-                        const sep = bloqueActual.textoConfirmado ? ' ' : '';
-                        bloqueActual.textoConfirmado += sep + limpio + '.';
+                        const sepGlobal = textoGlobalConfirmado && !textoGlobalConfirmado.endsWith(' ') && !textoGlobalConfirmado.endsWith('\n') ? ' ' : '';
+                        textoGlobalConfirmado += sepGlobal + limpio + '.';
+
+                        const sepBloque = bloqueActual.textoConfirmado ? ' ' : '';
+                        bloqueActual.textoConfirmado += sepBloque + limpio + '.';
                     }
                 }
+
+                // Actualizar cuadro superior en vivo palabra por palabra
+                const sepInt = textoGlobalConfirmado && textoIntermedio && !textoGlobalConfirmado.endsWith(' ') ? ' ' : '';
+                liveTranscriptBox.value = textoGlobalConfirmado + sepInt + textoIntermedio.trim();
+                liveTranscriptBox.scrollTop = liveTranscriptBox.scrollHeight;
+                actualizarEstadoBotonesExportacion();
 
                 bloqueActual.textoIntermedio = textoIntermedio.trim();
                 renderizarBloques();
@@ -703,13 +766,11 @@
             if (capturaPrevia) {
                 bloqueActual.imagenBase64 = capturaPrevia;
             }
-            // Consolidar texto intermedio antes de abrir el siguiente bloque
             if (bloqueActual.textoIntermedio && bloqueActual.textoIntermedio.trim()) {
                 const sep = bloqueActual.textoConfirmado ? ' ' : '';
                 bloqueActual.textoConfirmado += sep + bloqueActual.textoIntermedio.trim() + '.';
                 bloqueActual.textoIntermedio = '';
             }
-            // Abrir nuevo bloque vacío para la siguiente filmina
             const t = obtenerTiempoActual();
             bloquesDocumento.push({
                 tiempoSeg: t,
@@ -722,7 +783,6 @@
         }
 
         function detenerCapturaEnVivo() {
-            // Al detener, guardar la última filmina que quedó en pantalla y consolidar cualquier texto pendiente
             const bloqueFinal = bloquesDocumento[bloquesDocumento.length - 1];
             if (bloqueFinal) {
                 if (bloqueFinal.textoIntermedio && bloqueFinal.textoIntermedio.trim()) {
@@ -735,6 +795,9 @@
                 }
                 renderizarBloques();
             }
+
+            liveTranscriptBox.value = textoGlobalConfirmado;
+            actualizarEstadoBotonesExportacion();
 
             grabandoVivo = false;
             micStatusBadge.style.display = 'none';
@@ -769,7 +832,7 @@
                 try {
                     tabCaptureStream = await navigator.mediaDevices.getDisplayMedia({
                         video: { displaySurface: 'browser' },
-                        audio: false,
+                        audio: true,
                         preferCurrentTab: true
                     });
                     tabCaptureVideo = document.createElement('video');
@@ -781,6 +844,7 @@
             }
 
             grabandoVivo = true;
+            textoGlobalConfirmado = liveTranscriptBox.value;
             youtubeStartTime = Date.now();
             lastFrameSignature = null;
             ultimoFotogramaEstable = null;
@@ -796,7 +860,6 @@
 
             try { recognition.start(); } catch {}
 
-            // Revisar cada 1.5 segundos: mantiene actualizada la filmina estable y, justo cuando detecta el cambio a una nueva, guarda la anterior completa
             sceneCheckTimer = setInterval(() => {
                 if (!grabandoVivo) return;
                 if (!modoYoutube && videoPlayer.paused) return;
@@ -816,15 +879,15 @@
 
         videoPlayer.addEventListener('ended', detenerCapturaEnVivo);
 
-        // Captura manual en cualquier momento
         manualSnapBtn.addEventListener('click', () => {
             const img = capturarFotogramaActual();
             cerrarBloqueConCapturaPrevia(img);
         });
 
-        // Generar Documento Word (.doc) con imágenes incrustadas vía MHTML multiparte (compatibilidad total en Word)
+        // Generar Documento Word (.doc) con transcripción completa + imágenes MHTML incrustadas
         exportWordBtn.addEventListener('click', () => {
-            if (bloquesDocumento.length === 0) return;
+            const textoGlobal = liveTranscriptBox.value.trim();
+            if (bloquesDocumento.length === 0 && !textoGlobal) return;
 
             const fechaHoy = new Date().toLocaleDateString('es-CR', {
                 year: 'numeric', month: 'long', day: 'numeric'
@@ -864,6 +927,12 @@
                     `;
                 }).join('');
 
+            // Si hay texto en el cuadro superior que no quedó en secciones individuales, incluirlo completo arriba
+            const hayTextoEnSecciones = bloquesDocumento.some(b => (b.textoConfirmado && b.textoConfirmado.trim()));
+            const bloqueTextoCompletoHtml = (!hayTextoEnSecciones && textoGlobal)
+                ? `<div style="margin-bottom: 16pt;"><p style="font-size: 11.5pt; text-align: justify; line-height: 1.6;">${textoGlobal.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</p></div>`
+                : '';
+
             const htmlBody = `<!DOCTYPE html>
 <html xmlns:o='urn:schemas-microsoft-com:office:office'
       xmlns:w='urn:schemas-microsoft-com:office:word'
@@ -880,6 +949,7 @@
 <body>
     <h1>${nombreVideoActual}</h1>
     <div class="meta">Generado el ${fechaHoy} · Multimedia Online</div>
+    ${bloqueTextoCompletoHtml}
     ${seccionesHtml}
 </body>
 </html>`;
@@ -907,13 +977,15 @@
         });
 
         exportPdfBtn.addEventListener('click', () => {
-            if (bloquesDocumento.length === 0) return;
+            if (bloquesDocumento.length === 0 && !liveTranscriptBox.value.trim()) return;
             window.print();
         });
 
         clearAllBtn.addEventListener('click', () => {
             detenerCapturaEnVivo();
             bloquesDocumento = [];
+            textoGlobalConfirmado = "";
+            liveTranscriptBox.value = "";
             srtEntradas = [];
             nombreVideoActual = "Clase_Transcripcion";
             modoYoutube = false;
