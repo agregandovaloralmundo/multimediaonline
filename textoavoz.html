@@ -94,10 +94,10 @@
                     <textarea id="textContent" class="form-control" placeholder="Escribe aquí, carga un archivo .txt o presiona 'Dictar por Voz' para hablar y escribir directamente adentro de este cuadro..."></textarea>
                 </div>
 
-                <!-- Medidor de nivel de voz del micrófono en vivo -->
+                <!-- Medidor de nivel de voz / audio en vivo -->
                 <div id="vuWrapper" class="mb-3 text-start" style="display: none;">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <small class="fw-bold text-secondary">🎙️ Nivel de señal del micrófono:</small>
+                        <small id="vuLabel" class="fw-bold text-secondary">🎙️ Nivel de señal del micrófono:</small>
                         <small id="vuPercent" class="text-muted">0%</small>
                     </div>
                     <div class="progress" style="height: 8px;">
@@ -170,6 +170,7 @@
         const saveTxtButton = document.getElementById('saveTxtButton');
         const clearTextButton = document.getElementById('clearTextButton');
         const vuWrapper = document.getElementById('vuWrapper');
+        const vuLabel = document.getElementById('vuLabel');
         const vuPercent = document.getElementById('vuPercent');
         const vuBar = document.getElementById('vuBar');
         const voiceSelect = document.getElementById('voiceSelect');
@@ -184,6 +185,10 @@
         const progressBar = document.getElementById('progressBar');
 
         let voices = [];
+        let activeStream = null;
+        let audioCtx = null;
+        let processor = null;
+        let recordedBuffers = [];
         let micStream = null;
         let micAudioCtx = null;
         let micAnimId = null;
@@ -316,6 +321,8 @@
                 source.connect(analyser);
 
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                vuLabel.textContent = '🎙️ Nivel de señal del micrófono:';
+                vuBar.className = 'progress-bar bg-danger';
                 vuWrapper.style.display = 'block';
 
                 function actualizarVu() {
@@ -449,7 +456,7 @@
         });
 
         // ==========================================
-        // 2. ESCUCHAR EN VOZ ALTA (LECTURA CONTINUA)
+        // 2. ESCUCHAR EN VOZ ALTA Y GRABAR VOZ REAL EN MP3
         // ==========================================
         function cargarVoces() {
             voices = synth.getVoices();
@@ -563,20 +570,13 @@
             }
         }
 
-        speakButton.addEventListener('click', () => {
-            const texto = textContent.value.trim();
-            if (!texto) {
-                Swal.fire({ title: 'Texto vacío', text: 'Escribe, dicta o carga un texto primero.', icon: 'warning', confirmButtonColor: '#0d6efd' });
-                return;
-            }
-
+        function reproducirSecuencia(fragmentos, esGrabacion) {
             if (dictando) {
                 dictando = false;
                 recognition.stop();
                 restaurarBotonDictado();
             }
 
-            const fragmentos = dividirEnFragmentos(texto);
             canceladoManual = false;
             let indice = 0;
 
@@ -597,7 +597,12 @@
                     detenerKeepAlive();
                     progressBar.style.width = '100%';
                     actualizarBotones(false, false);
-                    setTimeout(() => { progressWrapper.style.display = 'none'; }, 800);
+
+                    if (esGrabacion) {
+                        setTimeout(() => detenerCapturaAudio(true), 400);
+                    } else {
+                        setTimeout(() => { progressWrapper.style.display = 'none'; }, 800);
+                    }
                     return;
                 }
 
@@ -626,191 +631,33 @@
 
             synth.cancel();
             leerSiguiente();
+        }
+
+        speakButton.addEventListener('click', () => {
+            const texto = textContent.value.trim();
+            if (!texto) {
+                Swal.fire({ title: 'Texto vacío', text: 'Escribe, dicta o carga un texto primero.', icon: 'warning', confirmButtonColor: '#0d6efd' });
+                return;
+            }
+            const fragmentos = dividirEnFragmentos(texto);
+            reproducirSecuencia(fragmentos, false);
         });
 
-        // ==========================================
-        // 3. SINTETIZADOR ARTICULATORIO DE TRACTO VOCAL (SIN CHILLIDO, 100% EN MEMORIA) -> MP3
-        // ==========================================
-        function textoAFonemas(texto) {
-            let t = " " + texto.toLowerCase() + " ";
-            t = t
-                .replace(/ch/g, 'C')
-                .replace(/ll/g, 'Y')
-                .replace(/rr/g, 'R')
-                .replace(/qu([ei])/g, 'k$1')
-                .replace(/gu([ei])/g, 'g$1')
-                .replace(/c([eiéí])/g, 's$1')
-                .replace(/g([eiéí])/g, 'j$1')
-                .replace(/([aeiouáéíóú])r([aeiouáéíóú])/g, '$14$2')
-                .replace(/^ r/g, ' R')
-                .replace(/([lns])r/g, '$1R')
-                .replace(/h/g, '')
-                .replace(/v/g, 'b')
-                .replace(/z/g, 's')
-                .replace(/c/g, 'k')
-                .replace(/q/g, 'k')
-                .replace(/y\b/g, 'i')
-                .replace(/y/g, 'Y');
-            return t.trim();
-        }
-
-        // [F1, F2, F3, anchoBanda, durMs, tipo: 0=vocal, 1=sonora, 2=fricativa, 3=oclusiva]
-        const FONEMAS_DB = {
-            'a': [750, 1180, 2550, 85, 82, 0],
-            'á': [780, 1200, 2580, 85, 100, 0],
-            'e': [480, 1920, 2550, 80, 80, 0],
-            'é': [500, 1960, 2600, 80, 98, 0],
-            'i': [280, 2320, 3050, 75, 76, 0],
-            'í': [280, 2360, 3100, 75, 94, 0],
-            'o': [520, 880, 2450, 80, 82, 0],
-            'ó': [540, 860, 2480, 80, 100, 0],
-            'u': [310, 820, 2260, 75, 78, 0],
-            'ú': [310, 800, 2280, 75, 96, 0],
-            'ü': [310, 820, 2260, 75, 78, 0],
-            'm': [260, 950, 2200, 95, 64, 1],
-            'n': [260, 1450, 2350, 95, 60, 1],
-            'ñ': [260, 1950, 2600, 95, 70, 1],
-            'l': [360, 1350, 2450, 90, 58, 1],
-            'Y': [290, 2150, 2850, 90, 64, 1],
-            '4': [420, 1380, 2300, 100, 36, 1],
-            'R': [430, 1350, 2250, 100, 78, 1],
-            'b': [220, 850, 2150, 110, 48, 1],
-            'd': [230, 1550, 2450, 110, 46, 1],
-            'g': [230, 1150, 2250, 110, 48, 1],
-            's': [4600, 6000, 7200, 450, 70, 2],
-            'f': [1800, 4000, 5800, 520, 62, 2],
-            'j': [1500, 3000, 4600, 480, 66, 2],
-            'C': [2700, 4500, 6000, 420, 70, 2],
-            'x': [4000, 5600, 7000, 450, 72, 2],
-            'p': [200, 800, 2100, 130, 46, 3],
-            't': [200, 1600, 2500, 130, 44, 3],
-            'k': [200, 1200, 2300, 130, 46, 3]
-        };
-
-        function sintetizarTextoEnMemoria(texto, rate) {
-            const sampleRate = 22050;
-            const fonemas = textoAFonemas(texto);
-            const durFactor = 1.0 / rate;
-            const totalEstimado = Math.ceil((fonemas.length + 12) * 0.09 * durFactor * sampleRate);
-            const buffer = new Float32Array(totalEstimado);
-
-            let pos = 0;
-            let faseGlotal = 0;
-            let y1_1 = 0, y2_1 = 0, y1_2 = 0, y2_2 = 0, y1_3 = 0, y2_3 = 0;
-            let prevF1 = 500, prevF2 = 1400, prevF3 = 2500;
-            let lpPrev = 0;
-
-            for (let i = 0; i < fonemas.length; i++) {
-                const f = fonemas[i];
-
-                if (f === ' ') {
-                    pos += Math.floor(0.044 * durFactor * sampleRate);
-                    continue;
-                }
-                if (f === ',' || f === ';') {
-                    pos += Math.floor(0.17 * durFactor * sampleRate);
-                    continue;
-                }
-                if (f === '.' || f === '?' || f === '!' || f === '\n') {
-                    pos += Math.floor(0.32 * durFactor * sampleRate);
-                    continue;
-                }
-
-                const def = FONEMAS_DB[f];
-                if (!def) continue;
-
-                const [targetF1, targetF2, targetF3, bw, durMs, tipo] = def;
-                const numSamples = Math.max(120, Math.floor((durMs / 1000) * durFactor * sampleRate));
-
-                const posEnFrase = (i % 55) / 55;
-                const esAcentuada = /[áéíóú]/.test(f);
-                const f0Base = (120 - 16 * posEnFrase) * (esAcentuada ? 1.11 : 1.0);
-
-                for (let n = 0; n < numSamples && (pos + n) < buffer.length; n++) {
-                    const tNorm = n / numSamples;
-                    const blend = tNorm < 0.38 ? (tNorm / 0.38) : 1.0;
-                    const f1 = prevF1 + (targetF1 - prevF1) * blend;
-                    const f2 = prevF2 + (targetF2 - prevF2) * blend;
-                    const f3 = prevF3 + (targetF3 - prevF3) * blend;
-
-                    let excitacion = 0;
-                    let ganancia = 0.85;
-
-                    if (tipo === 0 || tipo === 1) {
-                        const f0 = f0Base * (1 + 0.007 * Math.sin(2 * Math.PI * 5.0 * (pos + n) / sampleRate));
-                        faseGlotal += f0 / sampleRate;
-                        if (faseGlotal >= 1.0) faseGlotal -= 1.0;
-
-                        if (faseGlotal < 0.45) {
-                            excitacion = Math.sin((Math.PI * faseGlotal) / 0.45);
-                        } else if (faseGlotal < 0.60) {
-                            excitacion = -0.35 * Math.sin((Math.PI * (faseGlotal - 0.45)) / 0.15);
-                        } else {
-                            excitacion = 0;
-                        }
-
-                        if (f === 'R') {
-                            const trino = 0.45 + 0.55 * Math.abs(Math.sin(2 * Math.PI * 26 * n / sampleRate));
-                            excitacion *= trino;
-                        } else if (f === '4') {
-                            const tap = Math.abs(tNorm - 0.5) < 0.22 ? 0.25 : 1.0;
-                            excitacion *= tap;
-                        }
-
-                        if (tipo === 1) ganancia = 0.52;
-                    } else if (tipo === 2) {
-                        excitacion = (Math.random() * 2 - 1) * 0.42;
-                        ganancia = 0.40;
-                    } else if (tipo === 3) {
-                        if (tNorm < 0.60) {
-                            excitacion = 0;
-                        } else {
-                            excitacion = (Math.random() * 2 - 1) * Math.exp(-(tNorm - 0.60) * 14);
-                        }
-                        ganancia = 0.52;
-                    }
-
-                    const r1 = Math.exp(-Math.PI * bw / sampleRate);
-                    const c1 = 2 * r1 * Math.cos(2 * Math.PI * f1 / sampleRate);
-                    const out1 = (1 - r1) * excitacion + c1 * y1_1 - (r1 * r1) * y2_1;
-                    y2_1 = y1_1; y1_1 = out1;
-
-                    const r2 = Math.exp(-Math.PI * (bw * 1.2) / sampleRate);
-                    const c2 = 2 * r2 * Math.cos(2 * Math.PI * f2 / sampleRate);
-                    const out2 = (1 - r2) * excitacion + c2 * y1_2 - (r2 * r2) * y2_2;
-                    y2_2 = y1_2; y1_2 = out2;
-
-                    const r3 = Math.exp(-Math.PI * (bw * 1.5) / sampleRate);
-                    const c3 = 2 * r3 * Math.cos(2 * Math.PI * f3 / sampleRate);
-                    const out3 = (1 - r3) * excitacion + c3 * y1_3 - (r3 * r3) * y2_3;
-                    y2_3 = y1_3; y1_3 = out3;
-
-                    const env = Math.min(1, tNorm * 10) * Math.min(1, (1 - tNorm) * 10);
-                    let señal = (out1 * 0.64 + out2 * 0.26 + out3 * 0.10) * ganancia * env * 2.2;
-
-                    // Filtro paso-bajo suave para eliminar cualquier chillido agudo
-                    lpPrev = lpPrev + 0.58 * (señal - lpPrev);
-                    buffer[pos + n] = Math.max(-0.96, Math.min(0.96, lpPrev));
-                }
-
-                prevF1 = targetF1;
-                prevF2 = targetF2;
-                prevF3 = targetF3;
-                pos += numSamples;
-            }
-
-            return { samples: buffer.subarray(0, pos), sampleRate };
-        }
-
-        function codificarFloat32AMp3(floatArr, sampleRate) {
+        function codificarFloat32AMp3(buffers, sampleRate) {
             const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
             const mp3Data = [];
             const blockSize = 1152;
-            const samples = new Int16Array(floatArr.length);
 
-            for (let i = 0; i < floatArr.length; i++) {
-                const s = Math.max(-1, Math.min(1, floatArr[i]));
-                samples[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            let totalLength = 0;
+            buffers.forEach(b => totalLength += b.length);
+            const samples = new Int16Array(totalLength);
+            let offset = 0;
+
+            for (const arr of buffers) {
+                for (let i = 0; i < arr.length; i++) {
+                    const s = Math.max(-1, Math.min(1, arr[i]));
+                    samples[offset++] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                }
             }
 
             for (let i = 0; i < samples.length; i += blockSize) {
@@ -824,53 +671,109 @@
             return new Blob(mp3Data, { type: 'audio/mp3' });
         }
 
-        recordMp3Button.addEventListener('click', () => {
+        function detenerCapturaAudio(descargar = false) {
+            vuWrapper.style.display = 'none';
+            vuBar.style.width = '0%';
+            vuPercent.textContent = '0%';
+
+            if (processor) {
+                processor.disconnect();
+                processor = null;
+            }
+            if (activeStream) {
+                activeStream.getTracks().forEach(t => t.stop());
+                activeStream = null;
+            }
+            const rate = audioCtx ? audioCtx.sampleRate : 44100;
+            if (audioCtx) {
+                audioCtx.close();
+                audioCtx = null;
+            }
+
+            if (descargar && recordedBuffers.length > 0) {
+                const mp3Blob = codificarFloat32AMp3(recordedBuffers, rate);
+                const url = URL.createObjectURL(mp3Blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `voz_multimedia_${Date.now()}.mp3`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                Toast.fire({ icon: 'success', title: '¡MP3 con voz real descargado!' });
+            }
+            recordedBuffers = [];
+            setTimeout(() => { progressWrapper.style.display = 'none'; }, 800);
+        }
+
+        recordMp3Button.addEventListener('click', async () => {
             const texto = textContent.value.trim();
             if (!texto) {
                 Swal.fire({ title: 'Texto vacío', text: 'Escribe, dicta o carga un texto primero.', icon: 'warning', confirmButtonColor: '#0d6efd' });
                 return;
             }
 
-            if (dictando) {
-                dictando = false;
-                recognition.stop();
-                restaurarBotonDictado();
-            }
+            await Swal.fire({
+                title: 'Grabar Voz Humana en MP3',
+                html: 'Para capturar la voz real de <b>Google Español</b> en Windows:<br><br>1. En la ventana que sigue, haz clic arriba en <b>"Toda la pantalla"</b>.<br>2. Selecciona tu pantalla y activa el interruptor azul <b>"Compartir también el audio del sistema"</b>.',
+                icon: 'info',
+                confirmButtonColor: '#198754',
+                confirmButtonText: 'Continuar'
+            });
 
-            const textoOriginalBtn = recordMp3Button.innerHTML;
-            recordMp3Button.disabled = true;
-            speakButton.disabled = true;
-            recordMp3Button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Generando...';
-            progressWrapper.style.display = 'block';
-            progressBar.style.width = '45%';
+            try {
+                activeStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false
+                    },
+                    systemAudio: 'include'
+                });
 
-            setTimeout(() => {
-                try {
-                    const rate = parseFloat(rateRange.value) || 1.0;
-                    const { samples, sampleRate } = sintetizarTextoEnMemoria(texto, rate);
-                    progressBar.style.width = '85%';
-
-                    const mp3Blob = codificarFloat32AMp3(samples, sampleRate);
-                    const url = URL.createObjectURL(mp3Blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `voz_multimedia_${Date.now()}.mp3`;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    URL.revokeObjectURL(url);
-
-                    progressBar.style.width = '100%';
-                    Toast.fire({ icon: 'success', title: '¡MP3 descargado!' });
-                } catch (e) {
-                    Swal.fire('Aviso', 'No se pudo codificar el archivo MP3.', 'error');
-                } finally {
-                    recordMp3Button.disabled = false;
-                    speakButton.disabled = false;
-                    recordMp3Button.innerHTML = textoOriginalBtn;
-                    setTimeout(() => { progressWrapper.style.display = 'none'; }, 700);
+                const audioTracks = activeStream.getAudioTracks();
+                if (audioTracks.length === 0) {
+                    activeStream.getTracks().forEach(t => t.stop());
+                    Swal.fire('Faltó el interruptor de audio', 'Recuerda activar "Compartir también el audio del sistema" antes de darle a Compartir.', 'warning');
+                    return;
                 }
-            }, 60);
+
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') {
+                    await audioCtx.resume();
+                }
+
+                const source = audioCtx.createMediaStreamSource(new MediaStream(audioTracks));
+                processor = audioCtx.createScriptProcessor(4096, 1, 1);
+                recordedBuffers = [];
+
+                vuLabel.textContent = '🎚️ Nivel de voz capturado para MP3:';
+                vuBar.className = 'progress-bar bg-success';
+                vuWrapper.style.display = 'block';
+
+                processor.onaudioprocess = (e) => {
+                    const input = e.inputBuffer.getChannelData(0);
+                    recordedBuffers.push(new Float32Array(input));
+
+                    let max = 0;
+                    for (let i = 0; i < input.length; i++) {
+                        const abs = Math.abs(input[i]);
+                        if (abs > max) max = abs;
+                    }
+                    const pct = Math.min(100, Math.round(max * 350));
+                    vuBar.style.width = `${pct}%`;
+                    vuPercent.textContent = `${pct}%`;
+                };
+
+                source.connect(processor);
+                processor.connect(audioCtx.destination);
+
+                const fragmentos = dividirEnFragmentos(texto);
+                reproducirSecuencia(fragmentos, true);
+            } catch (err) {
+                detenerCapturaAudio(false);
+            }
         });
 
         pauseButton.addEventListener('click', () => {
@@ -891,6 +794,7 @@
             canceladoManual = true;
             detenerKeepAlive();
             synth.cancel();
+            detenerCapturaAudio(false);
             progressWrapper.style.display = 'none';
             actualizarBotones(false, false);
         });
