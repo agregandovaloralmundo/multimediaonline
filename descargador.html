@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+        if (localStorage.getItem("grabando") === "true") {
+            alert("⛔ Esta función está deshabilitada temporalmente porque hay una grabación en curso. Detén la grabación o espera a que finalice.");
+            window.history.back();
+        }
+    </script>
+    <title>Multimedia Online - Descargar Videos</title>
+    <meta name="description" content="Descarga y gestiona tus videos y archivos multimedia libres de forma rápida y gratuita en Multimedia Online." />
+    <meta name="author" content="Lic. Antonio Ramírez Bogantes" />
+    <link rel="icon" type="image/x-icon" href="img/principal.ico" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        .main-wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem 1rem;
+        }
+        .downloader-box {
+            width: 100%;
+            max-width: 560px;
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-top: 5px solid #0d6efd;
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+        .mascot-img {
+            width: 140px;
+            height: auto;
+            margin-bottom: 12px;
+        }
+        .thumb-img, .video-preview {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border: 2px solid #dee2e6;
+            max-height: 240px;
+            object-fit: cover;
+            background: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+        <!-- Barra de navegación compartida -->
+        <div id="navbar-placeholder"></div>
+        <script src="navbar.js"></script>
+
+        <!-- Contenido Principal -->
+        <div class="main-content">
+            <div class="downloader-box">
+                <img src="img/videos.png" alt="Descargar Videos" class="mascot-img" onerror="this.style.display='none'">
+                <h2 class="mb-1 fw-bold">Descargar Videos</h2>
+                <p class="text-muted small mb-4">Pega el enlace del video o archivo multimedia para analizar y descargar</p>
+
+                <div id="inputBox">
+                    <div class="input-group input-group-lg">
+                        <input type="text" id="urlInput" class="form-control" placeholder="Pega el link aquí..." autofocus>
+                        <button class="btn btn-primary fw-bold px-4" id="btnAnalizar" onclick="analizarVideo()">🔍 Analizar</button>
+                    </div>
+                </div>
+
+                <div id="previewArea" style="display: none;" class="mt-4">
+                    <img id="videoThumb" src="" class="thumb-img" style="display:none;">
+                    <video id="videoPlayer" class="video-preview" controls style="display:none;"></video>
+                    <div id="videoTitle" class="fw-bold text-dark mb-3"></div>
+
+                    <a id="btnDownloadVideo" href="#" target="_blank" rel="noopener" class="btn btn-success btn-lg w-100 fw-bold mb-2" onclick="marcarExito()">
+                        ⬇️ Descargar Video (MP4)
+                    </a>
+                    <a id="btnDownloadAudio" href="#" target="_blank" rel="noopener" class="btn btn-outline-primary w-100 fw-bold mb-2" style="display:none;" onclick="marcarExito()">
+                        🎵 Descargar Solo Audio (MP3)
+                    </a>
+                    <button class="btn btn-sm btn-secondary mt-2" onclick="reset()">
+                        🔄 Analizar otro enlace
+                    </button>
+                </div>
+
+                <div id="loader" style="display: none;" class="mt-4">
+                    <div class="spinner-border text-primary mb-2"></div>
+                    <p class="fw-bold text-primary mb-0">Analizando enlace...</p>
+                </div>
+
+                <div id="successBox" style="display:none;" class="mt-4">
+                    <div class="alert alert-success fw-bold">✅ ¡Descarga iniciada!</div>
+                    <button class="btn btn-primary fw-bold w-100" onclick="reset()">Descargar otro video</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pie de página compartido -->
+        <div id="footer-placeholder"></div>
+        <script src="footer.js"></script>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window.onload = () => document.getElementById('urlInput').focus();
+
+        const EXTRACTION_ENDPOINTS = [
+            "https://api.cobalt.tools/",
+            "https://cobalt-api.kwiatekmiki.com/",
+            "https://cobalt-backend.canine.tools/"
+        ];
+
+        function mostrarMensaje(titulo, texto, icono) {
+            return Swal.fire({
+                title: titulo,
+                text: texto,
+                icon: icono,
+                confirmButtonColor: '#0d6efd',
+                confirmButtonText: 'Entendido'
+            });
+        }
+
+        function extraerYoutubeId(url) {
+            const match = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            return match ? match[1] : null;
+        }
+
+        function esArchivoDirecto(url) {
+            return /\.(mp4|webm|ogg|mov|mp3|wav|m4a)(\?.*)?$/i.test(url);
+        }
+
+        async function consultarNodoExtraccion(videoUrl, modoAudio = false) {
+            for (const endpoint of EXTRACTION_ENDPOINTS) {
+                try {
+                    const resp = await fetch(endpoint, {
+                        method: "POST",
+                        headers: {
+                            "Accept": "application/json",
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            url: videoUrl,
+                            videoQuality: "720",
+                            audioFormat: "mp3",
+                            downloadMode: modoAudio ? "audio" : "auto"
+                        })
+                    });
+                    if (!resp.ok) continue;
+                    const data = await resp.json();
+                    if (data && data.url) {
+                        return { ok: true, downloadUrl: data.url };
+                    }
+                } catch (err) {
+                    console.warn("Nodo no disponible:", endpoint);
+                }
+            }
+            return { ok: false };
+        }
+
+        async function analizarVideo() {
+            const urlInput = document.getElementById('urlInput');
+            const rawUrl = urlInput.value.trim();
+            const btn = document.getElementById('btnAnalizar');
+
+            if (!rawUrl) return;
+            if (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")) {
+                await mostrarMensaje('Enlace inválido', 'Por favor pega un enlace completo que empiece con https://', 'warning');
+                return;
+            }
+
+            btn.innerText = "...";
+            btn.disabled = true;
+            document.getElementById('previewArea').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
+
+            try {
+                if (esArchivoDirecto(rawUrl)) {
+                    const player = document.getElementById('videoPlayer');
+                    const thumb = document.getElementById('videoThumb');
+                    thumb.style.display = 'none';
+                    player.style.display = 'block';
+                    player.src = rawUrl;
+
+                    const nombreArchivo = rawUrl.split('/').pop().split('?')[0] || "video_multimedia.mp4";
+                    document.getElementById('videoTitle').innerText = nombreArchivo;
+
+                    const btnVideo = document.getElementById('btnDownloadVideo');
+                    btnVideo.href = rawUrl;
+                    btnVideo.setAttribute('download', nombreArchivo);
+                    document.getElementById('btnDownloadAudio').style.display = 'none';
+
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('previewArea').style.display = 'block';
+                    return;
+                }
+
+                const ytId = extraerYoutubeId(rawUrl);
+                let tituloDetectado = "Video Listo para Descargar";
+                let miniatura = "";
+
+                if (ytId) {
+                    miniatura = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+                    try {
+                        const oembed = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(rawUrl)}`);
+                        if (oembed.ok) {
+                            const info = await oembed.json();
+                            if (info.title) tituloDetectado = info.title;
+                        }
+                    } catch {}
+                }
+
+                const [resVideo, resAudio] = await Promise.all([
+                    consultarNodoExtraccion(rawUrl, false),
+                    consultarNodoExtraccion(rawUrl, true)
+                ]);
+
+                if (resVideo.ok) {
+                    const player = document.getElementById('videoPlayer');
+                    const thumb = document.getElementById('videoThumb');
+                    player.style.display = 'none';
+
+                    if (miniatura) {
+                        thumb.src = miniatura;
+                        thumb.style.display = 'block';
+                    } else {
+                        thumb.style.display = 'none';
+                    }
+
+                    document.getElementById('videoTitle').innerText = tituloDetectado;
+                    document.getElementById('btnDownloadVideo').href = resVideo.downloadUrl;
+
+                    const btnAudio = document.getElementById('btnDownloadAudio');
+                    if (resAudio.ok) {
+                        btnAudio.href = resAudio.downloadUrl;
+                        btnAudio.style.display = 'block';
+                    } else {
+                        btnAudio.style.display = 'none';
+                    }
+
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('previewArea').style.display = 'block';
+                    urlInput.blur();
+                } else {
+                    document.getElementById('loader').style.display = 'none';
+                    await mostrarMensaje(
+                        'Servidor de extracción ocupado',
+                        'Los servidores gratuitos están saturados en este momento o el enlace tiene restricción. Prueba con un enlace directo .mp4 o intenta de nuevo en unos minutos.',
+                        'warning'
+                    );
+                    reset();
+                }
+            } catch (e) {
+                document.getElementById('loader').style.display = 'none';
+                await mostrarMensaje('Error', 'No se pudo procesar el enlace en este momento.', 'error');
+                reset();
+            } finally {
+                btn.innerText = "🔍 Analizar";
+                btn.disabled = false;
+            }
+        }
+
+        function marcarExito() {
+            setTimeout(() => {
+                document.getElementById('previewArea').style.display = 'none';
+                document.getElementById('inputBox').style.display = 'none';
+                document.getElementById('successBox').style.display = 'block';
+            }, 800);
+        }
+
+        function reset() {
+            const input = document.getElementById('urlInput');
+            const player = document.getElementById('videoPlayer');
+            player.pause();
+            player.src = "";
+            input.value = "";
+            document.getElementById('inputBox').style.display = 'flex';
+            document.getElementById('previewArea').style.display = 'none';
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('successBox').style.display = 'none';
+            input.focus();
+        }
+
+        document.getElementById('urlInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') analizarVideo();
+        });
+    </script>
+</body>
+</html>
