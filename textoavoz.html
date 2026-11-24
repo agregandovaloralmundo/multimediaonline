@@ -16,6 +16,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mespeak@2.0.2/mespeak.min.js"></script>
     <style>
         html, body {
             height: 100%;
@@ -69,7 +70,7 @@
         <div class="main-content">
             <div class="tts-box">
                 <h3 class="mb-1 fw-bold text-dark">Texto a Voz y Dictado</h3>
-                <p class="text-muted small mb-3">Dicta con tu voz, carga un archivo (.txt), escucha en MP3 o guarda tu texto en Word y TXT</p>
+                <p class="text-muted small mb-3">Dicta con tu voz, carga un archivo (.txt), escucha, baja en MP3 directo o guarda en Word y TXT</p>
 
                 <!-- Cargar archivo .txt -->
                 <div class="mb-2 text-start">
@@ -94,21 +95,21 @@
                     <textarea id="textContent" class="form-control" placeholder="Escribe aquí, carga un archivo .txt o presiona 'Dictar por Voz' para hablar y escribir directamente adentro de este cuadro..."></textarea>
                 </div>
 
-                <!-- Medidor de nivel de audio / voz en vivo -->
+                <!-- Medidor de nivel de voz del micrófono en vivo -->
                 <div id="vuWrapper" class="mb-3 text-start" style="display: none;">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <small id="vuLabel" class="fw-bold text-secondary">🎚️ Nivel de señal de voz / audio:</small>
+                        <small id="vuLabel" class="fw-bold text-secondary">🎙️ Nivel de señal del micrófono:</small>
                         <small id="vuPercent" class="text-muted">0%</small>
                     </div>
                     <div class="progress" style="height: 8px;">
-                        <div id="vuBar" class="progress-bar bg-success" style="width: 0%; transition: width 0.08s linear;"></div>
+                        <div id="vuBar" class="progress-bar bg-danger" style="width: 0%; transition: width 0.08s linear;"></div>
                     </div>
                 </div>
 
                 <!-- Selector de voz y velocidad -->
                 <div class="row g-3 mb-3 text-start">
                     <div class="col-md-8">
-                        <label for="voiceSelect" class="form-label fw-bold small text-secondary mb-1">🗣️ Voz de lectura <span class="text-muted fw-normal">(usa Online/Google o captura audio del sistema)</span>:</label>
+                        <label for="voiceSelect" class="form-label fw-bold small text-secondary mb-1">🗣️ Voz de lectura en vivo:</label>
                         <select id="voiceSelect" class="form-select form-select-sm"></select>
                     </div>
                     <div class="col-md-4">
@@ -148,7 +149,7 @@
                     <button id="cancelButton" class="btn btn-danger btn-sm fw-bold px-3" disabled>⏹️ Cancelar</button>
                 </div>
 
-                <!-- Barra de progreso de lectura -->
+                <!-- Barra de progreso -->
                 <div id="progressWrapper" class="progress mt-2" style="height: 8px; display: none;">
                     <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%;"></div>
                 </div>
@@ -188,17 +189,23 @@
         const statusDiv = document.getElementById('status');
 
         let voices = [];
-        let activeStream = null;
         let micStream = null;
         let micAudioCtx = null;
         let micAnimId = null;
-        let audioCtx = null;
-        let processor = null;
-        let recordedBuffers = [];
-        let picoMaximoGrabacion = 0;
         let keepAliveTimer = null;
         let canceladoManual = false;
         let textoBaseConfirmado = "";
+        let mespeakListo = false;
+
+        // Inicializar motor offline meSpeak para generar MP3 directo en memoria sin compartir pestaña
+        try {
+            if (window.meSpeak) {
+                meSpeak.loadConfig("https://cdn.jsdelivr.net/npm/mespeak@2.0.2/mespeak_config.json");
+                meSpeak.loadVoice("https://cdn.jsdelivr.net/npm/mespeak@2.0.2/voices/es-la.json", () => {
+                    mespeakListo = true;
+                });
+            }
+        } catch {}
 
         // ==========================================
         // ESTADO DE BOTONES DE EXPORTACIÓN (WORD/TXT)
@@ -401,7 +408,6 @@
                     textoBaseConfirmado = textoBaseConfirmado + separador + limpio;
                 }
 
-                // Todo se escribe adentro del textarea en tiempo real (sin líneas afuera)
                 const sepInt = textoBaseConfirmado && textoIntermedio && !textoBaseConfirmado.endsWith(' ') && !textoBaseConfirmado.endsWith('\n') ? ' ' : '';
                 textContent.value = textoBaseConfirmado + sepInt + textoIntermedio.trim();
                 textContent.scrollTop = textContent.scrollHeight;
@@ -458,7 +464,7 @@
         });
 
         // ==========================================
-        // 2. TEXTO A VOZ Y GRABACIÓN MP3
+        // 2. ESCUCHAR EN VOZ ALTA (LECTURA EN VIVO)
         // ==========================================
         function cargarVoces() {
             voices = synth.getVoices();
@@ -572,13 +578,20 @@
             }
         }
 
-        function reproducirSecuencia(fragmentos, esGrabacion) {
+        speakButton.addEventListener('click', () => {
+            const texto = textContent.value.trim();
+            if (!texto) {
+                Swal.fire({ title: 'Texto vacío', text: 'Escribe, dicta o carga un texto primero.', icon: 'warning', confirmButtonColor: '#0d6efd' });
+                return;
+            }
+
             if (dictando) {
                 dictando = false;
                 recognition.stop();
                 restaurarBotonDictado();
             }
 
+            const fragmentos = dividirEnFragmentos(texto);
             canceladoManual = false;
             let indice = 0;
 
@@ -599,20 +612,13 @@
                     detenerKeepAlive();
                     progressBar.style.width = '100%';
                     actualizarBotones(false, false);
-
-                    if (esGrabacion) {
-                        setTimeout(() => detenerCapturaAudio(true), 450);
-                    } else {
-                        statusDiv.textContent = '✅ Lectura completa finalizada.';
-                    }
+                    statusDiv.textContent = '✅ Lectura completa finalizada.';
                     return;
                 }
 
                 const pct = Math.round(((indice + 1) / fragmentos.length) * 100);
                 progressBar.style.width = `${pct}%`;
-                statusDiv.textContent = esGrabacion
-                    ? `🔴 Grabando MP3: parte ${indice + 1} de ${fragmentos.length} (${pct}%)...`
-                    : `🔊 Leyendo parte ${indice + 1} de ${fragmentos.length} (${pct}%)...`;
+                statusDiv.textContent = `🔊 Leyendo parte ${indice + 1} de ${fragmentos.length} (${pct}%)...`;
 
                 const utterance = new SpeechSynthesisUtterance(fragmentos[indice]);
                 const selectedVoice = voices.find(v => v.name === voiceSelect.value);
@@ -636,36 +642,30 @@
 
             synth.cancel();
             leerSiguiente();
-        }
-
-        speakButton.addEventListener('click', () => {
-            const texto = textContent.value.trim();
-            if (!texto) {
-                Swal.fire({ title: 'Texto vacío', text: 'Escribe, dicta o carga un texto primero.', icon: 'warning', confirmButtonColor: '#0d6efd' });
-                return;
-            }
-            const fragmentos = dividirEnFragmentos(texto);
-            reproducirSecuencia(fragmentos, false);
         });
 
-        function exportarMp3(buffers, sampleRate) {
+        // ==========================================
+        // 3. GENERACIÓN DIRECTA DE MP3 EN MEMORIA (SIN COMPARTIR PANTALLA)
+        // ==========================================
+        function wavBytesAInt16(wavBuffer) {
+            const view = new DataView(wavBuffer);
+            const sampleRate = view.getUint32(24, true);
+            const dataOffset = 44;
+            const numSamples = Math.floor((wavBuffer.byteLength - dataOffset) / 2);
+            const samples = new Int16Array(numSamples);
+            for (let i = 0; i < numSamples; i++) {
+                samples[i] = view.getInt16(dataOffset + i * 2, true);
+            }
+            return { samples, sampleRate };
+        }
+
+        function codificarSamplesAMp3(samples, sampleRate) {
             const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
             const mp3Data = [];
-            const sampleBlockSize = 1152;
+            const blockSize = 1152;
 
-            let totalLength = 0;
-            buffers.forEach(b => totalLength += b.length);
-            const samples = new Int16Array(totalLength);
-            let offset = 0;
-            buffers.forEach(b => {
-                for (let i = 0; i < b.length; i++) {
-                    const s = Math.max(-1, Math.min(1, b[i]));
-                    samples[offset++] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-                }
-            });
-
-            for (let i = 0; i < samples.length; i += sampleBlockSize) {
-                const chunk = samples.subarray(i, i + sampleBlockSize);
+            for (let i = 0; i < samples.length; i += blockSize) {
+                const chunk = samples.subarray(i, i + blockSize);
                 const mp3buf = mp3encoder.encodeBuffer(chunk);
                 if (mp3buf.length > 0) mp3Data.push(mp3buf);
             }
@@ -675,41 +675,73 @@
             return new Blob(mp3Data, { type: 'audio/mp3' });
         }
 
-        function detenerCapturaAudio(descargar = false) {
-            vuWrapper.style.display = 'none';
-            vuBar.style.width = '0%';
-            vuPercent.textContent = '0%';
-
-            if (processor) {
-                processor.disconnect();
-                processor = null;
-            }
-            if (activeStream) {
-                activeStream.getTracks().forEach(t => t.stop());
-                activeStream = null;
-            }
-            const rate = audioCtx ? audioCtx.sampleRate : 44100;
-            if (audioCtx) {
-                audioCtx.close();
-                audioCtx = null;
+        recordMp3Button.addEventListener('click', async () => {
+            const texto = textContent.value.trim();
+            if (!texto) {
+                Swal.fire({ title: 'Texto vacío', text: 'Escribe, dicta o carga un texto primero.', icon: 'warning', confirmButtonColor: '#0d6efd' });
+                return;
             }
 
-            if (descargar && recordedBuffers.length > 0) {
-                if (picoMaximoGrabacion < 0.001) {
-                    recordedBuffers = [];
-                    statusDiv.textContent = '⚠️ Lectura terminada, pero el audio llegó en silencio.';
-                    Swal.fire({
-                        title: 'El audio de la pestaña llegó en silencio',
-                        html: 'En tu equipo, esta voz sale por el audio general de Windows en vez de la pestaña.<br><br><b>Cómo grabarla con sonido:</b><br>1. Dale de nuevo a <b>Bajar MP3</b>.<br>2. En el cuadro del navegador, cambia arriba a <b>"Toda la pantalla"</b>.<br>3. Activa el interruptor <b>"Compartir también el audio del sistema"</b> y dale a <b>Compartir</b>.',
-                        icon: 'info',
-                        confirmButtonColor: '#0d6efd'
-                    });
-                    return;
-                }
+            if (dictando) {
+                dictando = false;
+                recognition.stop();
+                restaurarBotonDictado();
+            }
 
-                statusDiv.textContent = '⏳ Codificando pista MP3...';
-                setTimeout(() => {
-                    const mp3Blob = exportarMp3(recordedBuffers, rate);
+            if (!window.meSpeak || !mespeakListo) {
+                Swal.fire('Cargando motor de voz MP3', 'Espera 2 segundos mientras termina de cargar el paquete de voz en español y vuelve a presionar Bajar MP3.', 'info');
+                return;
+            }
+
+            recordMp3Button.disabled = true;
+            speakButton.disabled = true;
+            progressWrapper.style.display = 'block';
+            progressBar.style.width = '15%';
+            statusDiv.textContent = '⚙️ Generando audio directamente en MP3...';
+
+            setTimeout(() => {
+                try {
+                    const rate = parseFloat(rateRange.value) || 1.0;
+                    const speedWpm = Math.round(160 * rate);
+                    const fragmentos = dividirEnFragmentos(texto, 350);
+                    const chunksInt16 = [];
+                    let totalSamples = 0;
+                    let sampleRate = 22050;
+
+                    for (let i = 0; i < fragmentos.length; i++) {
+                        const rawWav = meSpeak.speak(fragmentos[i], {
+                            rawdata: 'arraybuffer',
+                            speed: speedWpm,
+                            pitch: 48,
+                            wordgap: 3
+                        });
+
+                        if (rawWav && rawWav.byteLength > 44) {
+                            const parsed = wavBytesAInt16(rawWav);
+                            sampleRate = parsed.sampleRate;
+                            chunksInt16.push(parsed.samples);
+                            totalSamples += parsed.samples.length;
+                        }
+
+                        const pct = Math.round(((i + 1) / fragmentos.length) * 85);
+                        progressBar.style.width = `${pct}%`;
+                    }
+
+                    if (totalSamples === 0) {
+                        throw new Error("No se generó audio");
+                    }
+
+                    statusDiv.textContent = '⏳ Codificando archivo MP3...';
+                    progressBar.style.width = '95%';
+
+                    const allSamples = new Int16Array(totalSamples);
+                    let offset = 0;
+                    for (const c of chunksInt16) {
+                        allSamples.set(c, offset);
+                        offset += c.length;
+                    }
+
+                    const mp3Blob = codificarSamplesAMp3(allSamples, sampleRate);
                     const url = URL.createObjectURL(mp3Blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -718,84 +750,17 @@
                     a.click();
                     a.remove();
                     URL.revokeObjectURL(url);
-                    statusDiv.textContent = '✅ ¡Pista MP3 descargada lista para tu editor!';
-                    recordedBuffers = [];
-                }, 150);
-            } else {
-                recordedBuffers = [];
-            }
-        }
 
-        recordMp3Button.addEventListener('click', async () => {
-            const texto = textContent.value.trim();
-            if (!texto) {
-                Swal.fire({ title: 'Texto vacío', text: 'Escribe, dicta o carga un texto primero.', icon: 'warning', confirmButtonColor: '#0d6efd' });
-                return;
-            }
-
-            await Swal.fire({
-                title: 'Captura de Audio para MP3',
-                html: 'En la ventana que aparecerá:<br>1. Selecciona <b>esta pestaña</b> (o <b>Toda la pantalla</b> si usas voces locales de Windows).<br>2. Verifica que esté encendido el interruptor <b>"Compartir también el audio"</b>.',
-                icon: 'info',
-                confirmButtonColor: '#198754',
-                confirmButtonText: 'Iniciar Grabación MP3'
-            });
-
-            try {
-                activeStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: true,
-                    audio: {
-                        echoCancellation: false,
-                        noiseSuppression: false,
-                        autoGainControl: false
-                    },
-                    systemAudio: 'include'
-                });
-
-                const audioTracks = activeStream.getAudioTracks();
-                if (audioTracks.length === 0) {
-                    activeStream.getTracks().forEach(t => t.stop());
-                    Swal.fire('No activaste el audio', 'Debes marcar el interruptor "Compartir también el audio" para que se grabe la voz.', 'warning');
-                    return;
+                    progressBar.style.width = '100%';
+                    statusDiv.textContent = '✅ ¡Archivo MP3 generado y descargado con audio real!';
+                } catch (err) {
+                    statusDiv.textContent = '⚠️ No se pudo sintetizar el MP3. Intenta nuevamente.';
+                } finally {
+                    recordMp3Button.disabled = false;
+                    speakButton.disabled = false;
+                    setTimeout(() => { progressWrapper.style.display = 'none'; }, 1500);
                 }
-
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') {
-                    await audioCtx.resume();
-                }
-
-                const source = audioCtx.createMediaStreamSource(new MediaStream(audioTracks));
-                processor = audioCtx.createScriptProcessor(4096, 1, 1);
-                recordedBuffers = [];
-                picoMaximoGrabacion = 0;
-
-                vuLabel.textContent = '🎚️ Nivel de audio capturado para MP3:';
-                vuBar.className = 'progress-bar bg-success';
-                vuWrapper.style.display = 'block';
-
-                processor.onaudioprocess = (e) => {
-                    const input = e.inputBuffer.getChannelData(0);
-                    recordedBuffers.push(new Float32Array(input));
-
-                    let max = 0;
-                    for (let i = 0; i < input.length; i++) {
-                        const abs = Math.abs(input[i]);
-                        if (abs > max) max = abs;
-                    }
-                    if (max > picoMaximoGrabacion) picoMaximoGrabacion = max;
-                    const pct = Math.min(100, Math.round(max * 350));
-                    vuBar.style.width = `${pct}%`;
-                    vuPercent.textContent = `${pct}%`;
-                };
-
-                source.connect(processor);
-                processor.connect(audioCtx.destination);
-
-                const fragmentos = dividirEnFragmentos(texto);
-                reproducirSecuencia(fragmentos, true);
-            } catch (err) {
-                detenerCapturaAudio(false);
-            }
+            }, 80);
         });
 
         pauseButton.addEventListener('click', () => {
@@ -818,9 +783,8 @@
             canceladoManual = true;
             detenerKeepAlive();
             synth.cancel();
-            detenerCapturaAudio(false);
             progressWrapper.style.display = 'none';
-            statusDiv.textContent = '⏹️ Operación cancelada.';
+            statusDiv.textContent = '⏹️ Lectura detenida.';
             actualizarBotones(false, false);
         });
     </script>
