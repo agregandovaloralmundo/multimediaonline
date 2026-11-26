@@ -109,6 +109,11 @@
                             <span id="playbackClock" class="badge bg-dark fs-6 font-monospace">00:00</span>
                         </div>
 
+                        <div class="form-check form-switch mt-2 small">
+                            <input class="form-check-input" type="checkbox" id="chkAnuncio">
+                            <label class="form-check-label text-danger fw-bold" for="chkAnuncio">🚫 Está pasando un anuncio: ignorar audio y filminas <span class="text-muted fw-normal">(atajo: tecla A)</span></label>
+                        </div>
+
                         <div class="d-grid gap-2 mt-2">
                             <button id="liveTranscribeBtn" class="btn btn-danger btn-sm fw-bold" disabled>
                                 ▶️ Reproducir y Transcribir Audio Interno + Filminas
@@ -188,9 +193,9 @@
         // El motor se elige solo: con tarjeta gráfica (WebGPU) usa Whisper "base" (preciso y rápido);
         // sin ella usa Whisper "tiny" en CPU (el único que va a tiempo real en un navegador).
         const UMBRAL_CAMBIO = 14;      // sensibilidad de cambio de filmina
-        const MIN_SECCION = 1.5;       // segundos mínimos entre filminas
-        const SEG_MIN = 5;             // un segmento de audio nunca se corta antes de 5 s
-        const SEG_OBJ = 9;             // ...y se corta al llegar a ~9 s (en el punto más silencioso): el texto aparece más rápido
+        const MIN_SECCION = 4;       // segundos mínimos entre filminas
+        const SEG_MIN = 4;             // un segmento de audio nunca se corta antes de 4 s
+        const SEG_OBJ = 7;             // ...y se corta al llegar a ~7 s (en el punto más silencioso): menos retraso
         const COLA_PAUSA = 3;          // si hay 3 segmentos pendientes, el video se pausa solo
         const COLA_REANUDA = 1;        // ...y continúa cuando quedan 1 o menos
         const DB_NAME = 'multimedia_online_db', DB_STORE = 'respaldo', DB_KEY = 'bloques_v10';
@@ -208,7 +213,7 @@
         const progressWrapper = $('progressWrapper'), progressBar = $('progressBar');
         const exportWordBtn = $('exportWordBtn'), exportPdfBtn = $('exportPdfBtn'), clearAllBtn = $('clearAllBtn');
         const printArea = $('printArea');
-        const liveText = $('liveText'), nivelBar = $('nivelBar'), avisoAudio = $('avisoAudio');
+        const liveText = $('liveText'), nivelBar = $('nivelBar'), avisoAudio = $('avisoAudio'), chkAnuncio = $('chkAnuncio');
 
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2600, timerProgressBar: true });
         const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -238,7 +243,38 @@
         // IA (Web Worker)
         let worker = null, whisperListo = false, whisperOcupado = false, errorIA = false;
         let colaAudio = [], itemEnCurso = null, idPeticion = 0, textoProgresoModelo = '';
-        let motorIA = '', liveTexto = '', picoSesion = 0, inicioSesionWall = 0, nivelAudio = 0;
+        let motorIA = '', liveTexto = '', picoSesion = 0, inicioSesionWall = 0, nivelAudio = 0, ultimoNorm = '';
+        let anuncioManual = false, anuncioAuto = false, autoAdOff = false, adContador = 0, anuncioDesde = 0, estabaIgnorando = false, ytIdActual = null;
+
+        // Anuncios: mientras haya uno, no se transcribe ni se capturan filminas
+        function ignorandoAnuncio() { return anuncioManual || anuncioAuto; }
+        function cambiarModoAnuncio() {
+            const ahora = ignorandoAnuncio();
+            if (ahora === estabaIgnorando) return;
+            estabaIgnorando = ahora;
+            if (ahora) {
+                if (capturandoEscenas) { cortarSegmento(true); pcmBuffer = []; pcmSamples = 0; }   // se guarda lo dicho justo antes del anuncio
+                Toast.fire({ icon: 'warning', title: '🚫 Anuncio: se ignora audio y filminas hasta que termine' });
+            } else {
+                lastFrameSignature = null; ultimoFotogramaEstable = null; pcmBuffer = []; pcmSamples = 0;
+                if (capturandoEscenas) {
+                    const t = obtenerTiempoActual(), act = asegurarBloqueActivo();
+                    if (act.textoConfirmado || act.imagenBase64) nuevoBloque(t); else { act.tiempoSeg = t; act.tiempoTxt = formatearTiempo(t); }
+                    renderizarBloques();
+                }
+                Toast.fire({ icon: 'success', title: 'Video principal: se reanuda la transcripción' });
+            }
+            actualizarEstadoIA();
+        }
+        chkAnuncio.addEventListener('change', () => { anuncioManual = chkAnuncio.checked; cambiarModoAnuncio(); });
+        document.addEventListener('keydown', (e) => {   // atajo: tecla A = anuncio sí/no
+            const tag = (e.target && e.target.tagName) || '';
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || e.ctrlKey || e.metaKey || e.altKey) return;
+            if (e.key === 'a' || e.key === 'A') { chkAnuncio.checked = !chkAnuncio.checked; chkAnuncio.dispatchEvent(new Event('change')); }
+        });
+        setInterval(() => {   // seguro: la detección automática nunca se queda pegada más de 2 minutos
+            if (anuncioAuto && Date.now() - anuncioDesde > 120000) { anuncioAuto = false; autoAdOff = true; cambiarModoAnuncio(); }
+        }, 2000);
 
         // Panel "Transcripción en vivo": siempre muestra el texto más reciente que entrega la IA
         function mostrarEnVivo(t) {
@@ -335,6 +371,12 @@
                     ytTiempo = d.info.currentTime; ytTiempoStamp = Date.now(); ytRecibioInfo = true;
                 }
                 if (typeof d.info.playerState === 'number') cambioEstadoYT(d.info.playerState);
+                // Detección automática (mejor esfuerzo): si el reproductor reporta un video distinto al cargado, es un anuncio
+                if (d.info.videoData && d.info.videoData.video_id && ytIdActual && !autoAdOff) {
+                    adContador = d.info.videoData.video_id !== ytIdActual ? adContador + 1 : 0;
+                    const esAd = adContador >= 2;
+                    if (esAd !== anuncioAuto) { anuncioAuto = esAd; anuncioDesde = Date.now(); cambiarModoAnuncio(); }
+                }
             } else if (d.event === 'onStateChange' && typeof d.info === 'number') {
                 cambioEstadoYT(d.info);
             }
@@ -369,6 +411,9 @@
             return bloquesDocumento[Math.min(indiceSesion, bloquesDocumento.length - 1)] || null;
         }
         function insertarTextoEnBloque(id, texto) {
+            const norm = texto.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+            if (norm && norm === ultimoNorm) return;      // frase idéntica a la anterior: bucle de la IA
+            ultimoNorm = norm;
             mostrarEnVivo(texto);
             const b = bloquesDocumento.find(x => x.id === id) || bloquesDocumento[bloquesDocumento.length - 1];
             if (!b) return;
@@ -471,7 +516,10 @@
                 .replace(/subtítulos realizados por la comunidad de amara\.org/gi, '')
                 .replace(/\s+/g, ' ').trim();
             // Colapsa bucles de alucinación (3+ repeticiones seguidas) dejando UNA sola vez
-            t = t.replace(/([\p{L}\p{N}]+(?:\s+[\p{L}\p{N}]+){0,5})(?:[\s,.;:!?¡¿]+\1(?![\p{L}\p{N}])){2,}/giu, '$1');
+            for (let k = 0; k < 2; k++) t = t.replace(/([\p{L}\p{N}]+(?:\s+[\p{L}\p{N}]+){0,9})(?:[\s,.;:!?¡¿\-–—…"]+\1(?![\p{L}\p{N}])){2,}/giu, '$1');
+            // Bucle que sobrevive al colapso: casi todas las palabras son las mismas
+            const pal = t.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+            if (pal.length >= 12 && new Set(pal).size / pal.length < 0.3) return '';
             // Frases típicas inventadas por Whisper cuando solo hay silencio/música
             if (/^(¡?\s*(subtítulos[^.!?]*|gracias por ver[^.!?]*|amara\.org[^.!?]*|suscríbete[^.!?]*)[.!?]?\s*)+$/i.test(t)) return '';
             return t;
@@ -513,16 +561,19 @@
                         self.postMessage({ tipo: 'listo', motor });
                     } catch (err) { self.postMessage({ tipo: 'error', msg: String(err) }); }
                 } else if (m.tipo === 'transcribir') {
-                    const opts = { language: 'spanish', task: 'transcribe', return_timestamps: false };
+                    const base = { language: 'spanish', task: 'transcribe', max_new_tokens: m.maxTokens || 200 };
+                    const opts = { ...base, return_timestamps: true };
+                    const optsSin = { ...base, return_timestamps: false };
+                    const ejecutar = async () => { try { return await asr(m.audio, opts); } catch (e1) { return await asr(m.audio, optsSin); } };
                     try {
                         let out;
-                        try { out = await asr(m.audio, opts); }
+                        try { out = await ejecutar(); }
                         catch (err) {
                             if (!usandoGPU) throw err;
                             await cargarCPU();           // si la GPU falla a mitad de camino, se continúa en CPU
-                            out = await asr(m.audio, opts);
+                            out = await ejecutar();
                         }
-                        self.postMessage({ tipo: 'resultado', id: m.id, texto: (out && out.text) ? out.text : '' });
+                        self.postMessage({ tipo: 'resultado', id: m.id, texto: (out && out.text) ? out.text : '', chunks: (out && Array.isArray(out.chunks)) ? out.chunks : null });
                     } catch (err) { self.postMessage({ tipo: 'resultado', id: m.id, texto: '', error: String(err) }); }
                 }
             };`;
@@ -578,8 +629,22 @@
                     const it = itemEnCurso; itemEnCurso = null; whisperOcupado = false;
                     if (m.error) console.warn('Whisper:', m.error);
                     if (it && it.gen === generacion) {
-                        const txt = limpiarTextoWhisper(m.texto);
-                        if (txt) insertarTextoEnBloque(it.bloqueId, txt);
+                        // Cada frase se coloca en la filmina que estaba en pantalla cuando se dijo (usa las marcas de tiempo de Whisper)
+                        let colocado = false;
+                        if (Array.isArray(m.chunks) && m.chunks.length && typeof it.tIni === 'number') {
+                            for (const c of m.chunks) {
+                                const txt = limpiarTextoWhisper(c.text || '');
+                                if (!txt) continue;
+                                const t = it.tIni + ((c.timestamp && typeof c.timestamp[0] === 'number') ? c.timestamp[0] : 0);
+                                const b = bloquePorTiempo(t + 0.2);
+                                insertarTextoEnBloque(b ? b.id : it.bloqueId, txt);
+                                colocado = true;
+                            }
+                        }
+                        if (!colocado) {
+                            const txt = limpiarTextoWhisper(m.texto);
+                            if (txt) insertarTextoEnBloque(it.bloqueId, txt);
+                        }
                     }
                     procesarCola(); actualizarEstadoIA(); controlarContrapresion();
                 }
@@ -596,7 +661,7 @@
             const it = colaAudio.shift();
             itemEnCurso = it; whisperOcupado = true;
             const audio = it.audio;
-            worker.postMessage({ tipo: 'transcribir', id: ++idPeticion, audio }, [audio.buffer]);
+            worker.postMessage({ tipo: 'transcribir', id: ++idPeticion, audio, maxTokens: Math.ceil((it.dur || 8) * 7) + 30 }, [audio.buffer]);
         }
 
         function actualizarEstadoIA() {
@@ -607,6 +672,9 @@
             if (worker && !whisperListo) {
                 aiStatusBadge.style.display = 'inline-block'; aiStatusBadge.className = 'badge bg-warning text-dark';
                 aiStatusBadge.textContent = textoProgresoModelo || '⏳ Cargando IA...';
+            } else if (ignorandoAnuncio() && capturandoEscenas) {
+                aiStatusBadge.style.display = 'inline-block'; aiStatusBadge.className = 'badge bg-danger';
+                aiStatusBadge.textContent = '🚫 Anuncio: ignorando';
             } else if (pausadoPorCola) {
                 aiStatusBadge.style.display = 'inline-block'; aiStatusBadge.className = 'badge bg-secondary';
                 aiStatusBadge.textContent = '⏸️ Pausa: la IA se pone al día';
@@ -768,7 +836,7 @@
         }
 
         function recibirPCM(f) {
-            if (!aceptandoPCM) return;
+            if (!aceptandoPCM || ignorandoAnuncio()) return;
             let pk = 0; for (let i = 0; i < f.length; i += 8) { const v = Math.abs(f[i]); if (v > pk) pk = v; }
             if (pk > nivelAudio) nivelAudio = pk;
             if (pk > picoSesion) picoSesion = pk;
@@ -814,7 +882,7 @@
             if (pico < 0.5) { const g = Math.min(8, 0.7 / pico); for (let i = 0; i < a.length; i++) a[i] *= g; }  // normaliza voz baja
 
             const bloque = bloquePorTiempo(tMid);
-            colaAudio.push({ audio: a, bloqueId: bloque ? bloque.id : null, gen: generacion });
+            colaAudio.push({ audio: a, bloqueId: bloque ? bloque.id : null, gen: generacion, tIni: tFinSeg - durSeg, dur: durSeg });
             procesarCola(); actualizarEstadoIA(); controlarContrapresion();
         }
 
@@ -852,7 +920,7 @@
             try {
                 const c = document.createElement('canvas'); c.width = 32; c.height = 18;
                 const ctx = c.getContext('2d', { willReadFrequently: true });
-                ctx.drawImage(f.el, f.sx, f.sy, f.sw, f.sh, 0, 0, 32, 18);
+                ctx.drawImage(f.el, f.sx, f.sy, f.sw, f.sh * 0.78, 0, 0, 32, 18);   // ignora el 22% de abajo: subtítulos incrustados y controles de YouTube
                 return ctx.getImageData(0, 0, 32, 18).data;
             } catch { return null; }
         }
@@ -874,6 +942,7 @@
             if (!capturandoEscenas) return;
             if (!modoYoutube && videoPlayer.paused) return;
             if (modoYoutube && (ytEstado === 2 || ytEstado === 0)) return;
+            if (ignorandoAnuncio()) return;
             const sig = leerFirma();
             if (!sig) return;
             if (!lastFrameSignature) { lastFrameSignature = sig; ultimoFotogramaEstable = capturarFotogramaActual(); return; }
@@ -917,7 +986,7 @@
                     });
                     return;
                 }
-                modoYoutube = true;
+                modoYoutube = true; ytIdActual = ytId; anuncioAuto = false; autoAdOff = false; adContador = 0;
                 reiniciarEstadoYT();
                 playbackClock.textContent = '00:00';
                 videoPlayer.pause();
@@ -1173,8 +1242,8 @@
                 }
                 if (!texto && !imgHtml) return '';
                 return `<div style="margin-bottom: 14pt; page-break-inside: avoid;">
-                    ${texto ? `<p style="font-size: 11.5pt; text-align: justify; margin-bottom: 8pt;">${esc(texto)}</p>` : ''}
                     ${imgHtml}
+                    ${texto ? `<p style="font-size: 11.5pt; text-align: justify; margin-bottom: 8pt;">${esc(texto)}</p>` : ''}
                 </div>`;
             }).join('');
 
@@ -1218,7 +1287,7 @@
                 bloquesDocumento.map(b => {
                     const t = (b.textoConfirmado || '').trim();
                     if (!t && !b.imagenBase64) return '';
-                    return `<div class="sec">${t ? `<p>${esc(t)}</p>` : ''}${b.imagenBase64 ? `<img src="${b.imagenBase64}" alt="Filmina">` : ''}</div>`;
+                    return `<div class="sec">${b.imagenBase64 ? `<img src="${b.imagenBase64}" alt="Filmina">` : ''}${t ? `<p>${esc(t)}</p>` : ''}</div>`;
                 }).join('');
             window.print();
         });
