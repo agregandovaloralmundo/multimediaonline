@@ -31,7 +31,7 @@
             width: 100%; height: 255px; background: #000000; border-radius: 12px; border: none;
         }
         #timelinePreview {
-            height: 395px; max-height: 395px; overflow-y: auto;
+            height: 320px; max-height: 320px; overflow-y: auto;
             border: 1.5px solid #0d6efd; border-radius: 12px; padding: 12px;
             background: #f8f9fa; text-align: left;
         }
@@ -48,6 +48,8 @@
             max-width: 100%; max-height: 195px; border-radius: 8px;
             border: 1px solid #ced4da; margin-top: 8px; display: block;
         }
+        #liveText { max-height: 62px; overflow-y: auto; line-height: 1.4; }
+        #liveText:empty::before { content: attr(data-ph); color: #6c757d; }
         .mic-active { animation: pulsoMic 1.2s infinite; }
         @keyframes pulsoMic {
             0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.6); }
@@ -138,6 +140,15 @@
                                 <span id="blockCount" class="badge bg-primary">0 filminas</span>
                             </div>
                         </div>
+                        <div class="border rounded bg-white mb-2 px-2 py-1" id="livePanel">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="small fw-bold text-success text-nowrap">📝 Transcripción en vivo</span>
+                                <div class="progress flex-grow-1" style="height: 6px;"><div id="nivelBar" class="progress-bar bg-success" style="width: 0%;"></div></div>
+                                <span class="small text-muted text-nowrap">nivel de audio</span>
+                            </div>
+                            <div id="avisoAudio" class="small text-danger"></div>
+                            <div id="liveText" class="small" data-ph="Aquí irá apareciendo, palabra por palabra, el texto que la IA va escuchando..."></div>
+                        </div>
                         <div id="timelinePreview"></div>
                     </div>
                 </div>
@@ -174,13 +185,12 @@
         /* ============================================================
            CONFIGURACIÓN
            ============================================================ */
-        // 'Xenova/whisper-base' es bastante más preciso que 'whisper-tiny' en español.
-        // Si tu equipo es lento, cambia a 'Xenova/whisper-tiny'.
-        const MODELO_WHISPER = 'Xenova/whisper-base';
+        // El motor se elige solo: con tarjeta gráfica (WebGPU) usa Whisper "base" (preciso y rápido);
+        // sin ella usa Whisper "tiny" en CPU (el único que va a tiempo real en un navegador).
         const UMBRAL_CAMBIO = 14;      // sensibilidad de cambio de filmina
         const MIN_SECCION = 1.5;       // segundos mínimos entre filminas
-        const SEG_MIN = 8;             // un segmento de audio nunca se corta antes de 8 s
-        const SEG_OBJ = 14;            // ...y se corta al llegar a ~14 s (en el punto más silencioso)
+        const SEG_MIN = 5;             // un segmento de audio nunca se corta antes de 5 s
+        const SEG_OBJ = 9;             // ...y se corta al llegar a ~9 s (en el punto más silencioso): el texto aparece más rápido
         const COLA_PAUSA = 3;          // si hay 3 segmentos pendientes, el video se pausa solo
         const COLA_REANUDA = 1;        // ...y continúa cuando quedan 1 o menos
         const DB_NAME = 'multimedia_online_db', DB_STORE = 'respaldo', DB_KEY = 'bloques_v10';
@@ -198,6 +208,7 @@
         const progressWrapper = $('progressWrapper'), progressBar = $('progressBar');
         const exportWordBtn = $('exportWordBtn'), exportPdfBtn = $('exportPdfBtn'), clearAllBtn = $('clearAllBtn');
         const printArea = $('printArea');
+        const liveText = $('liveText'), nivelBar = $('nivelBar'), avisoAudio = $('avisoAudio');
 
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2600, timerProgressBar: true });
         const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -227,6 +238,23 @@
         // IA (Web Worker)
         let worker = null, whisperListo = false, whisperOcupado = false, errorIA = false;
         let colaAudio = [], itemEnCurso = null, idPeticion = 0, textoProgresoModelo = '';
+        let motorIA = '', liveTexto = '', picoSesion = 0, inicioSesionWall = 0, nivelAudio = 0;
+
+        // Panel "Transcripción en vivo": siempre muestra el texto más reciente que entrega la IA
+        function mostrarEnVivo(t) {
+            if (!t) return;
+            liveTexto = (liveTexto + ' ' + t).trim();
+            if (liveTexto.length > 3000) liveTexto = liveTexto.slice(-3000);
+            liveText.textContent = liveTexto;
+            liveText.scrollTop = liveText.scrollHeight;
+        }
+        function reiniciarEnVivo() { liveTexto = ''; liveText.textContent = ''; }
+        setInterval(() => {
+            nivelAudio *= 0.7;
+            nivelBar.style.width = Math.min(100, Math.round(nivelAudio * 400)) + '%';
+            const sinAudio = capturandoEscenas && (Date.now() - inicioSesionWall) > 8000 && picoSesion < 0.002;
+            avisoAudio.textContent = sinAudio ? '⚠️ No está llegando audio: al compartir la pestaña marca "Compartir también el audio de la pestaña" y revisa que el video no esté en silencio dentro de YouTube.' : '';
+        }, 250);
 
         /* ============================================================
            RESPALDO EN INDEXEDDB (aguanta imágenes sin llenar localStorage)
@@ -341,6 +369,7 @@
             return bloquesDocumento[Math.min(indiceSesion, bloquesDocumento.length - 1)] || null;
         }
         function insertarTextoEnBloque(id, texto) {
+            mostrarEnVivo(texto);
             const b = bloquesDocumento.find(x => x.id === id) || bloquesDocumento[bloquesDocumento.length - 1];
             if (!b) return;
             b.textoConfirmado = ((b.textoConfirmado || '') + (b.textoConfirmado ? ' ' : '') + texto).trim();
@@ -452,6 +481,52 @@
            IA WHISPER EN WEB WORKER (no congela la página ni pierde audio)
            ============================================================ */
         const CODIGO_WORKER = `
+            let asr = null, usandoGPU = false, motor = '';
+            const progreso = (p) => self.postMessage({ tipo: 'progreso', p });
+            async function cargarCPU() {
+                const T = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
+                T.env.allowLocalModels = false;
+                asr = await T.pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', { quantized: true, progress_callback: progreso });
+                usandoGPU = false; motor = 'CPU · modelo rápido';
+            }
+            async function cargarGPU() {
+                const T = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3');
+                T.env.allowLocalModels = false;
+                asr = await T.pipeline('automatic-speech-recognition', 'onnx-community/whisper-base', {
+                    device: 'webgpu',
+                    dtype: { encoder_model: 'fp32', decoder_model_merged: 'q4' },
+                    progress_callback: progreso
+                });
+                await asr(new Float32Array(16000), { language: 'spanish', task: 'transcribe' }); // prueba real de la GPU
+                usandoGPU = true; motor = 'GPU · modelo preciso';
+            }
+            self.onmessage = async (e) => {
+                const m = e.data;
+                if (m.tipo === 'cargar') {
+                    try {
+                        let ok = false;
+                        if (self.navigator && self.navigator.gpu) {
+                            try { await cargarGPU(); ok = true; }
+                            catch (err) { self.postMessage({ tipo: 'aviso', msg: 'GPU no disponible, uso CPU: ' + err }); }
+                        }
+                        if (!ok) await cargarCPU();
+                        self.postMessage({ tipo: 'listo', motor });
+                    } catch (err) { self.postMessage({ tipo: 'error', msg: String(err) }); }
+                } else if (m.tipo === 'transcribir') {
+                    const opts = { language: 'spanish', task: 'transcribe', return_timestamps: false };
+                    try {
+                        let out;
+                        try { out = await asr(m.audio, opts); }
+                        catch (err) {
+                            if (!usandoGPU) throw err;
+                            await cargarCPU();           // si la GPU falla a mitad de camino, se continúa en CPU
+                            out = await asr(m.audio, opts);
+                        }
+                        self.postMessage({ tipo: 'resultado', id: m.id, texto: (out && out.text) ? out.text : '' });
+                    } catch (err) { self.postMessage({ tipo: 'resultado', id: m.id, texto: '', error: String(err) }); }
+                }
+            };`;
+        const CODIGO_WORKER_V1 = `
             import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
             env.allowLocalModels = false;
             let asr = null;
@@ -492,8 +567,10 @@
                         actualizarEstadoIA();
                     }
                 } else if (m.tipo === 'listo') {
-                    whisperListo = true; textoProgresoModelo = '';
+                    whisperListo = true; textoProgresoModelo = ''; motorIA = m.motor || '';
                     procesarCola(); actualizarEstadoIA();
+                } else if (m.tipo === 'aviso') {
+                    console.warn(m.msg);
                 } else if (m.tipo === 'error') {
                     errorIA = true; actualizarEstadoIA();
                     Swal.fire('Error al cargar la IA', 'No se pudo descargar el modelo Whisper. Revisa tu conexión e inténtalo de nuevo.<br><small>' + esc(m.msg) + '</small>', 'error');
@@ -508,7 +585,7 @@
                 }
             };
             worker.onerror = (e) => { console.warn('Worker error', e); };
-            worker.postMessage({ tipo: 'cargar', modelo: MODELO_WHISPER });
+            worker.postMessage({ tipo: 'cargar' });
             actualizarEstadoIA();
         }
 
@@ -538,7 +615,7 @@
                 aiStatusBadge.textContent = '🧠 IA transcribiendo...';
             } else if (capturandoEscenas) {
                 aiStatusBadge.style.display = 'inline-block'; aiStatusBadge.className = 'badge bg-info text-dark';
-                aiStatusBadge.textContent = '🎧 Escuchando audio...';
+                aiStatusBadge.textContent = '🎧 Escuchando · ' + motorIA;
             } else {
                 aiStatusBadge.style.display = 'none';
             }
@@ -692,6 +769,9 @@
 
         function recibirPCM(f) {
             if (!aceptandoPCM) return;
+            let pk = 0; for (let i = 0; i < f.length; i += 8) { const v = Math.abs(f[i]); if (v > pk) pk = v; }
+            if (pk > nivelAudio) nivelAudio = pk;
+            if (pk > picoSesion) picoSesion = pk;
             pcmBuffer.push(f); pcmSamples += f.length;
             if (pcmSamples / audioSampleRate >= SEG_OBJ) cortarSegmento(false);
         }
@@ -1027,6 +1107,7 @@
             renderizarBloques();
 
             pcmBuffer = []; pcmSamples = 0; aceptandoPCM = true; pausadoPorCola = false;
+            picoSesion = 0; inicioSesionWall = Date.now();
             lastFrameSignature = null; ultimoFotogramaEstable = null;
             ytRelojFallback = Date.now() - t0 * 1000;
             capturandoEscenas = true;
@@ -1151,7 +1232,7 @@
             colaAudio = [];
             reiniciarEstadoYT();
             playbackClock.textContent = '00:00';
-            bloquesDocumento = []; indiceSesion = 0; srtEntradas = [];
+            bloquesDocumento = []; indiceSesion = 0; srtEntradas = []; reiniciarEnVivo();
             nombreVideoActual = 'Clase_Transcripcion';
             modoYoutube = false;
             lastFrameSignature = null; ultimoFotogramaEstable = null;
