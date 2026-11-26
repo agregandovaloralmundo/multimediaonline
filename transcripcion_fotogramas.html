@@ -16,90 +16,55 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
-        .main-wrapper {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+        html, body { height: 100%; margin: 0; }
+        .main-wrapper { min-height: 100vh; display: flex; flex-direction: column; }
         .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 0.75rem 1.25rem;
+            flex: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; padding: 0.75rem 1.25rem;
         }
         .tool-box {
-            width: 96%;
-            max-width: 1240px;
-            background: #ffffff;
-            border: 3px solid #0d6efd;
-            border-radius: 20px;
-            padding: 18px 26px;
-            box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
-            margin: auto;
+            width: 96%; max-width: 1240px; background: #ffffff;
+            border: 3px solid #0d6efd; border-radius: 20px; padding: 18px 26px;
+            box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15); margin: auto;
         }
         #videoPlayer, #youtubeFrame {
-            width: 100%;
-            height: 255px;
-            background: #000000;
-            border-radius: 12px;
-            border: none;
+            width: 100%; height: 255px; background: #000000; border-radius: 12px; border: none;
         }
         #timelinePreview {
-            height: 395px;
-            max-height: 395px;
-            overflow-y: auto;
-            border: 1.5px solid #0d6efd;
-            border-radius: 12px;
-            padding: 12px;
-            background: #f8f9fa;
-            text-align: left;
+            height: 395px; max-height: 395px; overflow-y: auto;
+            border: 1.5px solid #0d6efd; border-radius: 12px; padding: 12px;
+            background: #f8f9fa; text-align: left;
         }
         .bloque-item {
-            background: #ffffff;
-            border: 1px solid #dee2e6;
-            border-left: 5px solid #0d6efd;
-            border-radius: 10px;
-            padding: 10px 12px;
-            margin-bottom: 12px;
+            background: #ffffff; border: 1px solid #dee2e6; border-left: 5px solid #0d6efd;
+            border-radius: 10px; padding: 10px 12px; margin-bottom: 12px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.04);
         }
+        /* El cuadro de texto crece solo para mostrar TODO el texto transcrito */
+        .bloque-item textarea.txt {
+            overflow: hidden; resize: vertical; min-height: 38px; line-height: 1.45;
+        }
         .bloque-img {
-            max-width: 100%;
-            max-height: 195px;
-            border-radius: 8px;
-            border: 1px solid #ced4da;
-            margin-top: 8px;
-            display: block;
+            max-width: 100%; max-height: 195px; border-radius: 8px;
+            border: 1px solid #ced4da; margin-top: 8px; display: block;
         }
-        .mic-active {
-            animation: pulsoMic 1.2s infinite;
-        }
+        .mic-active { animation: pulsoMic 1.2s infinite; }
         @keyframes pulsoMic {
             0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.6); }
             70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
             100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
         }
+
+        /* Área exclusiva de impresión / PDF (texto completo + filminas) */
+        #printArea { display: none; }
+        #printArea h2 { font-size: 18pt; color: #0d6efd; margin-bottom: 4pt; }
+        #printArea .meta { font-size: 9pt; color: #666; border-bottom: 1px solid #ccc; padding-bottom: 6pt; margin-bottom: 14pt; }
+        #printArea .sec { margin-bottom: 14pt; page-break-inside: avoid; }
+        #printArea .sec p { font-size: 11.5pt; text-align: justify; margin: 0 0 8pt 0; }
+        #printArea .sec img { max-width: 100%; display: block; margin: 4pt auto 12pt auto; }
         @media print {
-            body * { visibility: hidden; }
-            #timelinePreview, #timelinePreview * { visibility: visible; }
-            #timelinePreview {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: auto;
-                max-height: none;
-                overflow: visible;
-                border: none;
-                background: #fff;
-            }
-            .no-print { display: none !important; }
+            .main-wrapper { display: none !important; }
+            #printArea { display: block !important; }
         }
     </style>
 </head>
@@ -111,9 +76,8 @@
         <div class="main-content">
             <div class="tool-box">
                 <h3 class="mb-1 fw-bold text-dark text-center">Transcripción IA y Fotogramas a Word</h3>
-                <p class="text-muted small mb-3 text-center">Escucha directamente el audio interno del video con IA Whisper (rápido y sin bucles), captura todas las filminas y genera tu Word o PDF</p>
+                <p class="text-muted small mb-3 text-center">Escucha el audio interno del video con IA Whisper (en segundo plano, sin perder palabras), captura todas las filminas y genera tu Word o PDF</p>
 
-                <!-- Cajetín de enlace, video local y subtítulos opcionales -->
                 <div class="row g-2 mb-3 text-start">
                     <div class="col-md-5">
                         <label for="videoUrlInput" class="form-label fw-bold small text-secondary mb-1">🔗 Pegar link del video (YouTube o enlace .mp4):</label>
@@ -132,14 +96,12 @@
                     </div>
                 </div>
 
-                <!-- Dos columnas: Reproductor + Reloj a la izquierda, Vista completa de secciones a la derecha -->
                 <div class="row g-3 mb-3">
                     <div class="col-md-5 text-start">
                         <video id="videoPlayer" controls crossorigin="anonymous"></video>
                         <iframe id="youtubeFrame" style="display: none;" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
                         <canvas id="captureCanvas" style="display: none;"></canvas>
 
-                        <!-- Barra de tiempo de reproducción visible -->
                         <div class="d-flex justify-content-between align-items-center bg-light border rounded px-3 py-1 mt-2">
                             <span class="small fw-bold text-secondary">⏱️ Tiempo de reproducción:</span>
                             <span id="playbackClock" class="badge bg-dark fs-6 font-monospace">00:00</span>
@@ -156,48 +118,43 @@
                                 📸 Capturar Diapositiva Ahora + Agregar Nota
                             </button>
                         </div>
+
+                        <div class="form-check form-switch mt-2 small">
+                            <input class="form-check-input" type="checkbox" id="chkEscuchar">
+                            <label class="form-check-label text-secondary" for="chkEscuchar">
+                                🔊 Escuchar el audio mientras se transcribe <span class="text-muted">(apagado = silencio total; la IA lo capta igual)</span>
+                            </label>
+                        </div>
                     </div>
 
                     <div class="col-md-7 text-start">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <span class="fw-bold small text-primary">📑 Vista previa del documento Word (texto + filminas en orden):</span>
-                            <div class="d-flex align-items-center gap-1">
+                            <div class="d-flex align-items-center gap-1 flex-wrap justify-content-end">
                                 <span id="aiStatusBadge" class="badge bg-warning text-dark" style="display: none;">⏳ Cargando IA...</span>
+                                <span id="queueBadge" class="badge bg-light text-dark border" style="display: none;">Cola IA: 0</span>
                                 <span id="wordCountBadge" class="badge bg-light text-dark border">0 palabras</span>
                                 <span id="memoryBadge" class="badge bg-light text-secondary border">0 MB</span>
                                 <span id="blockCount" class="badge bg-primary">0 filminas</span>
                             </div>
                         </div>
-                        <div id="timelinePreview">
-                            <p class="text-muted small text-center mt-5">
-                                Pega el link de la clase o sube el video arriba.<br>
-                                Al darle a <b>Reproducir y Transcribir</b>, verás avanzar el reloj a la izquierda y aquí aparecerán todas las filminas junto con la transcripción continua.
-                            </p>
-                        </div>
+                        <div id="timelinePreview"></div>
                     </div>
                 </div>
 
-                <!-- Barra de progreso -->
                 <div id="progressWrapper" class="progress mb-2" style="height: 8px; display: none;">
                     <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%;"></div>
                 </div>
 
-                <!-- Botones finales de exportación -->
                 <div class="row g-2">
                     <div class="col-md-4">
-                        <button id="exportWordBtn" class="btn btn-success w-100 fw-bold" disabled>
-                            📘 Generar Documento Word (.doc)
-                        </button>
+                        <button id="exportWordBtn" class="btn btn-success w-100 fw-bold" disabled>📘 Generar Documento Word (.doc)</button>
                     </div>
                     <div class="col-md-4">
-                        <button id="exportPdfBtn" class="btn btn-outline-danger w-100 fw-bold" disabled>
-                            📕 Guardar / Imprimir en PDF
-                        </button>
+                        <button id="exportPdfBtn" class="btn btn-outline-danger w-100 fw-bold" disabled>📕 Guardar / Imprimir en PDF</button>
                     </div>
                     <div class="col-md-4">
-                        <button id="clearAllBtn" class="btn btn-outline-dark w-100 fw-bold" disabled>
-                            🗑️ Limpiar Todo
-                        </button>
+                        <button id="clearAllBtn" class="btn btn-outline-dark w-100 fw-bold" disabled>🗑️ Limpiar Todo</button>
                     </div>
                 </div>
             </div>
@@ -207,411 +164,668 @@
         <script src="footer.js"></script>
     </div>
 
+    <div id="printArea"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script type="module">
-        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
-        env.allowLocalModels = false;
-        window.whisperPipelineLoader = async (onStatus) => {
-            if (window._whisperInstance) return window._whisperInstance;
-            if (onStatus) onStatus('⏳ Cargando motor rápido Whisper IA...');
-            window._whisperInstance = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
-                quantized: true
-            });
-            return window._whisperInstance;
-        };
-    </script>
     <script>
-        const videoUrlInput = document.getElementById('videoUrlInput');
-        const loadUrlBtn = document.getElementById('loadUrlBtn');
-        const videoFile = document.getElementById('videoFile');
-        const srtFile = document.getElementById('srtFile');
-        const videoPlayer = document.getElementById('videoPlayer');
-        const youtubeFrame = document.getElementById('youtubeFrame');
-        const captureCanvas = document.getElementById('captureCanvas');
-        const playbackClock = document.getElementById('playbackClock');
-        const liveTranscribeBtn = document.getElementById('liveTranscribeBtn');
-        const autoProcessBtn = document.getElementById('autoProcessBtn');
-        const manualSnapBtn = document.getElementById('manualSnapBtn');
-        const aiStatusBadge = document.getElementById('aiStatusBadge');
-        const wordCountBadge = document.getElementById('wordCountBadge');
-        const timelinePreview = document.getElementById('timelinePreview');
-        const blockCount = document.getElementById('blockCount');
-        const memoryBadge = document.getElementById('memoryBadge');
-        const progressWrapper = document.getElementById('progressWrapper');
-        const progressBar = document.getElementById('progressBar');
-        const exportWordBtn = document.getElementById('exportWordBtn');
-        const exportPdfBtn = document.getElementById('exportPdfBtn');
-        const clearAllBtn = document.getElementById('clearAllBtn');
+    (() => {
+        'use strict';
 
-        const STORAGE_KEY = "multimedia_doc_respaldo_v9";
-        let bloquesDocumento = []; // { tiempoSeg, tiempoTxt, textoConfirmado, imagenBase64 }
+        /* ============================================================
+           CONFIGURACIÓN
+           ============================================================ */
+        // 'Xenova/whisper-base' es bastante más preciso que 'whisper-tiny' en español.
+        // Si tu equipo es lento, cambia a 'Xenova/whisper-tiny'.
+        const MODELO_WHISPER = 'Xenova/whisper-base';
+        const UMBRAL_CAMBIO = 14;      // sensibilidad de cambio de filmina
+        const MIN_SECCION = 1.5;       // segundos mínimos entre filminas
+        const SEG_MIN = 8;             // un segmento de audio nunca se corta antes de 8 s
+        const SEG_OBJ = 14;            // ...y se corta al llegar a ~14 s (en el punto más silencioso)
+        const COLA_PAUSA = 3;          // si hay 3 segmentos pendientes, el video se pausa solo
+        const COLA_REANUDA = 1;        // ...y continúa cuando quedan 1 o menos
+        const DB_NAME = 'multimedia_online_db', DB_STORE = 'respaldo', DB_KEY = 'bloques_v10';
+
+        /* ============================================================
+           REFERENCIAS DOM
+           ============================================================ */
+        const $ = (id) => document.getElementById(id);
+        const videoUrlInput = $('videoUrlInput'), loadUrlBtn = $('loadUrlBtn'), videoFile = $('videoFile'), srtFile = $('srtFile');
+        const videoPlayer = $('videoPlayer'), youtubeFrame = $('youtubeFrame'), captureCanvas = $('captureCanvas');
+        const playbackClock = $('playbackClock'), liveTranscribeBtn = $('liveTranscribeBtn');
+        const autoProcessBtn = $('autoProcessBtn'), manualSnapBtn = $('manualSnapBtn'), chkEscuchar = $('chkEscuchar');
+        const aiStatusBadge = $('aiStatusBadge'), queueBadge = $('queueBadge'), wordCountBadge = $('wordCountBadge');
+        const memoryBadge = $('memoryBadge'), blockCount = $('blockCount'), timelinePreview = $('timelinePreview');
+        const progressWrapper = $('progressWrapper'), progressBar = $('progressBar');
+        const exportWordBtn = $('exportWordBtn'), exportPdfBtn = $('exportPdfBtn'), clearAllBtn = $('clearAllBtn');
+        const printArea = $('printArea');
+
+        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2600, timerProgressBar: true });
+        const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        /* ============================================================
+           ESTADO
+           ============================================================ */
+        let bloquesDocumento = [];   // { id, tiempoSeg, tiempoTxt, textoConfirmado, imagenBase64 }
+        let siguienteId = 1;
+        let indiceSesion = 0;        // primer bloque de la sesión de captura actual
         let srtEntradas = [];
-        let nombreVideoActual = "Clase_Transcripcion";
+        let nombreVideoActual = 'Clase_Transcripcion';
         let modoYoutube = false;
-        let youtubeIdActual = null;
-        let youtubeStartTime = null;
-        let clockTimer = null;
-        let capturandoEscenas = false;
-        let tabCaptureStream = null;
-        let tabCaptureVideo = null;
-        let sceneCheckTimer = null;
-        let audioCaptureCtx = null;
-        let audioProcessor = null;
-        let audioChunkBuffer = [];
-        let whisperTimer = null;
-        let whisperOcupado = false;
-        let lastFrameSignature = null;
-        let ultimoFotogramaEstable = null;
-        let corsBloqueado = false;
+        let generacion = 0;          // sube al limpiar: descarta resultados viejos de la IA
 
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 2600,
-            timerProgressBar: true
-        });
+        // YouTube (tiempo real vía postMessage)
+        let ytTiempo = 0, ytTiempoStamp = 0, ytEstado = -1, ytRecibioInfo = false, ytRelojFallback = 0;
 
-        try {
-            const guardado = localStorage.getItem(STORAGE_KEY);
-            if (guardado) {
-                const parsed = JSON.parse(guardado);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    bloquesDocumento = parsed;
-                    renderizarBloques();
-                }
-            }
-        } catch {}
+        // Captura
+        let capturandoEscenas = false, aceptandoPCM = false, modoDirecto = false, pausadoPorCola = false;
+        let tabCaptureStream = null, tabCaptureVideo = null, sceneCheckTimer = null;
+        let ctxDirecto = null, srcElemento = null, gainMonitor = null, ctxTab = null, captorActual = null;
+        let audioSampleRate = 16000;
+        let pcmBuffer = [], pcmSamples = 0;
+        let lastFrameSignature = null, ultimoFotogramaEstable = null;
 
-        function guardarRespaldoLocal() {
+        // IA (Web Worker)
+        let worker = null, whisperListo = false, whisperOcupado = false, errorIA = false;
+        let colaAudio = [], itemEnCurso = null, idPeticion = 0, textoProgresoModelo = '';
+
+        /* ============================================================
+           RESPALDO EN INDEXEDDB (aguanta imágenes sin llenar localStorage)
+           ============================================================ */
+        function abrirDB() {
+            return new Promise((res, rej) => {
+                const r = indexedDB.open(DB_NAME, 1);
+                r.onupgradeneeded = () => r.result.createObjectStore(DB_STORE);
+                r.onsuccess = () => res(r.result);
+                r.onerror = () => rej(r.error);
+            });
+        }
+        async function dbSet(k, v) {
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(bloquesDocumento.slice(-100)));
+                const db = await abrirDB();
+                await new Promise((res, rej) => {
+                    const tx = db.transaction(DB_STORE, 'readwrite');
+                    tx.objectStore(DB_STORE).put(v, k);
+                    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+                });
+                db.close();
             } catch {}
         }
+        async function dbGet(k) {
+            try {
+                const db = await abrirDB();
+                const v = await new Promise((res, rej) => {
+                    const rq = db.transaction(DB_STORE).objectStore(DB_STORE).get(k);
+                    rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error);
+                });
+                db.close();
+                return v;
+            } catch { return null; }
+        }
+        let guardadoTimer = null;
+        function programarGuardado() {
+            clearTimeout(guardadoTimer);
+            guardadoTimer = setTimeout(() => dbSet(DB_KEY, bloquesDocumento), 1500);
+        }
 
+        /* ============================================================
+           UTILIDADES
+           ============================================================ */
         function formatearTiempo(segundos) {
-            const hrs = Math.floor(segundos / 3600);
-            const min = Math.floor((segundos % 3600) / 60);
-            const seg = Math.floor(segundos % 60);
-            if (hrs > 0) {
-                return `${String(hrs).padStart(2, '0')}:${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
-            }
-            return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
+            segundos = Math.max(0, segundos || 0);
+            const h = Math.floor(segundos / 3600), m = Math.floor((segundos % 3600) / 60), s = Math.floor(segundos % 60);
+            const p = (n) => String(n).padStart(2, '0');
+            return h > 0 ? `${p(h)}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`;
         }
-
         function extraerYoutubeId(url) {
-            const regExp = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-            const match = url.match(regExp);
-            return match ? match[1] : null;
+            const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            return m ? m[1] : null;
         }
 
-        function controlarReproductorYoutube(comando) {
+        /* ============================================================
+           YOUTUBE: tiempo real y estado del reproductor
+           ============================================================ */
+        function enviarYT(obj) {
             if (!modoYoutube || !youtubeFrame.contentWindow) return;
-            youtubeFrame.contentWindow.postMessage(JSON.stringify({
-                event: 'command',
-                func: comando,
-                args: []
-            }), '*');
+            youtubeFrame.contentWindow.postMessage(JSON.stringify(obj), '*');
+        }
+        function controlarReproductorYoutube(comando) {
+            enviarYT({ event: 'command', func: comando, args: [] });
+        }
+        function suscribirYT() {
+            enviarYT({ event: 'listening', id: 1, channel: 'widget' });
+            enviarYT({ event: 'command', func: 'addEventListener', args: ['onStateChange'] });
+        }
+        youtubeFrame.addEventListener('load', () => { if (modoYoutube) { suscribirYT(); setTimeout(suscribirYT, 1200); } });
+
+        window.addEventListener('message', (ev) => {
+            if (!modoYoutube || ev.source !== youtubeFrame.contentWindow) return;
+            let d = ev.data;
+            if (typeof d === 'string') { try { d = JSON.parse(d); } catch { return; } }
+            if (!d || typeof d !== 'object') return;
+            if (d.event === 'infoDelivery' && d.info) {
+                if (typeof d.info.currentTime === 'number') {
+                    ytTiempo = d.info.currentTime; ytTiempoStamp = Date.now(); ytRecibioInfo = true;
+                }
+                if (typeof d.info.playerState === 'number') cambioEstadoYT(d.info.playerState);
+            } else if (d.event === 'onStateChange' && typeof d.info === 'number') {
+                cambioEstadoYT(d.info);
+            }
+        });
+        function cambioEstadoYT(s) {
+            ytEstado = s;
+            if (s === 0 && capturandoEscenas) { detenerCapturaFotogramas(); } // el video terminó
         }
 
         function obtenerTiempoActual() {
             if (!modoYoutube) return videoPlayer.currentTime || 0;
-            if (!youtubeStartTime) return 0;
-            return (Date.now() - youtubeStartTime) / 1000;
+            if (ytRecibioInfo) return ytEstado === 1 ? ytTiempo + (Date.now() - ytTiempoStamp) / 1000 : ytTiempo;
+            return ytRelojFallback ? (Date.now() - ytRelojFallback) / 1000 : 0;
         }
+        setInterval(() => { playbackClock.textContent = formatearTiempo(obtenerTiempoActual()); }, 400);
 
-        function iniciarRelojReproduccion() {
-            detenerRelojReproduccion();
-            clockTimer = setInterval(() => {
-                playbackClock.textContent = formatearTiempo(obtenerTiempoActual());
-            }, 500);
+        /* ============================================================
+           BLOQUES (secciones del documento)
+           ============================================================ */
+        function nuevoBloque(t, texto = '', img = null) {
+            const b = { id: siguienteId++, tiempoSeg: t, tiempoTxt: formatearTiempo(t), textoConfirmado: texto, imagenBase64: img };
+            bloquesDocumento.push(b);
+            return b;
         }
-
-        function detenerRelojReproduccion() {
-            if (clockTimer) {
-                clearInterval(clockTimer);
-                clockTimer = null;
-            }
-        }
-
-        videoPlayer.addEventListener('timeupdate', () => {
-            if (!modoYoutube) {
-                playbackClock.textContent = formatearTiempo(videoPlayer.currentTime || 0);
-            }
-        });
-
-        function limpiarTextoWhisper(raw) {
-            if (!raw) return "";
-            let limpio = raw
-                .replace(/[\[\(]\s*(música|music|risas|aplausos|sonido|silencio|inaudible|murmullos|suspiro|tos)[^\]\)]*[\]\)]/gi, '')
-                .replace(/¡?\s*Subtítulos\s+(realizados|creados|por)[^.?!]*[.?!]?/gi, '')
-                .replace(/¡?\s*Amara\.org[^.?!]*[.?!]?/gi, '')
-                .replace(/¡?\s*Gracias por ver el video[^.?!]*[.?!]?/gi, '')
-                .replace(/([¡¿]?\s*[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]+[!?.,;:]*)(\s*\1){2,}/gi, '')
-                .replace(/\s+/g, ' ')
-                .trim();
-
-            const palabras = limpio.toLowerCase().match(/[a-zA-Záéíóúüñ]{2,}/g) || [];
-            if (palabras.length < 2) return "";
-
-            const conteo = {};
-            let maxRep = 0;
-            for (const p of palabras) {
-                conteo[p] = (conteo[p] || 0) + 1;
-                if (conteo[p] > maxRep) maxRep = conteo[p];
-            }
-            if (palabras.length >= 5 && (maxRep / palabras.length) > 0.45) {
-                return "";
-            }
-
-            return limpio;
-        }
-
         function asegurarBloqueActivo() {
-            if (bloquesDocumento.length === 0) {
-                const t = obtenerTiempoActual();
-                bloquesDocumento.push({
-                    tiempoSeg: t,
-                    tiempoTxt: formatearTiempo(t),
-                    textoConfirmado: "",
-                    imagenBase64: null
-                });
+            return bloquesDocumento.length ? bloquesDocumento[bloquesDocumento.length - 1] : nuevoBloque(obtenerTiempoActual());
+        }
+        function bloquePorTiempo(t) {
+            for (let i = bloquesDocumento.length - 1; i >= indiceSesion; i--) {
+                if (bloquesDocumento[i].tiempoSeg <= t + 0.3) return bloquesDocumento[i];
             }
-            return bloquesDocumento[bloquesDocumento.length - 1];
+            return bloquesDocumento[Math.min(indiceSesion, bloquesDocumento.length - 1)] || null;
+        }
+        function insertarTextoEnBloque(id, texto) {
+            const b = bloquesDocumento.find(x => x.id === id) || bloquesDocumento[bloquesDocumento.length - 1];
+            if (!b) return;
+            b.textoConfirmado = ((b.textoConfirmado || '') + (b.textoConfirmado ? ' ' : '') + texto).trim();
+            renderizarBloques();
+        }
+        function eliminarBloque(id) {
+            const i = bloquesDocumento.findIndex(b => b.id === id);
+            if (i >= 0) { bloquesDocumento.splice(i, 1); if (indiceSesion > i) indiceSesion--; renderizarBloques(); }
         }
 
-        function remuestrearA16k(float32Buffers, inputSampleRate) {
-            let totalLen = 0;
-            for (const b of float32Buffers) totalLen += b.length;
-            if (totalLen === 0) return new Float32Array(0);
+        /* ============================================================
+           RENDER INCREMENTAL (no destruye lo que el usuario está editando,
+           y el cuadro de texto se agranda para mostrar TODO el texto)
+           ============================================================ */
+        function autoajustar(ta) { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
 
-            const ratio = inputSampleRate / 16000;
-            const outLen = Math.floor(totalLen / ratio);
-            const result = new Float32Array(outLen);
-
-            const flat = new Float32Array(totalLen);
-            let offset = 0;
-            for (const b of float32Buffers) {
-                flat.set(b, offset);
-                offset += b.length;
-            }
-
-            for (let i = 0; i < outLen; i++) {
-                const idx = Math.floor(i * ratio);
-                result[i] = flat[idx] || 0;
-            }
-            return result;
+        function crearElementoBloque(b) {
+            const div = document.createElement('div');
+            div.className = 'bloque-item';
+            div.dataset.id = b.id;
+            div.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge bg-light text-primary border etiqueta"></span>
+                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 btn-del">✕</button>
+                </div>
+                <textarea class="form-control form-control-sm mt-1 txt" rows="1" placeholder="Esperando voz o escribe aquí..."></textarea>
+                <div class="img-wrap"></div>`;
+            const ta = div.querySelector('.txt');
+            ta.addEventListener('input', () => {
+                const blk = bloquesDocumento.find(x => x.id === b.id);
+                if (blk) blk.textoConfirmado = ta.value;
+                autoajustar(ta); actualizarContadores(); programarGuardado();
+            });
+            div.querySelector('.btn-del').addEventListener('click', () => eliminarBloque(b.id));
+            return div;
         }
 
-        async function procesarBloqueAudioConWhisper() {
-            if (whisperOcupado || audioChunkBuffer.length === 0) return;
-            if (!window.whisperPipelineLoader) return;
-
-            const buffersAProcesar = audioChunkBuffer.splice(0, audioChunkBuffer.length);
-            const sampleRateOrigen = audioCaptureCtx ? audioCaptureCtx.sampleRate : 44100;
-            const audio16k = remuestrearA16k(buffersAProcesar, sampleRateOrigen);
-
-            if (audio16k.length < 16000) return;
-            let energia = 0;
-            for (let i = 0; i < audio16k.length; i += 10) {
-                energia += Math.abs(audio16k[i]);
+        function actualizarContadores() {
+            const conImagen = bloquesDocumento.filter(b => b.imagenBase64).length;
+            blockCount.textContent = `${conImagen} ${conImagen === 1 ? 'filmina' : 'filminas'}`;
+            let palabras = 0, bytes = 0;
+            for (const b of bloquesDocumento) {
+                const t = (b.textoConfirmado || '').trim();
+                if (t) palabras += t.split(/\s+/).length;
+                bytes += t.length + (b.imagenBase64 ? b.imagenBase64.length : 0);
             }
-            if ((energia / (audio16k.length / 10)) < 0.004) return;
+            wordCountBadge.textContent = `${palabras} palabras`;
+            memoryBadge.textContent = `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+            const hay = bloquesDocumento.length > 0;
+            exportWordBtn.disabled = !hay; exportPdfBtn.disabled = !hay; clearAllBtn.disabled = !hay;
+        }
 
-            whisperOcupado = true;
-            aiStatusBadge.style.display = 'inline-block';
+        const HTML_VACIO = `<p class="text-muted small text-center mt-5 placeholder-vacio">
+            Pega el link de la clase o sube el video arriba.<br>
+            Al darle a <b>Reproducir y Transcribir</b>, aquí aparecerán las filminas junto con la transcripción continua.</p>`;
 
+        function renderizarBloques() {
+            const cerca = timelinePreview.scrollHeight - timelinePreview.scrollTop - timelinePreview.clientHeight < 90;
+
+            if (!bloquesDocumento.length) {
+                timelinePreview.innerHTML = HTML_VACIO;
+                actualizarContadores(); programarGuardado();
+                return;
+            }
+            const ph = timelinePreview.querySelector('.placeholder-vacio');
+            if (ph) ph.remove();
+
+            const ids = new Set(bloquesDocumento.map(b => String(b.id)));
+            timelinePreview.querySelectorAll('.bloque-item').forEach(el => { if (!ids.has(el.dataset.id)) el.remove(); });
+
+            bloquesDocumento.forEach((b, idx) => {
+                let el = timelinePreview.querySelector(`.bloque-item[data-id="${b.id}"]`);
+                if (!el) { el = crearElementoBloque(b); timelinePreview.appendChild(el); }
+                el.querySelector('.etiqueta').textContent = `Sección ${idx + 1} · ⏱️ ${b.tiempoTxt}`;
+                const ta = el.querySelector('.txt');
+                const valor = b.textoConfirmado || '';
+                if (document.activeElement !== ta && ta.value !== valor) ta.value = valor;
+                autoajustar(ta);
+                const wrap = el.querySelector('.img-wrap');
+                if (b.imagenBase64 && wrap.dataset.has !== '1') {
+                    const img = document.createElement('img');
+                    img.className = 'bloque-img'; img.alt = 'Filmina'; img.src = b.imagenBase64;
+                    wrap.appendChild(img); wrap.dataset.has = '1';
+                }
+            });
+
+            actualizarContadores();
+            if (cerca) timelinePreview.scrollTop = timelinePreview.scrollHeight;
+            programarGuardado();
+        }
+
+        /* ============================================================
+           LIMPIEZA DEL TEXTO DE WHISPER (sin comerse palabras reales)
+           ============================================================ */
+        function limpiarTextoWhisper(raw) {
+            if (!raw) return '';
+            let t = raw
+                .replace(/[\[\(]\s*(música|musica|music|risas|aplausos|sonido|silencio|inaudible|murmullos|suspiro|tos)[^\]\)]*[\]\)]/gi, '')
+                .replace(/subtítulos realizados por la comunidad de amara\.org/gi, '')
+                .replace(/\s+/g, ' ').trim();
+            // Colapsa bucles de alucinación (3+ repeticiones seguidas) dejando UNA sola vez
+            t = t.replace(/([\p{L}\p{N}]+(?:\s+[\p{L}\p{N}]+){0,5})(?:[\s,.;:!?¡¿]+\1(?![\p{L}\p{N}])){2,}/giu, '$1');
+            // Frases típicas inventadas por Whisper cuando solo hay silencio/música
+            if (/^(¡?\s*(subtítulos[^.!?]*|gracias por ver[^.!?]*|amara\.org[^.!?]*|suscríbete[^.!?]*)[.!?]?\s*)+$/i.test(t)) return '';
+            return t;
+        }
+
+        /* ============================================================
+           IA WHISPER EN WEB WORKER (no congela la página ni pierde audio)
+           ============================================================ */
+        const CODIGO_WORKER = `
+            import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+            env.allowLocalModels = false;
+            let asr = null;
+            self.onmessage = async (e) => {
+                const m = e.data;
+                if (m.tipo === 'cargar') {
+                    try {
+                        asr = await pipeline('automatic-speech-recognition', m.modelo, {
+                            quantized: true,
+                            progress_callback: (p) => self.postMessage({ tipo: 'progreso', p })
+                        });
+                        self.postMessage({ tipo: 'listo' });
+                    } catch (err) { self.postMessage({ tipo: 'error', msg: String(err) }); }
+                } else if (m.tipo === 'transcribir') {
+                    try {
+                        const out = await asr(m.audio, { language: 'spanish', task: 'transcribe', return_timestamps: false });
+                        self.postMessage({ tipo: 'resultado', id: m.id, texto: (out && out.text) ? out.text : '' });
+                    } catch (err) { self.postMessage({ tipo: 'resultado', id: m.id, texto: '', error: String(err) }); }
+                }
+            };`;
+
+        function iniciarWhisper() {
+            if (worker) return;
             try {
-                const transcriber = await window.whisperPipelineLoader((msg) => {
-                    aiStatusBadge.textContent = msg;
-                });
-                aiStatusBadge.className = 'badge bg-success';
-                aiStatusBadge.textContent = '🧠 IA Transcribiendo...';
-
-                const output = await transcriber(audio16k, {
-                    language: 'spanish',
-                    task: 'transcribe',
-                    chunk_length_s: 15,
-                    stride_length_s: 3,
-                    repetition_penalty: 1.25,
-                    no_repeat_ngram_size: 3
-                });
-
-                const textoLimpio = limpiarTextoWhisper(output && output.text ? output.text : '');
-                if (textoLimpio && textoLimpio.length > 2) {
-                    const bloqueActual = asegurarBloqueActivo();
-                    const sep = bloqueActual.textoConfirmado ? ' ' : '';
-                    bloqueActual.textoConfirmado = (bloqueActual.textoConfirmado + sep + textoLimpio).trim();
-                    renderizarBloques();
-                }
+                const url = URL.createObjectURL(new Blob([CODIGO_WORKER], { type: 'text/javascript' }));
+                worker = new Worker(url, { type: 'module' });
             } catch (err) {
-                console.warn('Error Whisper:', err);
-            } finally {
-                whisperOcupado = false;
-                if (capturandoEscenas) {
-                    aiStatusBadge.className = 'badge bg-info text-dark';
-                    aiStatusBadge.textContent = '🎧 Escuchando audio interno...';
-                } else {
-                    aiStatusBadge.style.display = 'none';
+                errorIA = true;
+                Swal.fire('No se pudo iniciar la IA', 'Tu navegador no permitió crear el motor Whisper en segundo plano. Usa Chrome o Edge actualizado.', 'error');
+                return;
+            }
+            worker.onmessage = (e) => {
+                const m = e.data;
+                if (m.tipo === 'progreso') {
+                    const p = m.p || {};
+                    if (p.status === 'progress' && typeof p.progress === 'number') {
+                        textoProgresoModelo = `⏳ Descargando IA ${Math.round(p.progress)}%`;
+                        actualizarEstadoIA();
+                    }
+                } else if (m.tipo === 'listo') {
+                    whisperListo = true; textoProgresoModelo = '';
+                    procesarCola(); actualizarEstadoIA();
+                } else if (m.tipo === 'error') {
+                    errorIA = true; actualizarEstadoIA();
+                    Swal.fire('Error al cargar la IA', 'No se pudo descargar el modelo Whisper. Revisa tu conexión e inténtalo de nuevo.<br><small>' + esc(m.msg) + '</small>', 'error');
+                } else if (m.tipo === 'resultado') {
+                    const it = itemEnCurso; itemEnCurso = null; whisperOcupado = false;
+                    if (m.error) console.warn('Whisper:', m.error);
+                    if (it && it.gen === generacion) {
+                        const txt = limpiarTextoWhisper(m.texto);
+                        if (txt) insertarTextoEnBloque(it.bloqueId, txt);
+                    }
+                    procesarCola(); actualizarEstadoIA(); controlarContrapresion();
                 }
+            };
+            worker.onerror = (e) => { console.warn('Worker error', e); };
+            worker.postMessage({ tipo: 'cargar', modelo: MODELO_WHISPER });
+            actualizarEstadoIA();
+        }
+
+        function pendientesIA() { return colaAudio.length + (whisperOcupado ? 1 : 0); }
+
+        function procesarCola() {
+            if (!worker || !whisperListo || whisperOcupado || !colaAudio.length) return;
+            const it = colaAudio.shift();
+            itemEnCurso = it; whisperOcupado = true;
+            const audio = it.audio;
+            worker.postMessage({ tipo: 'transcribir', id: ++idPeticion, audio }, [audio.buffer]);
+        }
+
+        function actualizarEstadoIA() {
+            const pend = pendientesIA();
+            queueBadge.style.display = (pend > 0 || capturandoEscenas) ? 'inline-block' : 'none';
+            queueBadge.textContent = `Cola IA: ${pend}`;
+            if (errorIA) { aiStatusBadge.style.display = 'inline-block'; aiStatusBadge.className = 'badge bg-danger'; aiStatusBadge.textContent = '⚠️ IA no disponible'; return; }
+            if (worker && !whisperListo) {
+                aiStatusBadge.style.display = 'inline-block'; aiStatusBadge.className = 'badge bg-warning text-dark';
+                aiStatusBadge.textContent = textoProgresoModelo || '⏳ Cargando IA...';
+            } else if (pausadoPorCola) {
+                aiStatusBadge.style.display = 'inline-block'; aiStatusBadge.className = 'badge bg-secondary';
+                aiStatusBadge.textContent = '⏸️ Pausa: la IA se pone al día';
+            } else if (whisperOcupado) {
+                aiStatusBadge.style.display = 'inline-block'; aiStatusBadge.className = 'badge bg-success';
+                aiStatusBadge.textContent = '🧠 IA transcribiendo...';
+            } else if (capturandoEscenas) {
+                aiStatusBadge.style.display = 'inline-block'; aiStatusBadge.className = 'badge bg-info text-dark';
+                aiStatusBadge.textContent = '🎧 Escuchando audio...';
+            } else {
+                aiStatusBadge.style.display = 'none';
             }
         }
 
-        function capturarFotogramaActual() {
-            if (!modoYoutube && videoPlayer.videoWidth && !corsBloqueado) {
-                try {
-                    const maxW = 640;
-                    const scale = Math.min(1, maxW / videoPlayer.videoWidth);
-                    captureCanvas.width = Math.round(videoPlayer.videoWidth * scale);
-                    captureCanvas.height = Math.round(videoPlayer.videoHeight * scale);
-                    const ctx = captureCanvas.getContext('2d');
-                    ctx.drawImage(videoPlayer, 0, 0, captureCanvas.width, captureCanvas.height);
-                    return captureCanvas.toDataURL('image/jpeg', 0.68);
-                } catch {
-                    corsBloqueado = true;
+        /* Contrapresión: si la IA va más lenta que el video, se pausa el video
+           para que NO se pierda ni una palabra, y se reanuda solo. */
+        function pausarMedio() { if (modoYoutube) controlarReproductorYoutube('pauseVideo'); else videoPlayer.pause(); }
+        function reanudarMedio() { if (modoYoutube) controlarReproductorYoutube('playVideo'); else videoPlayer.play().catch(() => {}); }
+        function controlarContrapresion() {
+            if (!capturandoEscenas) return;
+            const pend = pendientesIA();
+            if (!pausadoPorCola && pend >= COLA_PAUSA) {
+                pausadoPorCola = true; pausarMedio(); actualizarEstadoIA();
+            } else if (pausadoPorCola && pend <= COLA_REANUDA) {
+                pausadoPorCola = false; reanudarMedio(); actualizarEstadoIA();
+            }
+        }
+
+        /* ============================================================
+           AUDIO: captura continua → segmentos cortados en silencios → cola
+           ============================================================ */
+        const CODIGO_WORKLET = `
+            class CaptorPCM extends AudioWorkletProcessor {
+                constructor() { super(); this.buf = new Float32Array(2048); this.n = 0; }
+                process(inputs) {
+                    const inp = inputs[0];
+                    if (inp && inp.length) {
+                        const a = inp[0], b = inp.length > 1 ? inp[1] : null;
+                        for (let i = 0; i < a.length; i++) {
+                            this.buf[this.n++] = b ? (a[i] + b[i]) / 2 : a[i];
+                            if (this.n === this.buf.length) { this.port.postMessage(this.buf.slice(0)); this.n = 0; }
+                        }
+                    }
+                    return true;
                 }
             }
+            registerProcessor('captor-pcm', CaptorPCM);`;
+        let urlWorklet = null;
 
+        function crearAudioContext() {
+            try { return new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 }); }
+            catch { return new (window.AudioContext || window.webkitAudioContext)(); }
+        }
+
+        async function montarCaptor(ctx, srcNode) {
+            const mute = ctx.createGain();
+            mute.gain.value = 0;                 // el captor JAMÁS suena en los parlantes
+            let node;
+            if (ctx.audioWorklet) {
+                if (!ctx._wlListo) {
+                    if (!urlWorklet) urlWorklet = URL.createObjectURL(new Blob([CODIGO_WORKLET], { type: 'application/javascript' }));
+                    await ctx.audioWorklet.addModule(urlWorklet);
+                    ctx._wlListo = true;
+                }
+                node = new AudioWorkletNode(ctx, 'captor-pcm', { numberOfInputs: 1, numberOfOutputs: 1, channelCount: 2 });
+                node.port.onmessage = (e) => recibirPCM(e.data);
+            } else {
+                // Respaldo (páginas abiertas desde file://, sin AudioWorklet)
+                node = ctx.createScriptProcessor(4096, 2, 1);
+                node.onaudioprocess = (e) => {
+                    const a = e.inputBuffer.getChannelData(0), out = new Float32Array(a.length);
+                    if (e.inputBuffer.numberOfChannels > 1) {
+                        const b = e.inputBuffer.getChannelData(1);
+                        for (let i = 0; i < a.length; i++) out[i] = (a[i] + b[i]) / 2;
+                    } else out.set(a);
+                    recibirPCM(out);
+                };
+            }
+            srcNode.connect(node);
+            node.connect(mute);
+            mute.connect(ctx.destination);
+            return { node, mute, srcNode };
+        }
+
+        // Modo directo (video local / mp4 con CORS): el audio se lee del propio <video>,
+        // sin compartir pantalla y sin necesidad de parlantes.
+        async function montarAudioDirecto() {
+            if (!ctxDirecto || ctxDirecto.state === 'closed') { ctxDirecto = crearAudioContext(); srcElemento = null; }
+            if (ctxDirecto.state === 'suspended') await ctxDirecto.resume();
+            if (!srcElemento) {
+                srcElemento = ctxDirecto.createMediaElementSource(videoPlayer);
+                gainMonitor = ctxDirecto.createGain();
+                srcElemento.connect(gainMonitor);
+                gainMonitor.connect(ctxDirecto.destination);
+            }
+            gainMonitor.gain.value = chkEscuchar.checked ? 1 : 0;
+            audioSampleRate = ctxDirecto.sampleRate;
+            captorActual = await montarCaptor(ctxDirecto, srcElemento);
+        }
+
+        // Modo pestaña (YouTube): único modo posible, el navegador no deja leer el audio del iframe.
+        async function montarCapturaPestana() {
+            try {
+                tabCaptureStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { displaySurface: 'browser' },
+                    audio: {
+                        echoCancellation: false, noiseSuppression: false, autoGainControl: false,
+                        suppressLocalAudioPlayback: !chkEscuchar.checked   // silencia los parlantes pero la IA sigue oyendo
+                    },
+                    preferCurrentTab: true
+                });
+            } catch {
+                Swal.fire('Permiso requerido', 'Selecciona esta pestaña, activa "Compartir también el audio de la pestaña" y dale a Compartir.', 'info');
+                return false;
+            }
+            tabCaptureVideo = document.createElement('video');
+            tabCaptureVideo.muted = true;
+            tabCaptureVideo.srcObject = tabCaptureStream;
+            await tabCaptureVideo.play();
+            const vt = tabCaptureStream.getVideoTracks()[0];
+            if (vt) vt.addEventListener('ended', () => { if (capturandoEscenas) { pausarMedio(); detenerCapturaFotogramas(); } });
+
+            const at = tabCaptureStream.getAudioTracks();
+            if (at.length) {
+                ctxTab = crearAudioContext();
+                if (ctxTab.state === 'suspended') await ctxTab.resume();
+                audioSampleRate = ctxTab.sampleRate;
+                const src = ctxTab.createMediaStreamSource(new MediaStream(at));
+                captorActual = await montarCaptor(ctxTab, src);
+            } else {
+                Swal.fire('Audio de pestaña no compartido', 'Para transcribir, deja encendido "Compartir también el audio de la pestaña".', 'warning');
+            }
+            return true;
+        }
+
+        function desmontarAudio() {
+            if (captorActual) {
+                try { captorActual.srcNode.disconnect(captorActual.node); } catch {}
+                try { captorActual.node.disconnect(); } catch {}
+                try { captorActual.mute.disconnect(); } catch {}
+                try { if (captorActual.node.port) captorActual.node.port.onmessage = null; else captorActual.node.onaudioprocess = null; } catch {}
+                captorActual = null;
+            }
+            if (ctxTab) { ctxTab.close().catch(() => {}); ctxTab = null; }
+            if (tabCaptureStream) { tabCaptureStream.getTracks().forEach(t => t.stop()); tabCaptureStream = null; }
+            tabCaptureVideo = null;
+            if (gainMonitor) gainMonitor.gain.value = 1;   // el video vuelve a sonar normal cuando no se transcribe
+        }
+
+        function a16k(f32, sr) {
+            if (sr === 16000) return f32;
+            const ratio = sr / 16000, n = Math.floor(f32.length / ratio), out = new Float32Array(n);
+            for (let i = 0; i < n; i++) {
+                const ini = Math.floor(i * ratio), fin = Math.min(f32.length, Math.floor((i + 1) * ratio));
+                let s = 0; for (let j = ini; j < fin; j++) s += f32[j];
+                out[i] = s / Math.max(1, fin - ini);
+            }
+            return out;
+        }
+
+        function recibirPCM(f) {
+            if (!aceptandoPCM) return;
+            pcmBuffer.push(f); pcmSamples += f.length;
+            if (pcmSamples / audioSampleRate >= SEG_OBJ) cortarSegmento(false);
+        }
+
+        function aplanarPCM() {
+            const plano = new Float32Array(pcmSamples);
+            let o = 0; for (const b of pcmBuffer) { plano.set(b, o); o += b.length; }
+            return plano;
+        }
+
+        // Corta el audio acumulado en el punto MÁS SILENCIOSO (entre palabras/frases)
+        // para no partir ninguna palabra por la mitad.
+        function cortarSegmento(flushTodo) {
+            if (pcmSamples === 0) return;
+            const sr = audioSampleRate, plano = aplanarPCM();
+            let corte = plano.length;
+            if (!flushTodo) {
+                const win = Math.round(sr * 0.05), step = Math.max(1, Math.round(win / 2));
+                const desde = Math.max(Math.round(SEG_MIN * sr), plano.length - Math.round(4 * sr));
+                let mejor = Infinity, mejorPos = Math.max(0, plano.length - win);
+                for (let p = desde; p + win <= plano.length; p += step) {
+                    let e = 0; for (let i = p; i < p + win; i++) e += plano[i] * plano[i];
+                    if (e < mejor) { mejor = e; mejorPos = p; }
+                }
+                corte = mejorPos + Math.round(win / 2);
+            }
+            const tAhora = obtenerTiempoActual();
+            const durSeg = corte / sr;
+            const tFinSeg = tAhora - (plano.length - corte) / sr;
+            const tMid = Math.max(0, tFinSeg - durSeg / 2);
+
+            const segCopia = plano.slice(0, corte);
+            const resto = plano.slice(corte);
+            pcmBuffer = resto.length ? [resto] : []; pcmSamples = resto.length;
+
+            if (durSeg < 0.2) return;
+            const a = a16k(segCopia, sr);
+            let pico = 0; for (let i = 0; i < a.length; i++) { const v = Math.abs(a[i]); if (v > pico) pico = v; }
+            if (pico < 0.002) return;                      // silencio digital: nada que transcribir
+            if (pico < 0.5) { const g = Math.min(8, 0.7 / pico); for (let i = 0; i < a.length; i++) a[i] *= g; }  // normaliza voz baja
+
+            const bloque = bloquePorTiempo(tMid);
+            colaAudio.push({ audio: a, bloqueId: bloque ? bloque.id : null, gen: generacion });
+            procesarCola(); actualizarEstadoIA(); controlarContrapresion();
+        }
+
+        /* ============================================================
+           FOTOGRAMAS
+           ============================================================ */
+        function fuenteVisual() {
             if (tabCaptureVideo && tabCaptureVideo.videoWidth) {
-                try {
-                    const targetEl = modoYoutube ? youtubeFrame : videoPlayer;
-                    const rect = targetEl.getBoundingClientRect();
-                    const scaleX = tabCaptureVideo.videoWidth / window.innerWidth;
-                    const scaleY = tabCaptureVideo.videoHeight / window.innerHeight;
-
-                    captureCanvas.width = 640;
-                    captureCanvas.height = Math.round((rect.height / rect.width) * 640);
-                    const ctx = captureCanvas.getContext('2d');
-                    ctx.drawImage(
-                        tabCaptureVideo,
-                        rect.left * scaleX, rect.top * scaleY, rect.width * scaleX, rect.height * scaleY,
-                        0, 0, captureCanvas.width, captureCanvas.height
-                    );
-                    return captureCanvas.toDataURL('image/jpeg', 0.68);
-                } catch {}
+                const el = modoYoutube ? youtubeFrame : videoPlayer;
+                const r = el.getBoundingClientRect();
+                const sx = tabCaptureVideo.videoWidth / window.innerWidth, sy = tabCaptureVideo.videoHeight / window.innerHeight;
+                return { el: tabCaptureVideo, sx: r.left * sx, sy: r.top * sy, sw: r.width * sx, sh: r.height * sy, ratio: r.height / r.width };
+            }
+            if (!modoYoutube && videoPlayer.videoWidth) {
+                return { el: videoPlayer, sx: 0, sy: 0, sw: videoPlayer.videoWidth, sh: videoPlayer.videoHeight, ratio: videoPlayer.videoHeight / videoPlayer.videoWidth };
             }
             return null;
         }
 
-        function evaluarEstadoVisual() {
-            const tmpCanvas = document.createElement('canvas');
-            tmpCanvas.width = 32;
-            tmpCanvas.height = 18;
-            const ctx = tmpCanvas.getContext('2d');
-
+        function capturarFotogramaActual() {
+            const f = fuenteVisual();
+            if (!f) return null;
             try {
-                if (!modoYoutube && videoPlayer.videoWidth && !corsBloqueado) {
-                    ctx.drawImage(videoPlayer, 0, 0, 32, 18);
-                } else if (tabCaptureVideo && tabCaptureVideo.videoWidth) {
-                    const targetEl = modoYoutube ? youtubeFrame : videoPlayer;
-                    const rect = targetEl.getBoundingClientRect();
-                    const scaleX = tabCaptureVideo.videoWidth / window.innerWidth;
-                    const scaleY = tabCaptureVideo.videoHeight / window.innerHeight;
-                    ctx.drawImage(
-                        tabCaptureVideo,
-                        rect.left * scaleX, rect.top * scaleY, rect.width * scaleX, rect.height * scaleY,
-                        0, 0, 32, 18
-                    );
-                } else {
-                    return { cambio: false, diff: 0 };
-                }
-
-                const data = ctx.getImageData(0, 0, 32, 18).data;
-                if (!lastFrameSignature) {
-                    lastFrameSignature = data;
-                    ultimoFotogramaEstable = capturarFotogramaActual();
-                    return { cambio: false, diff: 0 };
-                }
-
-                let diff = 0;
-                for (let i = 0; i < data.length; i += 4) {
-                    diff += Math.abs(data[i] - lastFrameSignature[i])
-                          + Math.abs(data[i + 1] - lastFrameSignature[i + 1])
-                          + Math.abs(data[i + 2] - lastFrameSignature[i + 2]);
-                }
-                const promedioDiff = diff / (32 * 18 * 3);
-
-                // Iniciar cronómetro sincronizado en el primer movimiento real del video
-                if (modoYoutube && !youtubeStartTime && promedioDiff > 4) {
-                    youtubeStartTime = Date.now();
-                }
-
-                // Umbral 14 para capturar TODAS las filminas y cambios de escena sin saltarse ninguno
-                if (promedioDiff > 14) {
-                    lastFrameSignature = data;
-                    return { cambio: true, diff: promedioDiff };
-                } else {
-                    ultimoFotogramaEstable = capturarFotogramaActual();
-                    return { cambio: false, diff: promedioDiff };
-                }
-            } catch {
-                return { cambio: false, diff: 0 };
-            }
+                captureCanvas.width = 640;
+                captureCanvas.height = Math.max(1, Math.round(f.ratio * 640));
+                const ctx = captureCanvas.getContext('2d');
+                ctx.drawImage(f.el, f.sx, f.sy, f.sw, f.sh, 0, 0, captureCanvas.width, captureCanvas.height);
+                return captureCanvas.toDataURL('image/jpeg', 0.68);
+            } catch { return null; }
         }
 
-        function renderizarBloques() {
-            const conImagen = bloquesDocumento.filter(b => b.imagenBase64).length;
-            blockCount.textContent = `${conImagen} ${conImagen === 1 ? 'filmina' : 'filminas'}`;
-
-            const textoTotal = bloquesDocumento.map(b => b.textoConfirmado || "").join(" ").trim();
-            const palabras = textoTotal ? textoTotal.split(/\s+/).length : 0;
-            wordCountBadge.textContent = `${palabras} palabras`;
-
-            const bytesAprox = JSON.stringify(bloquesDocumento).length;
-            memoryBadge.textContent = `${(bytesAprox / (1024 * 1024)).toFixed(1)} MB`;
-
-            const hayContenido = bloquesDocumento.length > 0;
-            exportWordBtn.disabled = !hayContenido;
-            exportPdfBtn.disabled = !hayContenido;
-            clearAllBtn.disabled = !hayContenido;
-
-            if (!hayContenido) {
-                timelinePreview.innerHTML = `<p class="text-muted small text-center mt-5">Aún no hay secciones generadas.</p>`;
-                return;
-            }
-
-            timelinePreview.innerHTML = bloquesDocumento.map((b, idx) => {
-                const textoMostrar = (b.textoConfirmado || "").trim();
-                return `
-                    <div class="bloque-item">
-                        <div class="d-flex justify-content-between align-items-center mb-1 no-print">
-                            <span class="badge bg-light text-primary border">Sección ${idx + 1} · ⏱️ ${b.tiempoTxt}</span>
-                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarBloque(${idx})">✕</button>
-                        </div>
-                        <textarea class="form-control form-control-sm mt-1" rows="2" placeholder="Esperando voz o escribe aquí..." onchange="actualizarTextoBloque(${idx}, this.value)">${textoMostrar}</textarea>
-                        ${b.imagenBase64 ? `<img src="${b.imagenBase64}" class="bloque-img" alt="Filmina ${idx + 1}">` : ''}
-                    </div>
-                `;
-            }).join('');
-            timelinePreview.scrollTop = timelinePreview.scrollHeight;
-            guardarRespaldoLocal();
+        function leerFirma() {
+            const f = fuenteVisual();
+            if (!f) return null;
+            try {
+                const c = document.createElement('canvas'); c.width = 32; c.height = 18;
+                const ctx = c.getContext('2d', { willReadFrequently: true });
+                ctx.drawImage(f.el, f.sx, f.sy, f.sw, f.sh, 0, 0, 32, 18);
+                return ctx.getImageData(0, 0, 32, 18).data;
+            } catch { return null; }
+        }
+        function diferenciaFirmas(a, b) {
+            let d = 0;
+            for (let i = 0; i < a.length; i += 4) d += Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
+            return d / (32 * 18 * 3);
         }
 
-        window.actualizarTextoBloque = (idx, nuevoTexto) => {
-            if (bloquesDocumento[idx]) {
-                bloquesDocumento[idx].textoConfirmado = nuevoTexto;
-                renderizarBloques();
-            }
-        };
-
-        window.eliminarBloque = (idx) => {
-            bloquesDocumento.splice(idx, 1);
+        function cerrarSeccionConFilmina(img) {
+            if (!img) return;
+            const actual = asegurarBloqueActivo();
+            actual.imagenBase64 = img;
+            nuevoBloque(obtenerTiempoActual());
             renderizarBloques();
-        };
+        }
 
+        function vigilarEscenas() {
+            if (!capturandoEscenas) return;
+            if (!modoYoutube && videoPlayer.paused) return;
+            if (modoYoutube && (ytEstado === 2 || ytEstado === 0)) return;
+            const sig = leerFirma();
+            if (!sig) return;
+            if (!lastFrameSignature) { lastFrameSignature = sig; ultimoFotogramaEstable = capturarFotogramaActual(); return; }
+
+            const diff = diferenciaFirmas(sig, lastFrameSignature);
+            if (diff > UMBRAL_CAMBIO) {
+                const actual = asegurarBloqueActivo();
+                if ((obtenerTiempoActual() - actual.tiempoSeg) >= MIN_SECCION) {
+                    cerrarSeccionConFilmina(ultimoFotogramaEstable || capturarFotogramaActual());
+                    lastFrameSignature = sig;          // solo se actualiza cuando el cambio SÍ se aceptó
+                    ultimoFotogramaEstable = null;
+                }
+            } else {
+                ultimoFotogramaEstable = capturarFotogramaActual();
+            }
+        }
+
+        /* ============================================================
+           CARGA DE VIDEO
+           ============================================================ */
         function activarControlesVideo() {
             liveTranscribeBtn.disabled = false;
             manualSnapBtn.disabled = false;
             if (srtEntradas.length > 0) autoProcessBtn.disabled = false;
+            iniciarWhisper();   // precarga el modelo mientras el usuario revisa el video
         }
 
-        // 1A. Cargar link (YouTube o MP4 directo)
+        function reiniciarEstadoYT() { ytTiempo = 0; ytTiempoStamp = 0; ytEstado = -1; ytRecibioInfo = false; ytRelojFallback = 0; }
+
         loadUrlBtn.addEventListener('click', async () => {
             const url = videoUrlInput.value.trim();
-            if (!url) {
-                Swal.fire('Enlace vacío', 'Pega primero el link de YouTube o enlace directo del video.', 'warning');
-                return;
-            }
+            if (!url) { Swal.fire('Enlace vacío', 'Pega primero el link de YouTube o enlace directo del video.', 'warning'); return; }
 
             const ytId = extraerYoutubeId(url);
             if (ytId) {
@@ -619,91 +833,78 @@
                     Swal.fire({
                         title: 'Estás abriendo el archivo desde disco (file://)',
                         html: 'YouTube bloquea (<b>Error 153</b>) los reproductores incrustados cuando se abren directo desde una carpeta local.<br><br>Ábrelo desde tu página en GitHub Pages.',
-                        icon: 'warning',
-                        confirmButtonColor: '#0d6efd'
+                        icon: 'warning', confirmButtonColor: '#0d6efd'
                     });
                     return;
                 }
-
                 modoYoutube = true;
-                youtubeIdActual = ytId;
-                youtubeStartTime = null;
-                playbackClock.textContent = "00:00";
+                reiniciarEstadoYT();
+                playbackClock.textContent = '00:00';
                 videoPlayer.pause();
                 videoPlayer.style.display = 'none';
                 youtubeFrame.style.display = 'block';
-                youtubeFrame.src = `https://www.youtube-nocookie.com/embed/${ytId}?enablejsapi=1&rel=0&modestbranding=1`;
+                youtubeFrame.src = `https://www.youtube-nocookie.com/embed/${ytId}?enablejsapi=1&rel=0&modestbranding=1&origin=${encodeURIComponent(location.origin)}`;
                 activarControlesVideo();
-
                 try {
-                    const oembed = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${ytId}&format=json`);
-                    if (oembed.ok) {
-                        const info = await oembed.json();
-                        nombreVideoActual = info.title || `YouTube_${ytId}`;
-                    } else {
-                        nombreVideoActual = `YouTube_${ytId}`;
-                    }
-                } catch {
-                    nombreVideoActual = `YouTube_${ytId}`;
-                }
-
-                Toast.fire({ icon: 'success', title: 'YouTube cargado. Presiona el botón rojo y permite el audio de la pestaña.' });
+                    const o = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${ytId}&format=json`);
+                    nombreVideoActual = o.ok ? ((await o.json()).title || `YouTube_${ytId}`) : `YouTube_${ytId}`;
+                } catch { nombreVideoActual = `YouTube_${ytId}`; }
+                Toast.fire({ icon: 'success', title: 'YouTube cargado. Presiona el botón rojo y comparte esta pestaña con audio.' });
                 return;
             }
 
             modoYoutube = false;
-            youtubeIdActual = null;
-            youtubeStartTime = null;
-            corsBloqueado = false;
-            playbackClock.textContent = "00:00";
-            youtubeFrame.style.display = 'none';
-            youtubeFrame.src = '';
+            reiniciarEstadoYT();
+            playbackClock.textContent = '00:00';
+            youtubeFrame.style.display = 'none'; youtubeFrame.src = '';
             videoPlayer.style.display = 'block';
-            nombreVideoActual = url.split('/').pop().split('?')[0].replace(/\.[^/.]+$/, "") || "Video_Enlace";
-            videoPlayer.src = url;
-            videoPlayer.load();
+            videoPlayer.setAttribute('crossorigin', 'anonymous');
+            nombreVideoActual = url.split('/').pop().split('?')[0].replace(/\.[^/.]+$/, '') || 'Video_Enlace';
+            videoPlayer.src = url; videoPlayer.load();
             activarControlesVideo();
             Toast.fire({ icon: 'info', title: 'Enlace de video cargado.' });
         });
 
-        // 1B. Cargar video local
+        // Si el servidor del .mp4 no permite CORS, se recarga sin esa restricción (el video igual se ve).
+        videoPlayer.addEventListener('error', () => {
+            if (videoPlayer.src && !videoPlayer.src.startsWith('blob:') && videoPlayer.hasAttribute('crossorigin')) {
+                videoPlayer.removeAttribute('crossorigin'); videoPlayer.load();
+            }
+        });
+
         videoFile.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
             modoYoutube = false;
-            youtubeIdActual = null;
-            youtubeStartTime = null;
-            corsBloqueado = false;
-            playbackClock.textContent = "00:00";
-            youtubeFrame.style.display = 'none';
-            youtubeFrame.src = '';
+            reiniciarEstadoYT();
+            playbackClock.textContent = '00:00';
+            youtubeFrame.style.display = 'none'; youtubeFrame.src = '';
             videoPlayer.style.display = 'block';
-
-            nombreVideoActual = file.name.replace(/\.[^/.]+$/, "");
+            videoPlayer.setAttribute('crossorigin', 'anonymous');
+            nombreVideoActual = file.name.replace(/\.[^/.]+$/, '');
             videoPlayer.src = URL.createObjectURL(file);
             activarControlesVideo();
-            Toast.fire({ icon: 'success', title: 'Video local cargado listo para procesar' });
+            Toast.fire({ icon: 'success', title: 'Video local cargado, listo para procesar' });
         });
 
+        /* ============================================================
+           SUBTÍTULOS .SRT / .VTT
+           ============================================================ */
         function parsearSubtitulos(contenido) {
-            const bloquesRaw = contenido.replace(/\r\n/g, '\n').trim().split(/\n\n+/);
-            const resultado = [];
-            for (const b of bloquesRaw) {
+            const raws = contenido.replace(/\r\n/g, '\n').trim().split(/\n\n+/);
+            const res = [];
+            for (const b of raws) {
                 const lineas = b.split('\n').filter(l => l.trim() && !l.startsWith('WEBVTT'));
-                const lineaTiempo = lineas.find(l => l.includes('-->'));
-                if (!lineaTiempo) continue;
-
-                const inicioStr = lineaTiempo.split('-->')[0].trim().replace(',', '.');
-                const partes = inicioStr.split(':').map(parseFloat);
+                const lt = lineas.find(l => l.includes('-->'));
+                if (!lt) continue;
+                const partes = lt.split('-->')[0].trim().replace(',', '.').split(':').map(parseFloat);
                 let seg = 0;
                 if (partes.length === 3) seg = partes[0] * 3600 + partes[1] * 60 + partes[2];
                 else if (partes.length === 2) seg = partes[0] * 60 + partes[1];
-
-                const idxTiempo = lineas.indexOf(lineaTiempo);
-                const texto = lineas.slice(idxTiempo + 1).join(' ').replace(/<[^>]*>/g, '').trim();
-                if (texto) resultado.push({ tiempoSeg: seg, texto });
+                const texto = lineas.slice(lineas.indexOf(lt) + 1).join(' ').replace(/<[^>]*>/g, '').trim();
+                if (texto) res.push({ tiempoSeg: seg, texto });
             }
-            return resultado;
+            return res;
         }
 
         srtFile.addEventListener('change', (e) => {
@@ -712,9 +913,7 @@
             const reader = new FileReader();
             reader.onload = (ev) => {
                 srtEntradas = parsearSubtitulos(ev.target.result);
-                if (srtEntradas.length > 0 && (videoPlayer.src || modoYoutube)) {
-                    autoProcessBtn.disabled = false;
-                }
+                if (srtEntradas.length > 0 && (videoPlayer.src || modoYoutube)) autoProcessBtn.disabled = false;
                 Toast.fire({ icon: 'success', title: `${srtEntradas.length} bloques de subtítulos cargados` });
             };
             reader.readAsText(file, 'UTF-8');
@@ -722,284 +921,187 @@
 
         autoProcessBtn.addEventListener('click', async () => {
             if (srtEntradas.length === 0) return;
-
-            autoProcessBtn.disabled = true;
-            liveTranscribeBtn.disabled = true;
-            progressWrapper.style.display = 'block';
-            progressBar.style.width = '0%';
-            bloquesDocumento = [];
+            autoProcessBtn.disabled = true; liveTranscribeBtn.disabled = true;
+            progressWrapper.style.display = 'block'; progressBar.style.width = '0%';
+            bloquesDocumento = []; indiceSesion = 0;
 
             const grupos = [];
-            let grupoActual = null;
+            let g = null;
             for (const item of srtEntradas) {
-                if (!grupoActual || (item.tiempoSeg - grupoActual.tiempoSeg) >= 20) {
-                    if (grupoActual) grupos.push(grupoActual);
-                    grupoActual = { tiempoSeg: item.tiempoSeg, tiempoFin: item.tiempoSeg + 18, texto: item.texto };
-                } else {
-                    grupoActual.texto += ' ' + item.texto;
-                    grupoActual.tiempoFin = item.tiempoSeg + 2;
-                }
+                if (!g || (item.tiempoSeg - g.tiempoSeg) >= 20) {
+                    if (g) grupos.push(g);
+                    g = { tiempoSeg: item.tiempoSeg, tiempoFin: item.tiempoSeg + 18, texto: item.texto };
+                } else { g.texto += ' ' + item.texto; g.tiempoFin = item.tiempoSeg + 2; }
             }
-            if (grupoActual) grupos.push(grupoActual);
+            if (g) grupos.push(g);
 
             for (let i = 0; i < grupos.length; i++) {
-                const g = grupos[i];
+                const gr = grupos[i];
                 if (!modoYoutube && videoPlayer.src) {
                     await new Promise((resolve) => {
                         const onSeeked = () => {
                             videoPlayer.removeEventListener('seeked', onSeeked);
-                            const img = capturarFotogramaActual();
-                            bloquesDocumento.push({
-                                tiempoSeg: g.tiempoSeg,
-                                tiempoTxt: formatearTiempo(g.tiempoSeg),
-                                textoConfirmado: g.texto,
-                                imagenBase64: img
-                            });
-                            renderizarBloques();
-                            resolve();
+                            nuevoBloque(gr.tiempoSeg, gr.texto, capturarFotogramaActual());
+                            renderizarBloques(); resolve();
                         };
                         videoPlayer.addEventListener('seeked', onSeeked);
-                        const targetTime = Math.max(g.tiempoSeg, (g.tiempoFin || g.tiempoSeg) - 1.0);
-                        videoPlayer.currentTime = Math.min(targetTime, videoPlayer.duration || targetTime);
+                        const target = Math.max(gr.tiempoSeg, (gr.tiempoFin || gr.tiempoSeg) - 1.0);
+                        videoPlayer.currentTime = Math.min(target, videoPlayer.duration || target);
                     });
                 } else {
-                    bloquesDocumento.push({
-                        tiempoSeg: g.tiempoSeg,
-                        tiempoTxt: formatearTiempo(g.tiempoSeg),
-                        textoConfirmado: g.texto,
-                        imagenBase64: null
-                    });
+                    nuevoBloque(gr.tiempoSeg, gr.texto, null);
                     renderizarBloques();
                 }
-
-                const pct = Math.round(((i + 1) / grupos.length) * 100);
-                progressBar.style.width = `${pct}%`;
+                progressBar.style.width = `${Math.round(((i + 1) / grupos.length) * 100)}%`;
             }
-
-            autoProcessBtn.disabled = false;
-            liveTranscribeBtn.disabled = false;
+            autoProcessBtn.disabled = false; liveTranscribeBtn.disabled = false;
             setTimeout(() => { progressWrapper.style.display = 'none'; }, 1000);
             Toast.fire({ icon: 'success', title: '¡Secciones de transcripción armadas!' });
         });
 
-        function cerrarSeccionConFilmina(imgBase64) {
-            if (!imgBase64) return;
-            const bloqueActual = asegurarBloqueActivo();
-            bloqueActual.imagenBase64 = imgBase64;
-
-            const t = obtenerTiempoActual();
-            bloquesDocumento.push({
-                tiempoSeg: t,
-                tiempoTxt: formatearTiempo(t),
-                textoConfirmado: "",
-                imagenBase64: null
-            });
-            renderizarBloques();
+        /* ============================================================
+           INICIAR / DETENER REPRODUCCIÓN + TRANSCRIPCIÓN
+           ============================================================ */
+        async function videoPermiteCaptura() {
+            if (videoPlayer.src.startsWith('blob:')) return true;
+            if (!videoPlayer.videoWidth) {
+                await new Promise(r => { videoPlayer.addEventListener('loadeddata', () => r(), { once: true }); setTimeout(r, 4000); });
+            }
+            if (!videoPlayer.videoWidth) return false;
+            try {
+                const c = document.createElement('canvas'); c.width = c.height = 2;
+                const x = c.getContext('2d'); x.drawImage(videoPlayer, 0, 0, 2, 2); x.getImageData(0, 0, 1, 1);
+                return true;
+            } catch { return false; }
         }
 
-        function detenerCapturaFotogramas() {
-            detenerRelojReproduccion();
+        async function detenerCapturaFotogramas() {
+            if (!capturandoEscenas) { actualizarEstadoIA(); return; }
+            capturandoEscenas = false;
+            pausadoPorCola = false;
+            if (sceneCheckTimer) { clearInterval(sceneCheckTimer); sceneCheckTimer = null; }
+
             const ultimo = bloquesDocumento[bloquesDocumento.length - 1];
             if (ultimo && !ultimo.imagenBase64) {
                 ultimo.imagenBase64 = ultimoFotogramaEstable || capturarFotogramaActual();
-                renderizarBloques();
             }
-            ultimoFotogramaEstable = null;
+            ultimoFotogramaEstable = null; lastFrameSignature = null;
+            renderizarBloques();
 
-            capturandoEscenas = false;
-            if (sceneCheckTimer) {
-                clearInterval(sceneCheckTimer);
-                sceneCheckTimer = null;
-            }
-            if (whisperTimer) {
-                clearInterval(whisperTimer);
-                whisperTimer = null;
-            }
-            procesarBloqueAudioConWhisper();
-
-            if (audioProcessor) {
-                audioProcessor.disconnect();
-                audioProcessor = null;
-            }
-            if (audioCaptureCtx) {
-                audioCaptureCtx.close();
-                audioCaptureCtx = null;
-            }
-            if (tabCaptureStream) {
-                tabCaptureStream.getTracks().forEach(t => t.stop());
-                tabCaptureStream = null;
-                tabCaptureVideo = null;
-            }
-            aiStatusBadge.style.display = 'none';
             liveTranscribeBtn.classList.remove('mic-active');
             liveTranscribeBtn.innerHTML = '▶️ Reproducir y Transcribir Audio Interno + Filminas';
+
+            // Pequeña espera para recibir las últimas muestras de audio y NO perder la cola final
+            await new Promise(r => setTimeout(r, 350));
+            aceptandoPCM = false;
+            cortarSegmento(true);
+            pcmBuffer = []; pcmSamples = 0;
+            desmontarAudio();
+            actualizarEstadoIA();
         }
 
         liveTranscribeBtn.addEventListener('click', async () => {
-            if (capturandoEscenas) {
-                if (modoYoutube) controlarReproductorYoutube('pauseVideo');
-                else videoPlayer.pause();
-                detenerCapturaFotogramas();
-                return;
-            }
+            if (capturandoEscenas) { pausarMedio(); await detenerCapturaFotogramas(); return; }
 
+            iniciarWhisper();
+            liveTranscribeBtn.disabled = true;
             try {
-                tabCaptureStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: { displaySurface: 'browser' },
-                    audio: {
-                        echoCancellation: false,
-                        noiseSuppression: false,
-                        autoGainControl: false
-                    },
-                    preferCurrentTab: true
-                });
-
-                tabCaptureVideo = document.createElement('video');
-                tabCaptureVideo.muted = true;
-                tabCaptureVideo.srcObject = tabCaptureStream;
-                await tabCaptureVideo.play();
-
-                const audioTracks = tabCaptureStream.getAudioTracks();
-                if (audioTracks.length > 0) {
-                    audioCaptureCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    if (audioCaptureCtx.state === 'suspended') await audioCaptureCtx.resume();
-                    const source = audioCaptureCtx.createMediaStreamSource(new MediaStream(audioTracks));
-                    audioProcessor = audioCaptureCtx.createScriptProcessor(4096, 1, 1);
-                    audioChunkBuffer = [];
-
-                    audioProcessor.onaudioprocess = (e) => {
-                        if (!capturandoEscenas) return;
-                        const input = e.inputBuffer.getChannelData(0);
-                        audioChunkBuffer.push(new Float32Array(input));
-                    };
-
-                    source.connect(audioProcessor);
-                    audioProcessor.connect(audioCaptureCtx.destination);
-                } else {
-                    Swal.fire('Audio de pestaña no compartido', 'Para que la IA transcriba el audio del video, deja encendido "Compartir también el audio de la pestaña".', 'warning');
+                modoDirecto = false;
+                if (!modoYoutube) modoDirecto = await videoPermiteCaptura();
+                if (modoDirecto) {
+                    try { await montarAudioDirecto(); }
+                    catch (err) { console.warn('Audio directo no disponible, uso captura de pestaña:', err); modoDirecto = false; desmontarAudio(); }
                 }
-            } catch {
-                Swal.fire('Permiso requerido', 'Selecciona esta pestaña y dale a Permitir para capturar el audio interno y las filminas.', 'info');
-                return;
-            }
+                if (!modoDirecto) {
+                    const ok = await montarCapturaPestana();
+                    if (!ok) return;
+                }
+            } finally { liveTranscribeBtn.disabled = false; }
 
-            capturandoEscenas = true;
-            youtubeStartTime = null;
-            iniciarRelojReproduccion();
-            lastFrameSignature = null;
-            ultimoFotogramaEstable = null;
-            asegurarBloqueActivo();
+            // Preparar sesión de bloques
+            const t0 = obtenerTiempoActual();
+            const ult = bloquesDocumento[bloquesDocumento.length - 1];
+            if (ult && !ult.textoConfirmado && !ult.imagenBase64) {
+                indiceSesion = bloquesDocumento.length - 1; ult.tiempoSeg = t0; ult.tiempoTxt = formatearTiempo(t0);
+            } else { indiceSesion = bloquesDocumento.length; nuevoBloque(t0); }
             renderizarBloques();
 
-            aiStatusBadge.style.display = 'inline-block';
-            aiStatusBadge.className = 'badge bg-warning text-dark';
-            aiStatusBadge.textContent = '⏳ Iniciando IA Whisper...';
+            pcmBuffer = []; pcmSamples = 0; aceptandoPCM = true; pausadoPorCola = false;
+            lastFrameSignature = null; ultimoFotogramaEstable = null;
+            ytRelojFallback = Date.now() - t0 * 1000;
+            capturandoEscenas = true;
 
             liveTranscribeBtn.classList.add('mic-active');
             liveTranscribeBtn.innerHTML = '⏹️ Detener Reproducción y Transcripción';
+            actualizarEstadoIA();
 
-            if (window.whisperPipelineLoader) {
-                window.whisperPipelineLoader((msg) => {
-                    aiStatusBadge.textContent = msg;
-                }).then(() => {
-                    if (capturandoEscenas) {
-                        aiStatusBadge.className = 'badge bg-info text-dark';
-                        aiStatusBadge.textContent = '🎧 Escuchando audio interno...';
-                    }
-                });
-            }
+            if (modoYoutube) { suscribirYT(); controlarReproductorYoutube('playVideo'); }
+            else { try { await videoPlayer.play(); } catch {} }
 
-            if (modoYoutube) {
-                controlarReproductorYoutube('playVideo');
-            } else {
-                videoPlayer.play();
-            }
-
-            // 1. Vigilante cada 1.2s con intervalo mínimo de 2.5s para capturar TODAS las filminas sin saltarse ninguna
-            sceneCheckTimer = setInterval(() => {
-                if (!capturandoEscenas) return;
-                if (!modoYoutube && videoPlayer.paused) return;
-
-                const filminaAnteriorCompleta = ultimoFotogramaEstable;
-                const estado = evaluarEstadoVisual();
-
-                if (estado.cambio && filminaAnteriorCompleta) {
-                    const bloqueActual = asegurarBloqueActivo();
-                    const tActual = obtenerTiempoActual();
-                    if ((tActual - bloqueActual.tiempoSeg) >= 2.5) {
-                        cerrarSeccionConFilmina(filminaAnteriorCompleta);
-                    }
-                }
-            }, 1200);
-
-            // 2. Transcripción IA Whisper cada 10 segundos (modelo rápido, sin atrasarse)
-            whisperTimer = setInterval(() => {
-                if (!capturandoEscenas) return;
-                if (!modoYoutube && videoPlayer.paused) return;
-                procesarBloqueAudioConWhisper();
-            }, 10000);
+            sceneCheckTimer = setInterval(vigilarEscenas, 800);
         });
 
-        videoPlayer.addEventListener('ended', detenerCapturaFotogramas);
+        chkEscuchar.addEventListener('change', () => {
+            if (gainMonitor && capturandoEscenas && modoDirecto) gainMonitor.gain.value = chkEscuchar.checked ? 1 : 0;
+        });
+
+        videoPlayer.addEventListener('ended', () => { if (capturandoEscenas) detenerCapturaFotogramas(); });
 
         manualSnapBtn.addEventListener('click', () => {
             const img = capturarFotogramaActual();
-            if (img) {
-                cerrarSeccionConFilmina(img);
-                Toast.fire({ icon: 'success', title: 'Diapositiva capturada' });
-            } else {
-                Toast.fire({ icon: 'warning', title: 'Inicia primero la captura para tomar fotos' });
-            }
+            if (img) { cerrarSeccionConFilmina(img); Toast.fire({ icon: 'success', title: 'Diapositiva capturada' }); }
+            else Toast.fire({ icon: 'warning', title: 'Inicia primero la captura para tomar fotos' });
         });
 
-        exportWordBtn.addEventListener('click', () => {
-            if (bloquesDocumento.length === 0) return;
-
-            const fechaHoy = new Date().toLocaleDateString('es-CR', {
-                year: 'numeric', month: 'long', day: 'numeric'
+        /* ============================================================
+           EXPORTAR (espera a que la IA termine todo el audio pendiente)
+           ============================================================ */
+        async function asegurarTranscripcionCompleta() {
+            if (capturandoEscenas) {
+                await Swal.fire({ icon: 'info', title: 'Detén primero la reproducción', text: 'Presiona el botón rojo para terminar y luego exporta.' });
+                return false;
+            }
+            if (pendientesIA() === 0 || errorIA) return true;
+            Swal.fire({
+                title: 'Terminando la transcripción…',
+                html: 'La IA aún está procesando el último audio. Un momento, no se pierde nada.',
+                allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading()
             });
+            while (pendientesIA() > 0 && !errorIA) await new Promise(r => setTimeout(r, 400));
+            Swal.close();
+            return true;
+        }
 
-            const boundary = "----=_NextPart_MultimediaOnline_001";
-            let partesImagenesMhtml = "";
-            let imgIndex = 0;
+        exportWordBtn.addEventListener('click', async () => {
+            if (!bloquesDocumento.length) return;
+            if (!(await asegurarTranscripcionCompleta())) return;
 
-            const seccionesHtml = bloquesDocumento
-                .map((b) => {
-                    const textoLimpio = (b.textoConfirmado || "").trim();
-                    let imgHtml = "";
+            const fechaHoy = new Date().toLocaleDateString('es-CR', { year: 'numeric', month: 'long', day: 'numeric' });
+            const boundary = '----=_NextPart_MultimediaOnline_001';
+            let partesImagenesMhtml = '', imgIndex = 0;
 
-                    if (b.imagenBase64 && b.imagenBase64.startsWith("data:image/")) {
-                        imgIndex++;
-                        const nombreImg = `fotograma_${imgIndex}.jpg`;
-                        const base64Puro = b.imagenBase64.split(",")[1];
-                        const base64Formateado = base64Puro.match(/.{1,76}/g).join("\r\n");
-
-                        partesImagenesMhtml += `--${boundary}\r\n` +
-                            `Content-Location: file:///C:/multimedia/${nombreImg}\r\n` +
-                            `Content-Transfer-Encoding: base64\r\n` +
-                            `Content-Type: image/jpeg\r\n\r\n` +
-                            `${base64Formateado}\r\n\r\n`;
-
-                        imgHtml = `<p style="text-align: center; margin-top: 4pt; margin-bottom: 12pt;"><img src="file:///C:/multimedia/${nombreImg}" width="490" /></p>`;
-                    }
-
-                    if (!textoLimpio && !imgHtml) return "";
-
-                    return `
-                        <div style="margin-bottom: 14pt; page-break-inside: avoid;">
-                            ${textoLimpio ? `<p style="font-size: 11.5pt; text-align: justify; margin-bottom: 8pt;">${textoLimpio.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>` : ''}
-                            ${imgHtml}
-                        </div>
-                    `;
-                }).join('');
+            const seccionesHtml = bloquesDocumento.map((b) => {
+                const texto = (b.textoConfirmado || '').trim();
+                let imgHtml = '';
+                if (b.imagenBase64 && b.imagenBase64.startsWith('data:image/')) {
+                    imgIndex++;
+                    const nombreImg = `fotograma_${imgIndex}.jpg`;
+                    const b64 = b.imagenBase64.split(',')[1].match(/.{1,76}/g).join('\r\n');
+                    partesImagenesMhtml += `--${boundary}\r\nContent-Location: file:///C:/multimedia/${nombreImg}\r\nContent-Transfer-Encoding: base64\r\nContent-Type: image/jpeg\r\n\r\n${b64}\r\n\r\n`;
+                    imgHtml = `<p style="text-align: center; margin-top: 4pt; margin-bottom: 12pt;"><img src="file:///C:/multimedia/${nombreImg}" width="490" /></p>`;
+                }
+                if (!texto && !imgHtml) return '';
+                return `<div style="margin-bottom: 14pt; page-break-inside: avoid;">
+                    ${texto ? `<p style="font-size: 11.5pt; text-align: justify; margin-bottom: 8pt;">${esc(texto)}</p>` : ''}
+                    ${imgHtml}
+                </div>`;
+            }).join('');
 
             const htmlBody = `<!DOCTYPE html>
-<html xmlns:o='urn:schemas-microsoft-com:office:office'
-      xmlns:w='urn:schemas-microsoft-com:office:word'
-      xmlns='http://www.w3.org/TR/REC-html40'>
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
 <head>
     <meta charset='utf-8'>
-    <title>${nombreVideoActual}</title>
+    <title>${esc(nombreVideoActual)}</title>
     <style>
         body { font-family: 'Calibri', 'Arial', sans-serif; color: #111111; line-height: 1.55; }
         h1 { font-size: 16pt; color: #0d6efd; margin-bottom: 4pt; }
@@ -1007,71 +1109,77 @@
     </style>
 </head>
 <body>
-    <h1>${nombreVideoActual}</h1>
+    <h1>${esc(nombreVideoActual)}</h1>
     <div class="meta">Generado el ${fechaHoy} · Multimedia Online</div>
     ${seccionesHtml}
 </body>
 </html>`;
 
-            const mhtmlDoc =
-                `MIME-Version: 1.0\r\n` +
-                `Content-Type: multipart/related; boundary="${boundary}"\r\n\r\n` +
-                `--${boundary}\r\n` +
-                `Content-Type: text/html; charset="utf-8"\r\n` +
-                `Content-Transfer-Encoding: 8bit\r\n\r\n` +
-                `${htmlBody}\r\n\r\n` +
-                `${partesImagenesMhtml}` +
-                `--${boundary}--`;
+            const mhtml =
+                `MIME-Version: 1.0\r\nContent-Type: multipart/related; boundary="${boundary}"\r\n\r\n` +
+                `--${boundary}\r\nContent-Type: text/html; charset="utf-8"\r\nContent-Transfer-Encoding: 8bit\r\n\r\n` +
+                `${htmlBody}\r\n\r\n${partesImagenesMhtml}--${boundary}--`;
 
-            const blob = new Blob([mhtmlDoc], { type: 'application/msword;charset=utf-8' });
+            const blob = new Blob([mhtml], { type: 'application/msword;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = `${nombreVideoActual}_completo.doc`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
+            a.href = url; a.download = `${nombreVideoActual}_completo.doc`;
+            document.body.appendChild(a); a.click(); a.remove();
             URL.revokeObjectURL(url);
             Toast.fire({ icon: 'success', title: 'Documento Word (.doc) con texto e imágenes generado' });
         });
 
-        exportPdfBtn.addEventListener('click', () => {
-            if (bloquesDocumento.length === 0) return;
+        exportPdfBtn.addEventListener('click', async () => {
+            if (!bloquesDocumento.length) return;
+            if (!(await asegurarTranscripcionCompleta())) return;
+            const fechaHoy = new Date().toLocaleDateString('es-CR', { year: 'numeric', month: 'long', day: 'numeric' });
+            printArea.innerHTML = `<h2>${esc(nombreVideoActual)}</h2><div class="meta">Generado el ${fechaHoy} · Multimedia Online</div>` +
+                bloquesDocumento.map(b => {
+                    const t = (b.textoConfirmado || '').trim();
+                    if (!t && !b.imagenBase64) return '';
+                    return `<div class="sec">${t ? `<p>${esc(t)}</p>` : ''}${b.imagenBase64 ? `<img src="${b.imagenBase64}" alt="Filmina">` : ''}</div>`;
+                }).join('');
             window.print();
         });
 
-        clearAllBtn.addEventListener('click', () => {
-            detenerCapturaFotogramas();
-            youtubeStartTime = null;
-            playbackClock.textContent = "00:00";
-            bloquesDocumento = [];
-            srtEntradas = [];
-            nombreVideoActual = "Clase_Transcripcion";
+        /* ============================================================
+           LIMPIAR TODO
+           ============================================================ */
+        clearAllBtn.addEventListener('click', async () => {
+            if (capturandoEscenas) { pausarMedio(); await detenerCapturaFotogramas(); }
+            generacion++;                       // descarta lo que la IA aún esté procesando
+            colaAudio = [];
+            reiniciarEstadoYT();
+            playbackClock.textContent = '00:00';
+            bloquesDocumento = []; indiceSesion = 0; srtEntradas = [];
+            nombreVideoActual = 'Clase_Transcripcion';
             modoYoutube = false;
-            youtubeIdActual = null;
-            lastFrameSignature = null;
-            ultimoFotogramaEstable = null;
-            corsBloqueado = false;
-            localStorage.removeItem(STORAGE_KEY);
+            lastFrameSignature = null; ultimoFotogramaEstable = null;
+            dbSet(DB_KEY, []);
 
-            videoUrlInput.value = '';
-            videoFile.value = '';
-            srtFile.value = '';
-
-            youtubeFrame.src = '';
-            youtubeFrame.style.display = 'none';
-            videoPlayer.pause();
-            videoPlayer.removeAttribute('src');
-            videoPlayer.load();
+            videoUrlInput.value = ''; videoFile.value = ''; srtFile.value = '';
+            youtubeFrame.src = ''; youtubeFrame.style.display = 'none';
+            videoPlayer.pause(); videoPlayer.removeAttribute('src'); videoPlayer.load();
             videoPlayer.style.display = 'block';
 
-            liveTranscribeBtn.disabled = true;
-            autoProcessBtn.disabled = true;
-            manualSnapBtn.disabled = true;
-
-            renderizarBloques();
+            liveTranscribeBtn.disabled = true; autoProcessBtn.disabled = true; manualSnapBtn.disabled = true;
+            renderizarBloques(); actualizarEstadoIA();
             Toast.fire({ icon: 'info', title: 'Pantalla y video limpiados por completo' });
         });
+
+        /* ============================================================
+           ARRANQUE: restaurar respaldo
+           ============================================================ */
+        (async () => {
+            const g = await dbGet(DB_KEY);
+            if (Array.isArray(g) && g.length) {
+                g.forEach((b, i) => { if (!b.id) b.id = i + 1; });
+                bloquesDocumento = g;
+                siguienteId = Math.max(...g.map(b => b.id)) + 1;
+            }
+            renderizarBloques();
+        })();
+    })();
     </script>
 </body>
 </html>
