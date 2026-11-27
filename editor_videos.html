@@ -46,8 +46,8 @@
         #previewStage {
             width: 100%;
             flex: 1;
-            min-height: 275px;
-            max-height: 305px;
+            min-height: 405px;
+            max-height: 445px;
             background: #111827;
             border: 2px solid #0d6efd;
             border-radius: 12px;
@@ -59,7 +59,7 @@
         }
         #renderCanvas {
             max-width: 100%;
-            max-height: 298px;
+            max-height: 435px;
             background: #000000;
             border-radius: 6px;
             touch-action: none;
@@ -68,21 +68,21 @@
             background: #f8f9fa;
             border: 1px solid #dee2e6;
             border-radius: 10px;
-            padding: 6px 10px;
+            padding: 8px 11px;
         }
-        /* Línea de Tiempo Multipista estilo Camtasia */
+        /* Línea de Tiempo Multipista ampliada */
         #timelineContainer {
             background: #1e293b;
             border-radius: 10px;
-            padding: 6px 10px;
+            padding: 8px 12px;
             color: #f8fafc;
         }
         #timelineTrack {
             position: relative;
-            height: 56px;
+            height: 76px;
             background: #0f172a;
-            border: 1px solid #475569;
-            border-radius: 6px;
+            border: 1.5px solid #475569;
+            border-radius: 8px;
             cursor: pointer;
             overflow: hidden;
             user-select: none;
@@ -99,12 +99,13 @@
         }
         .tl-video-block {
             position: absolute;
-            top: 3px;
-            height: 24px;
-            border-radius: 4px;
-            font-size: 10px;
-            line-height: 24px;
-            padding: 0 6px;
+            top: 4px;
+            height: 32px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 32px;
+            padding: 0 8px;
             color: #ffffff;
             background: #2563eb;
             border: 1px solid #93c5fd;
@@ -125,22 +126,22 @@
         }
         .tl-overlay-bar {
             position: absolute;
-            height: 11px;
-            border-radius: 3px;
-            font-size: 9px;
-            line-height: 11px;
-            padding: 0 4px;
+            height: 15px;
+            border-radius: 4px;
+            font-size: 10px;
+            line-height: 15px;
+            padding: 0 5px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             cursor: pointer;
             z-index: 5;
         }
-        .tl-ov-text { top: 30px; background: #10b981; color: #fff; }
-        .tl-ov-img { top: 42px; background: #f59e0b; color: #111; font-weight: bold; }
+        .tl-ov-text { top: 40px; background: #10b981; color: #fff; }
+        .tl-ov-img { top: 57px; background: #f59e0b; color: #111; font-weight: bold; }
         .layer-pill {
             font-size: 11px;
-            padding: 1px 6px;
+            padding: 2px 7px;
             border-radius: 5px;
             display: inline-flex;
             align-items: center;
@@ -163,18 +164,18 @@
                 <div class="row g-3 content-grid align-items-stretch">
                     <!-- Columna izquierda: Banco de clips + Propiedades del clip seleccionado + Capas -->
                     <div class="col-md-5 text-start d-flex flex-column justify-content-between">
-                        <div>
+                        <div class="d-flex flex-column gap-2">
                             <!-- 1. Agregar Videos e Imágenes a la Línea de Tiempo -->
-                            <div class="panel-card mb-2">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="panel-card">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="fw-bold small text-dark">📥 1. Agregar medios a la Línea de Tiempo:</span>
-                                    <select id="aspectSelect" class="form-select form-select-sm py-0" style="width: 125px;" title="Formato del proyecto">
+                                    <select id="aspectSelect" class="form-select form-select-sm py-0" style="width: 130px;" title="Formato del proyecto">
                                         <option value="16:9" selected>16:9 YouTube</option>
                                         <option value="9:16">9:16 Short/Reel</option>
                                         <option value="1:1">1:1 Cuadrado</option>
                                     </select>
                                 </div>
-                                <div class="row g-1">
+                                <div class="row g-2">
                                     <div class="col-6">
                                         <button type="button" id="btnAddVideos" class="btn btn-primary btn-sm w-100 fw-bold py-1">
                                             🎬 + Agregar Videos
@@ -191,9 +192,9 @@
                             </div>
 
                             <!-- 2. Propiedades del Clip Seleccionado en la Línea de Tiempo -->
-                            <div class="panel-card mb-2">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="fw-bold small text-secondary text-truncate" style="max-width: 220px;" id="selectedClipTitle">
+                            <div class="panel-card">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold small text-secondary text-truncate" style="max-width: 240px;" id="selectedClipTitle">
                                         🎞️ Clip seleccionado: Ninguno
                                     </span>
                                     <div class="btn-group btn-group-sm">
@@ -202,22 +203,22 @@
                                         <button type="button" id="btnDeleteClip" class="btn btn-outline-danger py-0 px-2" title="Quitar clip de la línea de tiempo" disabled>🗑️</button>
                                     </div>
                                 </div>
-                                <div class="row g-1">
+                                <div class="row g-2">
                                     <div class="col-3">
-                                        <label class="form-label small fw-bold text-muted mb-0">Inicio (s):</label>
-                                        <input type="number" id="clipStartInput" class="form-control form-control-sm py-0" value="0" min="0" step="0.5" disabled>
+                                        <label class="form-label small fw-bold text-muted mb-1">Inicio (s):</label>
+                                        <input type="number" id="clipStartInput" class="form-control form-control-sm" value="0" min="0" step="0.5" disabled>
                                     </div>
                                     <div class="col-3">
-                                        <label class="form-label small fw-bold text-muted mb-0">Fin / Dur (s):</label>
-                                        <input type="number" id="clipEndInput" class="form-control form-control-sm py-0" value="0" min="0.5" step="0.5" disabled>
+                                        <label class="form-label small fw-bold text-muted mb-1">Fin / Dur (s):</label>
+                                        <input type="number" id="clipEndInput" class="form-control form-control-sm" value="0" min="0.5" step="0.5" disabled>
                                     </div>
                                     <div class="col-3">
-                                        <label class="form-label small fw-bold text-muted mb-0">Zoom (%):</label>
-                                        <input type="number" id="clipZoomInput" class="form-control form-control-sm py-0" value="100" min="100" max="150" step="5" disabled title="Recorta bordes si hay logo en esquina">
+                                        <label class="form-label small fw-bold text-muted mb-1">Zoom (%):</label>
+                                        <input type="number" id="clipZoomInput" class="form-control form-control-sm" value="100" min="100" max="150" step="5" disabled title="Recorta bordes si hay logo en esquina">
                                     </div>
                                     <div class="col-3">
-                                        <label class="form-label small fw-bold text-muted mb-0">Filtro:</label>
-                                        <select id="filterSelect" class="form-select form-select-sm py-0">
+                                        <label class="form-label small fw-bold text-muted mb-1">Filtro:</label>
+                                        <select id="filterSelect" class="form-select form-select-sm">
                                             <option value="none" selected>Normal</option>
                                             <option value="contrast(1.18) saturate(1.25)">Vívido</option>
                                             <option value="grayscale(100%)">B / N</option>
@@ -229,69 +230,70 @@
                             </div>
 
                             <!-- 3. Superponer Texto o Imagen en el segundo actual -->
-                            <div class="panel-card mb-2">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="panel-card">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="fw-bold small text-success">➕ Superponer en (<span id="currentSecLabel">0.0s</span>):</span>
                                     <div class="d-flex align-items-center gap-1">
                                         <span class="small text-muted">Dura:</span>
-                                        <input type="number" id="overlayDuration" class="form-control form-control-sm py-0 px-1 text-center" style="width: 48px;" value="5" min="1" max="120">
+                                        <input type="number" id="overlayDuration" class="form-control form-control-sm py-0 px-1 text-center" style="width: 52px;" value="5" min="1" max="120">
                                         <span class="small text-muted">s</span>
                                     </div>
                                 </div>
-                                <div class="input-group input-group-sm mb-1">
-                                    <input type="text" id="newTextInput" class="form-control py-0" placeholder="Texto o título en pantalla...">
-                                    <input type="color" id="newTextColor" class="form-control form-control-color py-0" value="#ffffff" title="Color">
-                                    <button type="button" id="addTextOverlayBtn" class="btn btn-success py-0 fw-bold" disabled>+ Texto</button>
+                                <div class="input-group input-group-sm mb-2">
+                                    <input type="text" id="newTextInput" class="form-control" placeholder="Texto o título en pantalla...">
+                                    <input type="color" id="newTextColor" class="form-control form-control-color" value="#ffffff" title="Color">
+                                    <button type="button" id="addTextOverlayBtn" class="btn btn-success fw-bold" disabled>+ Texto</button>
                                 </div>
-                                <button type="button" id="addImgOverlayBtn" class="btn btn-warning btn-sm w-100 fw-bold py-0" disabled>
+                                <button type="button" id="addImgOverlayBtn" class="btn btn-warning btn-sm w-100 fw-bold py-1" disabled>
                                     🏷️ + Superponer Logo / Imagen encima del video
                                 </button>
                                 <input type="file" id="overlayImgInput" accept="image/*" style="display:none;">
                             </div>
 
                             <!-- 4. Audio de fondo y Cámara flotante -->
-                            <div class="panel-card mb-1">
-                                <div class="row g-1 align-items-center">
-                                    <div class="col-5">
-                                        <button type="button" id="toggleCamBtn" class="btn btn-outline-danger btn-sm w-100 py-0 fw-bold">
-                                            📹 Cámara Flotante
+                            <div class="panel-card">
+                                <label class="form-label small fw-bold text-secondary mb-1">🎙️ Cámara en vivo, Audio original y Pista de fondo:</label>
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-4">
+                                        <button type="button" id="toggleCamBtn" class="btn btn-outline-danger btn-sm w-100 fw-bold">
+                                            📹 Cámara
                                         </button>
                                     </div>
-                                    <div class="col-3">
-                                        <select id="audioModeSelect" class="form-select form-select-sm py-0" title="Audio de los clips">
+                                    <div class="col-4">
+                                        <select id="audioModeSelect" class="form-select form-select-sm" title="Audio de los clips">
                                             <option value="keep" selected>Audio Orig.</option>
                                             <option value="mute">Silenciar</option>
                                         </select>
                                     </div>
                                     <div class="col-4">
-                                        <input type="file" id="extraAudioInput" class="form-control form-control-sm py-0" accept="audio/*" title="Pista MP3/WAV de voz o música">
+                                        <input type="file" id="extraAudioInput" class="form-control form-control-sm" accept="audio/*" title="Pista MP3/WAV de voz o música">
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Botones inferiores -->
-                        <div class="d-grid gap-1 mt-1">
+                        <div class="d-grid gap-2 mt-2">
                             <div class="row g-2">
                                 <div class="col-6">
-                                    <button id="previewBtn" class="btn btn-outline-primary btn-sm w-100 fw-bold" disabled>
+                                    <button id="previewBtn" class="btn btn-outline-primary btn-sm w-100 fw-bold py-1" disabled>
                                         ▶️ Reproducir Todo
                                     </button>
                                 </div>
                                 <div class="col-6">
-                                    <button id="renderBtn" class="btn btn-danger btn-sm w-100 fw-bold" disabled>
+                                    <button id="renderBtn" class="btn btn-danger btn-sm w-100 fw-bold py-1" disabled>
                                         🎬 Renderizar Video
                                     </button>
                                 </div>
                             </div>
                             <div class="row g-2">
                                 <div class="col-6">
-                                    <button id="downloadVideoBtn" class="btn btn-success btn-sm w-100 fw-bold" disabled>
+                                    <button id="downloadVideoBtn" class="btn btn-success btn-sm w-100 fw-bold py-1" disabled>
                                         ⬇️ Descargar Video
                                     </button>
                                 </div>
                                 <div class="col-6">
-                                    <button id="clearAllBtn" class="btn btn-outline-dark btn-sm w-100 fw-bold" disabled>
+                                    <button id="clearAllBtn" class="btn btn-outline-dark btn-sm w-100 fw-bold py-1" disabled>
                                         🗑️ Limpiar Proyecto
                                     </button>
                                 </div>
@@ -299,7 +301,7 @@
                         </div>
                     </div>
 
-                    <!-- Columna derecha: Lienzo + Línea de Tiempo Multipista -->
+                    <!-- Columna derecha: Lienzo ampliado + Línea de Tiempo Multipista más alta -->
                     <div class="col-md-7 text-start d-flex flex-column justify-content-between">
                         <div class="d-flex flex-column flex-grow-1">
                             <div class="d-flex justify-content-between align-items-center mb-1">
@@ -325,10 +327,10 @@
                             </div>
 
                             <div class="d-flex justify-content-between align-items-center mt-1 flex-wrap gap-1">
-                                <div id="layersList" class="d-flex gap-1 flex-wrap align-items-center" style="min-height: 22px;">
+                                <div id="layersList" class="d-flex gap-1 flex-wrap align-items-center" style="min-height: 24px;">
                                     <span class="small text-secondary">Pista 1 (Azul/Morado): Videos e imágenes · Pista 2 (Verde/Amarillo): Textos y logos.</span>
                                 </div>
-                                <div class="progress" style="width: 130px; height: 8px;" title="Progreso de renderizado">
+                                <div class="progress" style="width: 140px; height: 9px;" title="Progreso de renderizado">
                                     <div id="renderProgress" class="progress-bar bg-danger" style="width: 0%;"></div>
                                 </div>
                             </div>
@@ -395,13 +397,10 @@
         const camVideo = document.getElementById('camVideo');
         const hiddenAudio = document.getElementById('hiddenAudio');
 
-        // Secuencia de clips en la Pista 1:
-        // { id, type: 'video'|'image', name, url, videoEl?, imgEl?, rawDuration, trimStart, trimEnd, zoom }
         let clips = [];
         let selectedClipId = null;
         let nextClipId = 1;
 
-        // Capas superpuestas en Pista 2 (Textos / Logos):
         let overlays = [];
         let nextOverlayId = 1;
 
@@ -417,7 +416,6 @@
         let currentTimelineSec = 0;
         let scrubbingTimeline = false;
 
-        // Cámara flotante
         let camStream = null;
         let camActive = false;
         let camNormX = 0.72;
@@ -677,7 +675,6 @@
                 return;
             }
 
-            // Dibujar bloques de Pista 1 (Clips de video e imágenes)
             let acc = 0;
             clips.forEach((c, idx) => {
                 const dur = duracionClip(c);
@@ -701,7 +698,6 @@
                 acc += dur;
             });
 
-            // Dibujar bloques de Pista 2 (Textos e Imágenes superpuestas)
             overlays.forEach((ov) => {
                 const leftPct = Math.min(98, (ov.start / total) * 100);
                 const widthPct = Math.max(2.5, Math.min(100 - leftPct, ((ov.end - ov.start) / total) * 100));
@@ -891,7 +887,6 @@
             }
         }
 
-        // Cámara flotante
         function obtenerRectCamara() {
             const cw = renderCanvas.width;
             const ch = renderCanvas.height;
@@ -934,8 +929,8 @@
                 if (camIdleLoopId) cancelAnimationFrame(camIdleLoopId);
                 if (camStream) camStream.getTracks().forEach(t => t.stop());
                 camVideo.srcObject = null;
-                toggleCamBtn.className = 'btn btn-outline-danger btn-sm w-100 py-0 fw-bold';
-                toggleCamBtn.textContent = '📹 Cámara Flotante';
+                toggleCamBtn.className = 'btn btn-outline-danger btn-sm w-100 fw-bold';
+                toggleCamBtn.textContent = '📹 Cámara';
                 refrescarLienzoEstatico();
                 actualizarBotones();
                 return;
@@ -945,8 +940,8 @@
                 camVideo.srcObject = camStream;
                 await camVideo.play();
                 camActive = true;
-                toggleCamBtn.className = 'btn btn-danger btn-sm w-100 py-0 fw-bold';
-                toggleCamBtn.textContent = '⏹️ Apagar Cámara';
+                toggleCamBtn.className = 'btn btn-danger btn-sm w-100 fw-bold';
+                toggleCamBtn.textContent = '⏹️ Apagar';
                 const tick = () => {
                     if (!camActive) return;
                     if (!isPlayingPreview && !isRendering) refrescarLienzoEstatico();
@@ -959,7 +954,6 @@
             }
         });
 
-        // Arrastre en canvas
         function obtenerCoordsCanvas(clientX, clientY) {
             const rect = renderCanvas.getBoundingClientRect();
             return {
@@ -1142,7 +1136,6 @@
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 destAudio = audioCtx.createMediaStreamDestination();
 
-                // Conectar audio de cada video clip si está en modo Audio Original
                 if (audioModeSelect.value === 'keep') {
                     clips.forEach(c => {
                         if (c.type === 'video' && c.videoEl) {
@@ -1157,7 +1150,6 @@
                     });
                 }
 
-                // Conectar pista extra de música/voz
                 if (extraAudioUrl) {
                     try {
                         hiddenAudio.currentTime = 0;
@@ -1169,7 +1161,6 @@
                     } catch {}
                 }
 
-                // Conectar micrófono en vivo si cámara activa
                 if (camActive && camStream && camStream.getAudioTracks().length) {
                     try {
                         const srcM = audioCtx.createMediaStreamSource(new MediaStream(camStream.getAudioTracks()));
