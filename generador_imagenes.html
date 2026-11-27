@@ -163,12 +163,17 @@
                                         <option value="720x1280">Short/Reel (9:16)</option>
                                     </select>
                                 </div>
-                                <div class="col-7">
-                                    <label class="form-label fw-bold small text-secondary mb-1">⚡ Acelerador IA Rápida:</label>
-                                    <button type="button" id="helpConfigBtn" class="btn btn-outline-primary btn-sm w-100 fw-bold text-truncate">
-                                        ℹ️ Activar IA Rápida Gratis
-                                    </button>
-                                </div>
+									<div class="col-7">
+										<label class="form-label fw-bold small text-secondary mb-1">⚡ Cuota Privada Opcional:</label>
+										<div class="d-flex gap-1">
+											<button type="button" id="helpConfigBtn" class="btn btn-outline-success btn-sm flex-grow-1 fw-bold text-truncate" title="Conectar mi propia cuenta gratuita de Cloudflare">
+												⚙️ Mi Cuenta IA
+											</button>
+											<a href="guia_cloudflare.html" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm fw-bold" title="Ver guía completa paso a paso e imprimir en PDF">
+												📘 Guía
+											</a>
+										</div>
+									</div>
                             </div>
 
                             <div class="d-flex flex-wrap gap-1 mb-1">
@@ -347,18 +352,18 @@
             return guardada || DEFAULT_CLOUDFLARE_URL;
         }
 
-        function refrescarEstadoBotonConfig() {
-            const url = obtenerCloudflareUrl();
-            if (url && url.startsWith('http')) {
-                helpConfigBtn.textContent = '✅ IA Rápida Activa (Config)';
-                helpConfigBtn.classList.remove('btn-outline-primary');
-                helpConfigBtn.classList.add('btn-outline-success');
-            } else {
-                helpConfigBtn.textContent = 'ℹ️ Activar IA Rápida Gratis';
-                helpConfigBtn.classList.remove('btn-outline-success');
-                helpConfigBtn.classList.add('btn-outline-primary');
-            }
-        }
+		function refrescarEstadoBotonConfig() {
+			const guardada = (localStorage.getItem('multimedia_cf_worker_url') || '').trim();
+			if (guardada && guardada.startsWith('http')) {
+				helpConfigBtn.textContent = '✅ Mi Worker Activo';
+				helpConfigBtn.classList.remove('btn-outline-primary');
+				helpConfigBtn.classList.add('btn-outline-success');
+			} else {
+				helpConfigBtn.textContent = '⚡ IA Rápida Activa';
+				helpConfigBtn.classList.remove('btn-outline-primary');
+				helpConfigBtn.classList.add('btn-outline-success');
+			}
+		}
         refrescarEstadoBotonConfig();
 
         helpConfigBtn.addEventListener('click', () => {
