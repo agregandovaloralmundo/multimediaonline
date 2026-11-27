@@ -250,7 +250,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
                     <div class="d-flex align-items-center gap-2">
                         <h5 class="mb-0 fw-bold text-dark">✂️ Estudio Editor de Videos (Estilo Camtasia)</h5>
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">Arrastra, recorta bordes (↔), divide con ✂️ y doble clic en textos</span>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">Arrastra, recorta bordes (↔), divide con ✂️, ajusta volumen y doble clic en textos</span>
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <button type="button" id="toggleCamBtn" class="btn btn-danger btn-sm py-0 px-3 fw-bold">
@@ -363,7 +363,7 @@
                                 <canvas id="renderCanvas" width="854" height="480"></canvas>
                             </div>
 
-                            <!-- Inspector de Propiedades, Cámara y Exportación -->
+                            <!-- Inspector de Propiedades, Volumen, Cámara y Exportación -->
                             <div class="inspector-col text-start">
                                 <div>
                                     <div class="fw-bold text-primary border-bottom pb-1 mb-1">🎛️ Propiedades del Clip</div>
@@ -389,6 +389,15 @@
                                             <label class="text-muted mb-0">Transición:</label>
                                             <input type="text" id="inspTrans" class="form-control form-control-sm py-0" value="Ninguna" readonly>
                                         </div>
+                                    </div>
+
+                                    <!-- CONTROL DE VOLUMEN DE LA PISTA SELECCIONADA -->
+                                    <div class="bg-white p-1 rounded border mb-1">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label for="inspVolume" class="fw-bold text-dark mb-0" style="font-size:11px;">🔊 Volumen de Pista:</label>
+                                            <span id="inspVolumeBadge" class="badge bg-primary-subtle text-primary border" style="font-size:10px;">100%</span>
+                                        </div>
+                                        <input type="range" id="inspVolume" class="form-range my-0" min="0" max="100" step="1" value="100" disabled>
                                     </div>
 
                                     <div class="mb-1">
@@ -474,7 +483,7 @@
                                     <span class="track-label-tag">Pista 1 (Principal): Videos (.mp4) e Imágenes (arrastra orillas ↔ para recortar)</span>
                                 </div>
                                 <div class="track-row mb-0" id="trackAudio" data-track="audio">
-                                    <span class="track-label-tag">Pista 3 (Audio): Música o Voz (.mp3 / .wav) (arrastra para mover o recorta orillas)</span>
+                                    <span class="track-label-tag">Pista 3 (Audio): Música o Voz (.mp3 / .wav) (toca para ajustar volumen o recorta orillas)</span>
                                 </div>
                                 <div id="timelinePlayhead" style="left: 0%;"></div>
                             </div>
@@ -585,6 +594,8 @@
         const inspEnd = document.getElementById('inspEnd');
         const inspZoom = document.getElementById('inspZoom');
         const inspTrans = document.getElementById('inspTrans');
+        const inspVolume = document.getElementById('inspVolume');
+        const inspVolumeBadge = document.getElementById('inspVolumeBadge');
         const filterSelect = document.getElementById('filterSelect');
         const btnMoveLeft = document.getElementById('btnMoveLeft');
         const btnMoveRight = document.getElementById('btnMoveRight');
@@ -967,6 +978,7 @@
                     name: mediaItem.name,
                     url: mediaItem.url,
                     audioEl: audEl,
+                    volume: 100,
                     start: dropTime,
                     rawDuration: mediaItem.duration,
                     trimStart: 0,
@@ -1017,6 +1029,7 @@
                     name: mediaItem.name,
                     url: mediaItem.url,
                     videoEl: v,
+                    volume: 100,
                     rawDuration: mediaItem.duration,
                     trimStart: 0,
                     trimEnd: mediaItem.duration,
@@ -1133,7 +1146,7 @@
                             const aud2 = document.createElement('audio');
                             aud2.src = au.url;
                             aud2.preload = 'auto';
-                            aud2.volume = 1.0;
+                            aud2.volume = (au.volume !== undefined ? au.volume : 100) / 100;
                             hiddenMediaPool.appendChild(aud2);
 
                             const segundoAudio = {
@@ -1141,6 +1154,7 @@
                                 name: au.name,
                                 url: au.url,
                                 audioEl: aud2,
+                                volume: au.volume !== undefined ? au.volume : 100,
                                 start: t,
                                 rawDuration: au.rawDuration || au.duration,
                                 trimStart: corteEnAudio,
@@ -1182,7 +1196,7 @@
                 const v2 = document.createElement('video');
                 v2.src = c.url;
                 v2.muted = true;
-                v2.volume = 1.0;
+                v2.volume = (c.volume !== undefined ? c.volume : 100) / 100;
                 v2.playsInline = true;
                 v2.preload = 'auto';
                 hiddenMediaPool.appendChild(v2);
@@ -1194,6 +1208,7 @@
                     name: c.name,
                     url: c.url,
                     videoEl: v2,
+                    volume: c.volume !== undefined ? c.volume : 100,
                     rawDuration: c.rawDuration,
                     trimStart: puntoCorte,
                     trimEnd: c.trimEnd,
@@ -1385,10 +1400,11 @@
                 const widthPct = Math.max(2.5, (dur / total) * 100);
                 const el = document.createElement('div');
                 const isSel = selectedItem && selectedItem.track === 'main' && selectedItem.id === c.id;
+                const volTag = (c.type === 'video' && c.volume !== undefined && c.volume < 100) ? ` 🔊${c.volume}%` : '';
                 el.className = `tl-block ${c.type === 'image' ? 'tl-main-image' : 'tl-main-video'} ${isSel ? 'tl-main-selected' : ''}`;
                 el.style.left = `${leftPct}%`;
                 el.style.width = `${widthPct}%`;
-                el.textContent = `${idx + 1}. ${c.name} (${dur.toFixed(1)}s)${c.transition ? ' ✨' : ''}`;
+                el.textContent = `${idx + 1}. ${c.name} (${dur.toFixed(1)}s)${volTag}${c.transition ? ' ✨' : ''}`;
                 instalarInteraccionBloque(el, 'main', c);
                 trackMain.appendChild(el);
                 acc += dur;
@@ -1414,10 +1430,11 @@
                 const widthPct = Math.max(3, Math.min(100 - leftPct, (dur / total) * 100));
                 const el = document.createElement('div');
                 const isSel = selectedItem && selectedItem.track === 'audio' && selectedItem.id === au.id;
+                const volPct = au.volume !== undefined ? au.volume : 100;
                 el.className = `tl-block tl-audio-item ${isSel ? 'tl-main-selected' : ''}`;
                 el.style.left = `${leftPct}%`;
                 el.style.width = `${widthPct}%`;
-                el.textContent = `🎵 ${au.name} (${dur.toFixed(1)}s)`;
+                el.textContent = `🎵 ${au.name} (${dur.toFixed(1)}s · 🔊${volPct}%)`;
                 instalarInteraccionBloque(el, 'audio', au);
                 trackAudio.appendChild(el);
             });
@@ -1430,7 +1447,9 @@
 
             if (!selectedItem) {
                 inspTitle.textContent = 'Ningún clip seleccionado';
-                inspStart.disabled = inspEnd.disabled = inspZoom.disabled = true;
+                inspStart.disabled = inspEnd.disabled = inspZoom.disabled = inspVolume.disabled = true;
+                inspVolume.value = 100;
+                inspVolumeBadge.textContent = '100%';
                 btnMoveLeft.disabled = btnMoveRight.disabled = btnDeleteSelected.disabled = btnSplitClip.disabled = true;
                 inspTrans.value = 'Ninguna';
                 return;
@@ -1452,6 +1471,17 @@
                 inspTrans.value = c.transition ? c.transition.name : 'Ninguna';
                 btnMoveLeft.disabled = idx <= 0;
                 btnMoveRight.disabled = idx >= mainClips.length - 1;
+
+                if (c.type === 'video') {
+                    const vol = c.volume !== undefined ? c.volume : 100;
+                    inspVolume.disabled = false;
+                    inspVolume.value = vol;
+                    inspVolumeBadge.textContent = `${vol}%`;
+                } else {
+                    inspVolume.disabled = true;
+                    inspVolume.value = 100;
+                    inspVolumeBadge.textContent = 'N/A';
+                }
             } else if (selectedItem.track === 'overlay') {
                 const ov = overlayClips.find(o => o.id === selectedItem.id);
                 if (!ov) return;
@@ -1459,6 +1489,9 @@
                 inspStart.disabled = false;
                 inspEnd.disabled = false;
                 inspZoom.disabled = false;
+                inspVolume.disabled = true;
+                inspVolume.value = 100;
+                inspVolumeBadge.textContent = 'N/A';
                 inspStart.value = ov.start.toFixed(1);
                 inspEnd.value = ov.end.toFixed(1);
                 inspZoom.value = ov.type === 'image' ? Math.round((ov.wNorm || 0.24) * 400) : (ov.fontScale || 100);
@@ -1468,16 +1501,51 @@
             } else if (selectedItem.track === 'audio') {
                 const au = audioClips.find(a => a.id === selectedItem.id);
                 if (!au) return;
+                const vol = au.volume !== undefined ? au.volume : 100;
                 inspTitle.textContent = `Pista 3: ${au.name}`;
                 inspStart.disabled = false;
                 inspEnd.disabled = false;
                 inspZoom.disabled = true;
+                inspVolume.disabled = false;
+                inspVolume.value = vol;
+                inspVolumeBadge.textContent = `${vol}%`;
                 inspStart.value = au.start.toFixed(1);
                 inspEnd.value = (au.start + durAudioClip(au)).toFixed(1);
                 inspTrans.value = 'Audio';
                 btnMoveLeft.disabled = btnMoveRight.disabled = true;
             }
         }
+
+        /* ============================================================
+           CONTROL EN VIVO DEL VOLUMEN DE LA PISTA SELECCIONADA
+           ============================================================ */
+        inspVolume.addEventListener('input', () => {
+            if (!selectedItem) return;
+            const volPct = Math.max(0, Math.min(100, parseInt(inspVolume.value, 10) || 0));
+            inspVolumeBadge.textContent = `${volPct}%`;
+            const volNorm = volPct / 100;
+
+            if (selectedItem.track === 'main') {
+                const c = mainClips.find(x => x.id === selectedItem.id);
+                if (c && c.type === 'video') {
+                    c.volume = volPct;
+                    if (c.videoEl) {
+                        c.videoEl.volume = volNorm;
+                        c.videoEl.muted = (volPct === 0);
+                    }
+                }
+            } else if (selectedItem.track === 'audio') {
+                const au = audioClips.find(x => x.id === selectedItem.id);
+                if (au) {
+                    au.volume = volPct;
+                    if (au.audioEl) {
+                        au.audioEl.volume = volNorm;
+                        au.audioEl.muted = (volPct === 0);
+                    }
+                }
+            }
+            renderizarPistas();
+        });
 
         inspStart.addEventListener('change', () => {
             if (!selectedItem) return;
@@ -1864,7 +1932,7 @@
         });
 
         /* ============================================================
-           7. REPRODUCCIÓN Y RENDERIZADO FINAL (CON AUDIO DESBLOQUEADO)
+           7. REPRODUCCIÓN Y RENDERIZADO FINAL (RESPETANDO VOLUMEN)
            ============================================================ */
         function actualizarBotones() {
             const total = obtenerDuracionTotal();
@@ -1899,6 +1967,13 @@
             ejecutarSecuencia(true);
         });
 
+        function aplicarVolumenClip(clipObj, el) {
+            if (!el) return;
+            const volPct = clipObj.volume !== undefined ? clipObj.volume : 100;
+            el.volume = volPct / 100;
+            el.muted = (volPct === 0);
+        }
+
         function ejecutarSecuencia(grabarArchivo) {
             const total = obtenerDuracionTotal();
             const soloCam = camActive && total <= 0;
@@ -1932,8 +2007,7 @@
                 mainClips.forEach(c => {
                     if (c.type === 'video' && c.videoEl) {
                         try {
-                            c.videoEl.muted = false;
-                            c.videoEl.volume = 1.0;
+                            aplicarVolumenClip(c, c.videoEl);
                             const vs = c.videoEl.captureStream ? c.videoEl.captureStream() : c.videoEl.mozCaptureStream();
                             if (vs && vs.getAudioTracks().length) {
                                 audioCtx.createMediaStreamSource(new MediaStream(vs.getAudioTracks())).connect(destAudio);
@@ -1944,8 +2018,7 @@
                 audioClips.forEach(a => {
                     if (a.audioEl) {
                         try {
-                            a.audioEl.muted = false;
-                            a.audioEl.volume = 1.0;
+                            aplicarVolumenClip(a, a.audioEl);
                             const as = a.audioEl.captureStream ? a.audioEl.captureStream() : a.audioEl.mozCaptureStream();
                             if (as && as.getAudioTracks().length) {
                                 audioCtx.createMediaStreamSource(new MediaStream(as.getAudioTracks())).connect(destAudio);
@@ -2003,14 +2076,12 @@
 
             const startOffset = grabarArchivo ? 0 : (currentTimelineSec >= total - 0.15 ? 0 : currentTimelineSec);
 
-            // Arrancar reproducción de sonido directamente dentro del clic del usuario
             let activeVideoId = null;
             const infoInit = obtenerClipPrincipalEnTiempo(startOffset);
             if (infoInit && infoInit.clip.type === 'video' && infoInit.clip.videoEl) {
                 const vInit = infoInit.clip.videoEl;
                 activeVideoId = infoInit.clip.id;
-                vInit.muted = false;
-                vInit.volume = 1.0;
+                aplicarVolumenClip(infoInit.clip, vInit);
                 vInit.currentTime = infoInit.clip.trimStart + infoInit.localOffset;
                 vInit.play().catch(() => {});
             }
@@ -2018,8 +2089,7 @@
             audioClips.forEach(au => {
                 const durAu = durAudioClip(au);
                 const trimS = au.trimStart || 0;
-                au.audioEl.muted = false;
-                au.audioEl.volume = 1.0;
+                aplicarVolumenClip(au, au.audioEl);
                 if (startOffset >= au.start && startOffset <= au.start + durAu) {
                     au.audioEl.currentTime = trimS + (startOffset - au.start);
                     au.audioEl.play().catch(() => {});
@@ -2046,15 +2116,13 @@
                 const info = obtenerClipPrincipalEnTiempo(elapsed);
                 if (info && info.clip.type === 'video' && info.clip.videoEl) {
                     const v = info.clip.videoEl;
+                    aplicarVolumenClip(info.clip, v);
                     if (activeVideoId !== info.clip.id) {
                         mainClips.forEach(c => { if (c.videoEl) c.videoEl.pause(); });
                         activeVideoId = info.clip.id;
-                        v.muted = false;
-                        v.volume = 1.0;
                         v.currentTime = info.clip.trimStart + info.localOffset;
                         v.play().catch(() => {});
                     } else if (v.paused) {
-                        v.muted = false;
                         v.play().catch(() => {});
                     }
                 } else if (activeVideoId !== null) {
@@ -2065,10 +2133,9 @@
                 audioClips.forEach(au => {
                     const durAu = durAudioClip(au);
                     const trimS = au.trimStart || 0;
+                    aplicarVolumenClip(au, au.audioEl);
                     if (elapsed >= au.start && elapsed <= au.start + durAu) {
                         if (au.audioEl.paused) {
-                            au.audioEl.muted = false;
-                            au.audioEl.volume = 1.0;
                             au.audioEl.currentTime = trimS + (elapsed - au.start);
                             au.audioEl.play().catch(() => {});
                         }
