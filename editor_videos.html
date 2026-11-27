@@ -1266,4 +1266,333 @@
         }
 
         function dibujarCamaraFlotante() {
-            if (!camActive || !camVideo || cam
+            if (!camActive || !camVideo || camVideo.readyState < 2) return;
+            const { x, y, w, h, shape } = obtenerRectCamara();
+            ctx.save();
+            ctx.beginPath();
+            if (shape === 'circle') {
+                const r = Math.min(w, h) / 2;
+                ctx.arc(x + r, y + r, r, 0, Math.PI * 2);
+            } else {
+                ctx.roundRect ? ctx.roundRect(x, y, w, h, 10) : ctx.rect(x, y, w, h);
+            }
+            ctx.clip();
+            ctx.translate(x + w, y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(camVideo, 0, 0, w, h);
+            ctx.restore();
+
+            ctx.save();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            if (shape === 'circle') {
+                const r = Math.min(w, h) / 2;
+                ctx.arc(x + r, y + r, r, 0, Math.PI * 2);
+            } else {
+                ctx.roundRect ? ctx.roundRect(x, y, w, h, 10) : ctx.rect(x, y, w, h);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        toggleCamBtn.addEventListener('click', async () => {
+            if (camActive) {
+                camActive = false;
+                if (camIdleLoopId) cancelAnimationFrame(camIdleLoopId);
+                if (camStream) camStream.getTracks().forEach(t => t.stop());
+                camVideo.srcObject = null;
+                toggleCamBtn.className = 'btn btn-danger btn-sm py-0 px-3 fw-bold';
+                toggleCamBtn.textContent = '📹 Activar Cámara';
+                dibujarEscena(currentTimelineSec);
+                actualizarBotones();
+                return;
+            }
+            try {
+                camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                camVideo.srcObject = camStream;
+                await camVideo.play();
+                camActive = true;
+                toggleCamBtn.className = 'btn btn-dark btn-sm py-0 px-3 fw-bold';
+                toggleCamBtn.textContent = '⏹️ Apagar Cámara';
+                const tick = () => {
+                    if (!camActive) return;
+                    if (!isPlayingPreview && !isRendering) dibujarEscena(currentTimelineSec);
+                    camIdleLoopId = requestAnimationFrame(tick);
+                };
+                camIdleLoopId = requestAnimationFrame(tick);
+                actualizarBotones();
+                Toast.fire({ icon: 'success', title: 'Cámara activada: arrastra el cuadrito en pantalla' });
+            } catch {
+                Swal.fire('Permiso requerido', 'Autoriza la cámara y micrófono en el navegador.', 'warning');
+            }
+        });
+
+        camShapeSelect.addEventListener('change', () => dibujarEscena(currentTimelineSec));
+
+        renderCanvas.addEventListener('pointerdown', (e) => {
+            const rect = renderCanvas.getBoundingClientRect();
+            const pt = {
+                x: (e.clientX - rect.left) * (renderCanvas.width / rect.width),
+                y: (e.clientY - rect.top) * (renderCanvas.height / rect.height)
+            };
+            if (camActive) {
+                const rc = obtenerRectCamara();
+                if (pt.x >= rc.x && pt.x <= rc.x + rc.w && pt.y >= rc.y && pt.y <= rc.y + rc.h) {
+                    dragCanvasTarget = { kind: 'cam' };
+                    dragOffsetX = pt.x - rc.x;
+                    dragOffsetY = pt.y - rc.y;
+                    renderCanvas.setPointerCapture(e.pointerId);
+                    return;
+                }
+            }
+            for (let i = overlayClips.length - 1; i >= 0; i--) {
+                const ov = overlayClips[i];
+                if (currentTimelineSec < ov.start || currentTimelineSec > ov.end) continue;
+                const ro = obtenerRectOverlay(ov);
+                if (pt.x >= ro.x && pt.x <= ro.x + ro.w && pt.y >= ro.y && pt.y <= ro.y + ro.h) {
+                    dragCanvasTarget = { kind: 'overlay', item: ov };
+                    dragOffsetX = pt.x - ro.x;
+                    dragOffsetY = pt.y - ro.y;
+                    renderCanvas.setPointerCapture(e.pointerId);
+                    return;
+                }
+            }
+        });
+
+        renderCanvas.addEventListener('pointermove', (e) => {
+            if (!dragCanvasTarget) return;
+            const rect = renderCanvas.getBoundingClientRect();
+            const pt = {
+                x: (e.clientX - rect.left) * (renderCanvas.width / rect.width),
+                y: (e.clientY - rect.top) * (renderCanvas.height / rect.height)
+            };
+            if (dragCanvasTarget.kind === 'cam') {
+                camNormX = Math.max(0, Math.min(0.85, (pt.x - dragOffsetX) / renderCanvas.width));
+                camNormY = Math.max(0, Math.min(0.85, (pt.y - dragOffsetY) / renderCanvas.height));
+            } else {
+                dragCanvasTarget.item.xNorm = Math.max(0, Math.min(0.92, (pt.x - dragOffsetX) / renderCanvas.width));
+                dragCanvasTarget.item.yNorm = Math.max(0, Math.min(0.92, (pt.y - dragOffsetY) / renderCanvas.height));
+            }
+            dibujarEscena(currentTimelineSec);
+        });
+
+        renderCanvas.addEventListener('pointerup', (e) => {
+            if (dragCanvasTarget) {
+                dragCanvasTarget = null;
+                try { renderCanvas.releasePointerCapture(e.pointerId); } catch {}
+            }
+        });
+
+        /* ============================================================
+           5. REPRODUCCIÓN Y RENDERIZADO FINAL
+           ============================================================ */
+        function actualizarBotones() {
+            const total = obtenerDuracionTotal();
+            const soloCam = camActive && total <= 0;
+            const listo = total > 0 || soloCam;
+            previewBtn.disabled = total <= 0 || isRendering;
+            renderBtn.disabled = !listo || isRendering;
+            renderBtn.innerHTML = soloCam ? '🔴 Grabar Cámara' : '🎬 Renderizar Video';
+            clearAllBtn.disabled = !listo && !renderedBlobUrl;
+        }
+
+        function detenerTodoProceso() {
+            if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+            mainClips.forEach(c => { if (c.videoEl) c.videoEl.pause(); });
+            audioClips.forEach(a => { if (a.audioEl) a.audioEl.pause(); });
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                try { mediaRecorder.stop(); } catch {}
+            }
+            isPlayingPreview = false;
+            isRendering = false;
+            previewBtn.innerHTML = '▶️ Reproducir Todo';
+            actualizarBotones();
+        }
+
+        previewBtn.addEventListener('click', () => {
+            if (isPlayingPreview) { detenerTodoProceso(); return; }
+            ejecutarSecuencia(false);
+        });
+        renderBtn.addEventListener('click', () => {
+            if (isRendering) { detenerTodoProceso(); return; }
+            ejecutarSecuencia(true);
+        });
+
+        async function ejecutarSecuencia(grabarArchivo) {
+            const total = obtenerDuracionTotal();
+            const soloCam = camActive && total <= 0;
+            if (total <= 0 && !soloCam) return;
+            detenerTodoProceso();
+
+            const chunks = [];
+            let audioCtx = null;
+            let destAudio = null;
+
+            if (grabarArchivo) {
+                isRendering = true;
+                previewBtn.disabled = true;
+                downloadVideoBtn.disabled = true;
+                renderProgress.style.width = '0%';
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.textContent = soloCam ? '🔴 Grabando cámara...' : '🔴 Renderizando video...';
+
+                if (soloCam) {
+                    renderBtn.disabled = false;
+                    renderBtn.innerHTML = '⏹️ Detener Grabación';
+                } else {
+                    renderBtn.disabled = true;
+                }
+
+                const canvasStream = renderCanvas.captureStream(30);
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                destAudio = audioCtx.createMediaStreamDestination();
+
+                mainClips.forEach(c => {
+                    if (c.type === 'video' && c.videoEl) {
+                        try {
+                            const vs = c.videoEl.captureStream ? c.videoEl.captureStream() : c.videoEl.mozCaptureStream();
+                            if (vs && vs.getAudioTracks().length) {
+                                audioCtx.createMediaStreamSource(new MediaStream(vs.getAudioTracks())).connect(destAudio);
+                            }
+                        } catch {}
+                    }
+                });
+                audioClips.forEach(a => {
+                    if (a.audioEl) {
+                        try {
+                            const as = a.audioEl.captureStream ? a.audioEl.captureStream() : a.audioEl.mozCaptureStream();
+                            if (as && as.getAudioTracks().length) {
+                                audioCtx.createMediaStreamSource(new MediaStream(as.getAudioTracks())).connect(destAudio);
+                            }
+                        } catch {}
+                    }
+                });
+                if (camActive && chkMicLive.checked && camStream && camStream.getAudioTracks().length) {
+                    try {
+                        audioCtx.createMediaStreamSource(new MediaStream(camStream.getAudioTracks())).connect(destAudio);
+                    } catch {}
+                }
+
+                const combined = new MediaStream([...canvasStream.getVideoTracks(), ...destAudio.stream.getAudioTracks()]);
+                const mime = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm';
+                renderedExt = mime.includes('mp4') ? 'mp4' : 'webm';
+
+                mediaRecorder = new MediaRecorder(combined, { mimeType: mime, videoBitsPerSecond: 3800000 });
+                mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    if (audioCtx) audioCtx.close().catch(() => {});
+                    const blob = new Blob(chunks, { type: mime });
+                    if (renderedBlobUrl) URL.revokeObjectURL(renderedBlobUrl);
+                    renderedBlobUrl = URL.createObjectURL(blob);
+                    downloadVideoBtn.disabled = false;
+                    renderProgress.style.width = '100%';
+                    statusBadge.className = 'badge bg-success';
+                    statusBadge.textContent = '✅ ¡Video renderizado listo!';
+                    isRendering = false;
+                    actualizarBotones();
+                    Toast.fire({ icon: 'success', title: '¡Video listo para descargar!' });
+                };
+                mediaRecorder.start(200);
+            } else {
+                isPlayingPreview = true;
+                previewBtn.innerHTML = '⏹️ Pausar';
+                statusBadge.className = 'badge bg-primary';
+                statusBadge.textContent = '▶️ Reproduciendo...';
+            }
+
+            if (soloCam) {
+                const tWallStart = performance.now();
+                const stepCam = (now) => {
+                    if (!isRendering) return;
+                    const elapsed = (now - tWallStart) / 1000;
+                    timeBadge.textContent = `${fmtTime(elapsed)} / EN VIVO`;
+                    dibujarFondoBase();
+                    dibujarCamaraFlotante();
+                    renderProgress.style.width = '100%';
+                    animFrameId = requestAnimationFrame(stepCam);
+                };
+                animFrameId = requestAnimationFrame(stepCam);
+                return;
+            }
+
+            const startOffset = grabarArchivo ? 0 : (currentTimelineSec >= total - 0.15 ? 0 : currentTimelineSec);
+            const tWallStart = performance.now() - startOffset * 1000;
+            let activeVideoId = null;
+
+            const step = (now) => {
+                if (!isPlayingPreview && !isRendering) return;
+                const elapsed = (now - tWallStart) / 1000;
+                if (elapsed >= total) {
+                    actualizarPlayhead(total);
+                    dibujarEscena(total);
+                    detenerTodoProceso();
+                    if (!grabarArchivo) {
+                        statusBadge.className = 'badge bg-light text-secondary border';
+                        statusBadge.textContent = 'Listo';
+                    }
+                    return;
+                }
+
+                actualizarPlayhead(elapsed);
+                const info = obtenerClipPrincipalEnTiempo(elapsed);
+                if (info && info.clip.type === 'video' && info.clip.videoEl) {
+                    const v = info.clip.videoEl;
+                    if (activeVideoId !== info.clip.id) {
+                        mainClips.forEach(c => { if (c.videoEl) c.videoEl.pause(); });
+                        activeVideoId = info.clip.id;
+                        v.muted = false;
+                        v.currentTime = info.clip.trimStart + info.localOffset;
+                        v.play().catch(() => {});
+                    }
+                } else if (activeVideoId !== null) {
+                    mainClips.forEach(c => { if (c.videoEl) c.videoEl.pause(); });
+                    activeVideoId = null;
+                }
+
+                audioClips.forEach(au => {
+                    if (elapsed >= au.start && elapsed <= au.start + au.duration) {
+                        if (au.audioEl.paused) {
+                            au.audioEl.currentTime = elapsed - au.start;
+                            au.audioEl.play().catch(() => {});
+                        }
+                    } else if (!au.audioEl.paused) {
+                        au.audioEl.pause();
+                    }
+                });
+
+                dibujarEscena(elapsed);
+                if (isRendering) renderProgress.style.width = `${Math.min(100, Math.round((elapsed / total) * 100))}%`;
+                animFrameId = requestAnimationFrame(step);
+            };
+            animFrameId = requestAnimationFrame(step);
+        }
+
+        downloadVideoBtn.addEventListener('click', () => {
+            if (!renderedBlobUrl) return;
+            const a = document.createElement('a');
+            a.href = renderedBlobUrl;
+            a.download = `Video_Estudio_${Date.now()}.${renderedExt}`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        });
+
+        clearAllBtn.addEventListener('click', () => {
+            detenerTodoProceso();
+            mainClips = [];
+            overlayClips = [];
+            audioClips = [];
+            selectedItem = null;
+            if (renderedBlobUrl) { URL.revokeObjectURL(renderedBlobUrl); renderedBlobUrl = null; }
+            downloadVideoBtn.disabled = true;
+            renderProgress.style.width = '0%';
+            actualizarTodoUI();
+            dibujarFondoBase();
+        });
+
+        dibujarFondoBase();
+    })();
+    </script>
+</body>
+</html>
