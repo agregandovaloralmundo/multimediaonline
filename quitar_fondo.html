@@ -9,8 +9,8 @@
             window.history.back();
         }
     </script>
-    <title>Multimedia Online - Quitar Fondo y Retoque Manual con IA</title>
-    <meta name="description" content="Elimina el fondo de tus fotos e imágenes con IA automática y perfecciona los bordes con pincel borrador y restaurador estilo Pixlr gratis en tu navegador." />
+    <title>Multimedia Online - Quitar Fondo con IA de Alta Precisión</title>
+    <meta name="description" content="Elimina el fondo de tus fotos, productos y logos con Inteligencia Artificial de alta precisión, barra de progreso, zoom con rueda del mouse y retoque manual gratis." />
     <meta name="author" content="Lic. Antonio Ramírez Bogantes" />
     <link rel="icon" type="image/x-icon" href="img/principal.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -24,29 +24,44 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 10px 20px;
+            padding: 8px 18px;
         }
         .tool-box {
             width: 98%;
-            max-width: 1440px;
-            min-height: calc(100vh - 185px);
+            max-width: 1460px;
+            height: calc(100vh - 182px);
+            min-height: 540px;
             background: #ffffff;
             border: 3px solid #0d6efd;
             border-radius: 20px;
-            padding: 12px 24px;
+            padding: 10px 22px;
             box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            overflow: hidden;
         }
         .content-grid {
             flex: 1;
             display: flex;
+            min-height: 0;
+        }
+        .left-col-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+        .right-col-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
         }
         #dropZone {
             border: 2px dashed #0d6efd;
             border-radius: 12px;
-            padding: 10px;
+            padding: 9px;
             background: #f0f7ff;
             cursor: pointer;
             text-align: center;
@@ -58,17 +73,17 @@
             background: #dbeafe;
             border-color: #0a58ca;
         }
+        /* Tablero ajedrezado ocupando TODO el alto disponible a la derecha */
         .checkerboard-stage {
             width: 100%;
             flex: 1;
-            min-height: 360px;
-            max-height: 415px;
-            border: 2px solid #cbd5e1;
+            min-height: 0;
+            border: 2px solid #94a3b8;
             border-radius: 14px;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
+            overflow: auto;
             position: relative;
             background-color: #ffffff;
             background-image:
@@ -79,12 +94,20 @@
             background-size: 22px 22px;
             background-position: 0 0, 0 11px, 11px -11px, -11px 0;
         }
+        #canvasZoomWrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-origin: center center;
+            transition: transform 0.06s ease-out;
+        }
         #previewCanvas {
             max-width: 100%;
-            max-height: 400px;
-            border-radius: 8px;
+            max-height: calc(100vh - 285px);
+            border-radius: 6px;
             display: none;
             touch-action: none;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
         }
         .color-swatch {
             width: 24px;
@@ -103,19 +126,18 @@
 
         <div class="main-content">
             <div class="tool-box">
-                <div class="mb-2">
+                <div class="mb-1">
                     <h4 class="mb-0 fw-bold text-dark text-center">🪄 Quitar Fondo con IA y Retoque Manual (Estilo Pixlr)</h4>
-                    <p class="text-muted small mb-0 text-center">Elimina el fondo automáticamente con Inteligencia Artificial y perfecciona detalles pasando el pincel borrador o restaurador</p>
+                    <p class="text-muted small mb-0 text-center">Elimina el fondo con Inteligencia Artificial de alta precisión, haz zoom con la rueda del mouse y perfecciona bordes con pincel</p>
                 </div>
 
-                <div class="row g-3 content-grid align-items-stretch">
-                    <!-- Columna izquierda: Carga, IA, Color y Pinceles de retoque -->
-                    <div class="col-md-5 text-start d-flex flex-column justify-content-between">
+                <div class="row g-3 content-grid">
+                    <!-- Columna izquierda -->
+                    <div class="col-md-5 text-start left-col-panel">
                         <div>
-                            <!-- Zona de carga vinculada con label nativo + eventos drag & drop -->
                             <label for="imageInput" id="dropZone" class="mb-2">
                                 <div class="fw-bold text-primary small">📂 Arrastra tu imagen aquí o haz clic para seleccionarla</div>
-                                <div class="text-muted" style="font-size: 11px;">PNG, JPG, WEBP · 100% privado en tu navegador</div>
+                                <div class="text-muted" style="font-size: 11px;">PNG, JPG, WEBP · Procesamiento privado en tu navegador</div>
                             </label>
                             <input type="file" id="imageInput" accept="image/*" style="display:none;">
 
@@ -123,7 +145,7 @@
                             <ul class="nav nav-pills nav-fill mb-2 bg-light p-1 rounded border">
                                 <li class="nav-item">
                                     <button type="button" class="nav-link active py-1 small fw-bold" id="tabAiMode">
-                                        🤖 IA Automática
+                                        🤖 IA Alta Precisión
                                     </button>
                                 </li>
                                 <li class="nav-item">
@@ -135,8 +157,12 @@
 
                             <!-- PANEL MODO IA -->
                             <div id="panelAi" class="bg-light p-2 rounded border mb-2">
-                                <div class="small text-muted mb-1">
-                                    Reconoce personas, productos y objetos automáticamente para separar el fondo de golpe:
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="small fw-bold text-secondary">Calidad de recorte IA:</span>
+                                    <select id="aiModelQuality" class="form-select form-select-sm py-0" style="width: 175px;">
+                                        <option value="isnet_fp16" selected>Alta Precisión (Recomendado)</option>
+                                        <option value="isnet">Ultra Detalle (Más lento)</option>
+                                    </select>
                                 </div>
                                 <button type="button" id="runAiBtn" class="btn btn-primary btn-sm w-100 fw-bold" disabled>
                                     ✨ Quitar Fondo con IA Ahora
@@ -167,14 +193,14 @@
                             <!-- HERRAMIENTAS DE RETOQUE MANUAL ESTILO PIXLR -->
                             <div class="bg-light p-2 rounded border mb-2">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="fw-bold small text-dark">🖌️ Retoque Manual (pasa el mouse sobre la imagen):</span>
-                                    <button type="button" id="undoBrushBtn" class="btn btn-outline-secondary btn-sm py-0 px-2" disabled title="Deshacer último trazo">
+                                    <span class="fw-bold small text-dark">🖌️ Retoque Manual (pasa el mouse):</span>
+                                    <button type="button" id="undoBrushBtn" class="btn btn-outline-secondary btn-sm py-0 px-2" disabled>
                                         ↩️ Deshacer
                                     </button>
                                 </div>
                                 <div class="btn-group btn-group-sm w-100 mb-1" role="group">
                                     <button type="button" class="btn btn-outline-primary active fw-bold" data-brush="none">
-                                        👆 Gotero Color
+                                        👆 Gotero
                                     </button>
                                     <button type="button" class="btn btn-outline-danger fw-bold" data-brush="erase">
                                         🧽 Borrar parte
@@ -184,12 +210,12 @@
                                     </button>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
-                                    <span class="small text-secondary text-nowrap">Grosor pincel (<b id="brushSizeLabel">28</b>px):</span>
-                                    <input type="range" id="brushSizeRange" class="form-range" min="6" max="120" value="28">
+                                    <span class="small text-secondary text-nowrap">Pincel (<b id="brushSizeLabel">24</b>px):</span>
+                                    <input type="range" id="brushSizeRange" class="form-range" min="4" max="120" value="24">
                                 </div>
                             </div>
 
-                            <!-- Opcional: Nuevo fondo de color -->
+                            <!-- Nuevo fondo de color -->
                             <div class="bg-light p-2 rounded border">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="form-check form-switch mb-0">
@@ -223,29 +249,43 @@
                         </div>
                     </div>
 
-                    <!-- Columna derecha: Visor con cuadrícula de transparencia -->
-                    <div class="col-md-7 text-start d-flex flex-column justify-content-between">
+                    <!-- Columna derecha: Visor completo arriba + Barra de progreso abajo -->
+                    <div class="col-md-7 text-start right-col-panel">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-bold small text-primary">🖼️ Lienzo de trabajo (cuadrícula = transparente):</span>
-                            <span id="statusBadge" class="badge bg-light text-secondary border">Esperando imagen...</span>
+                            <span class="fw-bold small text-primary">🖼️ Lienzo (usa la rueda del mouse para hacer Zoom):</span>
+                            <div class="d-flex align-items-center gap-1">
+                                <div class="btn-group btn-group-sm" role="group" title="Zoom de vista">
+                                    <button type="button" id="zoomOutBtn" class="btn btn-outline-secondary py-0 px-2">➖</button>
+                                    <button type="button" id="zoomResetBtn" class="btn btn-outline-secondary py-0 px-2 fw-bold" style="min-width:52px;">100%</button>
+                                    <button type="button" id="zoomInBtn" class="btn btn-outline-secondary py-0 px-2">➕</button>
+                                </div>
+                                <span id="statusBadge" class="badge bg-light text-secondary border">Esperando imagen...</span>
+                            </div>
                         </div>
 
                         <div class="checkerboard-stage" id="stageContainer">
-                            <div id="emptyState" class="text-center bg-white bg-opacity-90 p-4 rounded-4 shadow-sm border mx-3">
-                                <div style="font-size: 2.8rem;">🪄</div>
+                            <div id="emptyState" class="text-center bg-white bg-opacity-95 p-4 rounded-4 shadow-sm border mx-3">
+                                <div style="font-size: 3rem;">🪄</div>
                                 <div class="fw-bold text-dark">Sube una imagen para quitarle el fondo con IA</div>
                                 <div class="text-muted small mt-1">
-                                    Después podrás pasar el <b>pincel borrador</b> para quitar sobrantes o el <b>pincel restaurador</b> para recuperar detalles, igual que en Pixlr.
+                                    Usa la <b>rueda del mouse</b> para acercar o alejar y perfecciona detalles con los pinceles de <b>Borrar</b> o <b>Restaurar</b>.
                                 </div>
                             </div>
 
-                            <div id="aiLoader" class="text-center bg-white p-4 rounded-4 shadow border" style="display: none;">
-                                <div class="spinner-border text-primary mb-2" style="width: 2.5rem; height: 2.5rem;" role="status"></div>
-                                <div class="fw-bold text-primary">Analizando imagen con Inteligencia Artificial...</div>
-                                <div class="text-muted small">Procesando localmente en tu navegador sin enviar datos afuera</div>
+                            <div id="canvasZoomWrap">
+                                <canvas id="previewCanvas"></canvas>
                             </div>
+                        </div>
 
-                            <canvas id="previewCanvas"></canvas>
+                        <!-- Barra de progreso real inferior -->
+                        <div class="mt-2 bg-light px-2 py-1 rounded border">
+                            <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 11px;">
+                                <span class="fw-bold text-secondary" id="progressText">Listo para procesar imagen</span>
+                                <span class="fw-bold text-primary font-monospace" id="progressPctLabel">0%</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div id="aiProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -263,12 +303,14 @@
 
         const dropZone = document.getElementById('dropZone');
         const stageContainer = document.getElementById('stageContainer');
+        const canvasZoomWrap = document.getElementById('canvasZoomWrap');
         const imageInput = document.getElementById('imageInput');
         const tabAiMode = document.getElementById('tabAiMode');
         const tabColorMode = document.getElementById('tabColorMode');
         const panelAi = document.getElementById('panelAi');
         const panelColor = document.getElementById('panelColor');
 
+        const aiModelQuality = document.getElementById('aiModelQuality');
         const runAiBtn = document.getElementById('runAiBtn');
         const targetColorBox = document.getElementById('targetColorBox');
         const targetColorPicker = document.getElementById('targetColorPicker');
@@ -287,9 +329,16 @@
         const resetBtn = document.getElementById('resetBtn');
         const downloadPngBtn = document.getElementById('downloadPngBtn');
 
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const zoomResetBtn = document.getElementById('zoomResetBtn');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+
         const statusBadge = document.getElementById('statusBadge');
         const emptyState = document.getElementById('emptyState');
-        const aiLoader = document.getElementById('aiLoader');
+        const progressText = document.getElementById('progressText');
+        const progressPctLabel = document.getElementById('progressPctLabel');
+        const aiProgressBar = document.getElementById('aiProgressBar');
+
         const previewCanvas = document.getElementById('previewCanvas');
         const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
 
@@ -304,6 +353,7 @@
         let isDrawingBrush = false;
         let lastBrushPt = null;
         let undoStack = [];
+        let viewZoom = 1.0;
 
         let targetRGB = { r: 255, g: 255, b: 255 };
         let showingOriginal = false;
@@ -313,8 +363,35 @@
             toast: true, position: 'top-end', showConfirmButton: false, timer: 2400, timerProgressBar: true
         });
 
+        function actualizarBarraProgreso(pct, texto) {
+            const p = Math.max(0, Math.min(100, Math.round(pct)));
+            aiProgressBar.style.width = `${p}%`;
+            progressPctLabel.textContent = `${p}%`;
+            if (texto) progressText.textContent = texto;
+        }
+
         /* ============================================================
-           TABS Y CONTROLES DE PINCEL
+           ZOOM CON RUEDA DEL MOUSE Y BOTONES (- / 100% / +)
+           ============================================================ */
+        function aplicarZoomVista(nuevoZoom) {
+            viewZoom = Math.max(0.25, Math.min(3.0, Number(nuevoZoom.toFixed(2))));
+            canvasZoomWrap.style.transform = `scale(${viewZoom})`;
+            zoomResetBtn.textContent = `${Math.round(viewZoom * 100)}%`;
+        }
+
+        stageContainer.addEventListener('wheel', (e) => {
+            if (!originalImage) return;
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.12 : -0.12;
+            aplicarZoomVista(viewZoom + delta);
+        }, { passive: false });
+
+        zoomInBtn.addEventListener('click', () => aplicarZoomVista(viewZoom + 0.15));
+        zoomOutBtn.addEventListener('click', () => aplicarZoomVista(viewZoom - 0.15));
+        zoomResetBtn.addEventListener('click', () => aplicarZoomVista(1.0));
+
+        /* ============================================================
+           TABS Y PINCELES
            ============================================================ */
         tabAiMode.addEventListener('click', () => {
             activeMode = 'ai';
@@ -348,7 +425,7 @@
 
         function guardarEstadoUndo() {
             if (!cutoutCanvas.width) return;
-            if (undoStack.length >= 12) undoStack.shift();
+            if (undoStack.length >= 15) undoStack.shift();
             undoStack.push(cutoutCtx.getImageData(0, 0, cutoutCanvas.width, cutoutCanvas.height));
             undoBrushBtn.disabled = false;
         }
@@ -362,34 +439,25 @@
         });
 
         /* ============================================================
-           CARGA DE IMAGEN (CLIC O ARRASTRAR Y SOLTAR EN CUALQUIER ZONA)
+           CARGA DE IMAGEN
            ============================================================ */
         imageInput.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) {
-                cargarArchivoImagen(e.target.files[0]);
-            }
+            if (e.target.files && e.target.files[0]) cargarArchivoImagen(e.target.files[0]);
         });
 
         [dropZone, stageContainer].forEach(zone => {
-            zone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.classList.add('drag-over');
-            });
-            zone.addEventListener('dragleave', () => {
-                dropZone.classList.remove('drag-over');
-            });
+            zone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+            zone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
             zone.addEventListener('drop', (e) => {
                 e.preventDefault();
                 dropZone.classList.remove('drag-over');
-                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    cargarArchivoImagen(e.dataTransfer.files[0]);
-                }
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) cargarArchivoImagen(e.dataTransfer.files[0]);
             });
         });
 
         function cargarArchivoImagen(file) {
             if (!file.type.startsWith('image/')) {
-                Toast.fire({ icon: 'warning', title: 'Por favor selecciona una imagen (PNG, JPG, WEBP)' });
+                Toast.fire({ icon: 'warning', title: 'Selecciona una imagen válida (PNG, JPG, WEBP)' });
                 return;
             }
             originalFileBlob = file;
@@ -402,6 +470,7 @@
                 showingOriginal = false;
                 undoStack = [];
                 undoBrushBtn.disabled = true;
+                aplicarZoomVista(1.0);
 
                 previewCanvas.width = img.width;
                 previewCanvas.height = img.height;
@@ -420,13 +489,13 @@
                 resetBtn.disabled = false;
                 downloadPngBtn.disabled = false;
                 toggleCompareBtn.disabled = true;
+                actualizarBarraProgreso(0, `Imagen cargada (${img.width}x${img.height} px) · Lista para quitar fondo`);
 
                 if (activeMode === 'color') aplicarRecortePorColor();
                 else {
                     statusBadge.className = 'badge bg-info text-dark';
-                    statusBadge.textContent = 'Lista · Presiona Quitar Fondo con IA o usa el pincel';
+                    statusBadge.textContent = 'Lista';
                 }
-                Toast.fire({ icon: 'success', title: 'Imagen cargada correctamente' });
             };
             img.src = url;
         }
@@ -439,23 +508,38 @@
         }
 
         /* ============================================================
-           1. IA AUTOMÁTICA CON CARGA DINÁMICA SEGURA
+           1. IA ALTA PRECISIÓN CON BARRA DE PROGRESO EN VIVO
            ============================================================ */
         runAiBtn.addEventListener('click', async () => {
             if (!originalFileBlob) return;
             runAiBtn.disabled = true;
-            previewCanvas.style.display = 'none';
-            aiLoader.style.display = 'block';
             statusBadge.className = 'badge bg-warning text-dark';
-            statusBadge.textContent = '⏳ Cargando motor IA...';
+            statusBadge.textContent = '⏳ Ejecutando IA...';
+            actualizarBarraProgreso(8, 'Iniciando motor de Inteligencia Artificial...');
 
             try {
-                const mod = await import('https://esm.sh/@imgly/background-removal@1.4.5');
+                const mod = await import('https://esm.sh/@imgly/background-removal@1.5.5');
                 const removeBackground = mod.removeBackground || mod.default;
-                if (!removeBackground) throw new Error('Módulo IA no disponible');
+                if (!removeBackground) throw new Error('Motor IA no disponible');
 
-                statusBadge.textContent = '⏳ Eliminando fondo con IA...';
-                const resultBlob = await removeBackground(originalFileBlob);
+                const config = {
+                    model: aiModelQuality.value || 'isnet_fp16',
+                    output: { format: 'image/png', quality: 1.0 },
+                    progress: (key, current, total) => {
+                        if (total > 0) {
+                            const ratio = current / total;
+                            const pct = key.includes('fetch') ? (10 + ratio * 50) : (60 + ratio * 35);
+                            const fase = key.includes('fetch')
+                                ? 'Descargando modelo IA de alta precisión...'
+                                : 'Segmentando silueta y conservando detalles...';
+                            actualizarBarraProgreso(pct, fase);
+                        }
+                    }
+                };
+
+                const resultBlob = await removeBackground(originalFileBlob, config);
+                actualizarBarraProgreso(98, 'Aplicando transparencia al lienzo...');
+
                 const resultUrl = URL.createObjectURL(resultBlob);
                 const cleanImg = new Image();
                 cleanImg.onload = () => {
@@ -467,25 +551,23 @@
 
                     hasCutout = true;
                     showingOriginal = false;
-                    aiLoader.style.display = 'none';
-                    previewCanvas.style.display = 'block';
                     renderizarCanvasFinal();
 
                     toggleCompareBtn.disabled = false;
                     downloadPngBtn.disabled = false;
                     statusBadge.className = 'badge bg-success';
-                    statusBadge.textContent = '✅ Fondo eliminado con IA';
-                    Toast.fire({ icon: 'success', title: '¡Fondo eliminado con IA!' });
+                    statusBadge.textContent = '✅ Fondo eliminado';
+                    actualizarBarraProgreso(100, '¡Listo! Usa la rueda del mouse para hacer zoom y retocar si hace falta');
+                    Toast.fire({ icon: 'success', title: '¡Fondo eliminado con alta precisión!' });
                     URL.revokeObjectURL(resultUrl);
                 };
                 cleanImg.src = resultUrl;
             } catch (err) {
                 console.error(err);
-                aiLoader.style.display = 'none';
-                previewCanvas.style.display = 'block';
                 statusBadge.className = 'badge bg-danger';
-                statusBadge.textContent = '⚠️ Usa Color/Gotero o Pincel';
-                Swal.fire('Motor IA externo ocupado', 'Puedes usar la pestaña "🎨 Color / Gotero" (un clic sobre el fondo) o el pincel "🧽 Borrar parte", que funcionan al instante sin internet.', 'info');
+                statusBadge.textContent = '⚠️ Error IA';
+                actualizarBarraProgreso(0, 'No se pudo cargar el modelo IA · Usa Color/Gotero o Pincel');
+                Swal.fire('Aviso', 'No se pudo conectar con la CDN del modelo IA. Puedes usar "🎨 Color / Gotero" o los pinceles manuales.', 'info');
             } finally {
                 runAiBtn.disabled = false;
             }
@@ -525,6 +607,7 @@
             downloadPngBtn.disabled = false;
             statusBadge.className = 'badge bg-success';
             statusBadge.textContent = '✅ Recortado por color';
+            actualizarBarraProgreso(100, 'Fondo recortado por color · Puedes afinar con los pinceles');
         }
 
         targetColorPicker.addEventListener('input', (e) => {
@@ -559,13 +642,12 @@
 
         function aplicarTrazoPincel(p1, p2) {
             const scaleRatio = previewCanvas.width / previewCanvas.getBoundingClientRect().width;
-            const radius = Math.max(4, (parseInt(brushSizeRange.value, 10) || 28) * scaleRatio * 0.5);
+            const radius = Math.max(3, (parseInt(brushSizeRange.value, 10) || 24) * scaleRatio * 0.5);
 
             cutoutCtx.save();
             if (brushMode === 'erase') {
                 cutoutCtx.globalCompositeOperation = 'destination-out';
                 cutoutCtx.strokeStyle = 'rgba(0,0,0,1)';
-                cutoutCtx.fillStyle = 'rgba(0,0,0,1)';
                 cutoutCtx.lineWidth = radius * 2;
                 cutoutCtx.lineCap = 'round';
                 cutoutCtx.lineJoin = 'round';
@@ -691,6 +773,7 @@
             hasCutout = false;
             showingOriginal = false;
             undoStack = [];
+            aplicarZoomVista(1.0);
             imageInput.value = '';
             previewCanvas.style.display = 'none';
             emptyState.style.display = 'block';
@@ -702,6 +785,7 @@
             downloadPngBtn.disabled = true;
             statusBadge.className = 'badge bg-light text-secondary border';
             statusBadge.textContent = 'Esperando imagen...';
+            actualizarBarraProgreso(0, 'Listo para procesar imagen');
         });
     })();
     </script>
