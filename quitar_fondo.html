@@ -34,7 +34,7 @@
             background: #ffffff;
             border: 3px solid #0d6efd;
             border-radius: 20px;
-            padding: 10px 22px;
+            padding: 12px 22px 16px 22px;
             box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
             display: flex;
             flex-direction: column;
@@ -49,14 +49,17 @@
         .left-col-panel {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: flex-start;
+            gap: 10px;
             height: 100%;
+            padding-bottom: 6px;
         }
         .right-col-panel {
             display: flex;
             flex-direction: column;
             height: 100%;
             min-height: 0;
+            padding-bottom: 6px;
         }
         #dropZone {
             border: 2px dashed #0d6efd;
@@ -73,7 +76,6 @@
             background: #dbeafe;
             border-color: #0a58ca;
         }
-        /* Tablero ajedrezado ocupando TODO el alto disponible a la derecha */
         .checkerboard-stage {
             width: 100%;
             flex: 1;
@@ -103,7 +105,7 @@
         }
         #previewCanvas {
             max-width: 100%;
-            max-height: calc(100vh - 285px);
+            max-height: calc(100vh - 300px);
             border-radius: 6px;
             display: none;
             touch-action: none;
@@ -126,13 +128,13 @@
 
         <div class="main-content">
             <div class="tool-box">
-                <div class="mb-1">
+                <div class="mb-2">
                     <h4 class="mb-0 fw-bold text-dark text-center">🪄 Quitar Fondo con IA y Retoque Manual (Estilo Pixlr)</h4>
                     <p class="text-muted small mb-0 text-center">Elimina el fondo con Inteligencia Artificial de alta precisión, haz zoom con la rueda del mouse y perfecciona bordes con pincel</p>
                 </div>
 
                 <div class="row g-3 content-grid">
-                    <!-- Columna izquierda -->
+                    <!-- Columna izquierda: Controles y botones subidos con aire inferior -->
                     <div class="col-md-5 text-start left-col-panel">
                         <div>
                             <label for="imageInput" id="dropZone" class="mb-2">
@@ -216,7 +218,7 @@
                             </div>
 
                             <!-- Nuevo fondo de color -->
-                            <div class="bg-light p-2 rounded border">
+                            <div class="bg-light p-2 rounded border mb-2">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="form-check form-switch mb-0">
                                         <input class="form-check-input" type="checkbox" id="chkCustomBg">
@@ -227,29 +229,29 @@
                                     <input type="color" id="newBgColor" class="form-control form-control-color form-control-sm" value="#0d6efd" disabled>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Botones inferiores -->
-                        <div class="d-grid gap-1 mt-2">
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <button id="toggleCompareBtn" class="btn btn-outline-secondary btn-sm w-100 fw-bold" disabled>
-                                        👁️ Ver Original
-                                    </button>
+                            <!-- Botones de acción subidos justo debajo de los controles -->
+                            <div class="d-grid gap-1">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <button id="toggleCompareBtn" class="btn btn-outline-secondary btn-sm w-100 fw-bold" disabled>
+                                            👁️ Ver Original
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button id="resetBtn" class="btn btn-outline-dark btn-sm w-100 fw-bold" disabled>
+                                            🗑️ Limpiar Todo
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="col-6">
-                                    <button id="resetBtn" class="btn btn-outline-dark btn-sm w-100 fw-bold" disabled>
-                                        🗑️ Limpiar Todo
-                                    </button>
-                                </div>
+                                <button id="downloadPngBtn" class="btn btn-success btn-sm w-100 fw-bold py-2" disabled>
+                                    ⬇️ Descargar Imagen Sin Fondo (.PNG)
+                                </button>
                             </div>
-                            <button id="downloadPngBtn" class="btn btn-success fw-bold" disabled>
-                                ⬇️ Descargar Imagen Sin Fondo (.PNG)
-                            </button>
                         </div>
                     </div>
 
-                    <!-- Columna derecha: Visor completo arriba + Barra de progreso abajo -->
+                    <!-- Columna derecha: Visor completo arriba + Barra de progreso separada del borde inferior -->
                     <div class="col-md-7 text-start right-col-panel">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <span class="fw-bold small text-primary">🖼️ Lienzo (usa la rueda del mouse para hacer Zoom):</span>
@@ -277,8 +279,8 @@
                             </div>
                         </div>
 
-                        <!-- Barra de progreso real inferior -->
-                        <div class="mt-2 bg-light px-2 py-1 rounded border">
+                        <!-- Barra de progreso inferior con margen holgado -->
+                        <div class="mt-2 mb-1 bg-light px-3 py-1 rounded border">
                             <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 11px;">
                                 <span class="fw-bold text-secondary" id="progressText">Listo para procesar imagen</span>
                                 <span class="fw-bold text-primary font-monospace" id="progressPctLabel">0%</span>
@@ -370,9 +372,6 @@
             if (texto) progressText.textContent = texto;
         }
 
-        /* ============================================================
-           ZOOM CON RUEDA DEL MOUSE Y BOTONES (- / 100% / +)
-           ============================================================ */
         function aplicarZoomVista(nuevoZoom) {
             viewZoom = Math.max(0.25, Math.min(3.0, Number(nuevoZoom.toFixed(2))));
             canvasZoomWrap.style.transform = `scale(${viewZoom})`;
@@ -390,9 +389,6 @@
         zoomOutBtn.addEventListener('click', () => aplicarZoomVista(viewZoom - 0.15));
         zoomResetBtn.addEventListener('click', () => aplicarZoomVista(1.0));
 
-        /* ============================================================
-           TABS Y PINCELES
-           ============================================================ */
         tabAiMode.addEventListener('click', () => {
             activeMode = 'ai';
             tabAiMode.classList.add('active');
@@ -438,9 +434,6 @@
             renderizarCanvasFinal();
         });
 
-        /* ============================================================
-           CARGA DE IMAGEN
-           ============================================================ */
         imageInput.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) cargarArchivoImagen(e.target.files[0]);
         });
@@ -507,9 +500,6 @@
             targetColorPicker.value = hex;
         }
 
-        /* ============================================================
-           1. IA ALTA PRECISIÓN CON BARRA DE PROGRESO EN VIVO
-           ============================================================ */
         runAiBtn.addEventListener('click', async () => {
             if (!originalFileBlob) return;
             runAiBtn.disabled = true;
@@ -573,9 +563,6 @@
             }
         });
 
-        /* ============================================================
-           2. RECORTE POR COLOR / GOTERO
-           ============================================================ */
         function aplicarRecortePorColor() {
             if (!originalImage) return;
             cutoutCanvas.width = originalImage.width;
@@ -629,9 +616,6 @@
             if (originalImage && activeMode === 'color') aplicarRecortePorColor();
         });
 
-        /* ============================================================
-           3. PINCELES MANUALES (BORRAR / RESTAURAR ESTILO PIXLR)
-           ============================================================ */
         function obtenerPuntoCanvas(e) {
             const rect = previewCanvas.getBoundingClientRect();
             return {
@@ -717,9 +701,6 @@
             }
         });
 
-        /* ============================================================
-           RENDERIZADO Y DESCARGA
-           ============================================================ */
         function renderizarCanvasFinal() {
             if (!originalImage) return;
             previewCanvas.width = originalImage.width;
