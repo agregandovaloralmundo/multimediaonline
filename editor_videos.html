@@ -146,7 +146,7 @@
             touch-action: none;
         }
         .inspector-col {
-            width: 245px;
+            width: 255px;
             background: #f8f9fa;
             border: 1.5px solid #cbd5e1;
             border-radius: 12px;
@@ -156,7 +156,7 @@
             justify-content: space-between;
             font-size: 12px;
         }
-        /* LÍNEA DE TIEMPO MULTIPISTA CON DRAG & DROP */
+        /* LÍNEA DE TIEMPO MULTIPISTA CON DRAG, RECORTE Y CORTE */
         #timelineContainer {
             background: #1e293b;
             border-radius: 10px;
@@ -166,7 +166,7 @@
         }
         .track-row {
             position: relative;
-            height: 28px;
+            height: 30px;
             background: #0f172a;
             border: 1px dashed #475569;
             border-radius: 5px;
@@ -196,7 +196,7 @@
             background: #ef4444;
             box-shadow: 0 0 6px #ef4444;
             pointer-events: none;
-            z-index: 15;
+            z-index: 20;
         }
         .tl-block {
             position: absolute;
@@ -205,17 +205,35 @@
             border-radius: 4px;
             font-size: 10px;
             font-weight: 600;
-            line-height: 22px;
-            padding: 0 6px;
+            line-height: 24px;
+            padding: 0 8px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            cursor: pointer;
+            cursor: grab;
+            user-select: none;
             z-index: 4;
+            box-sizing: border-box;
         }
+        .tl-block:active { cursor: grabbing; }
+        .tl-trim-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 7px;
+            cursor: ew-resize;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.18);
+            transition: background-color 0.15s;
+        }
+        .tl-trim-handle:hover {
+            background: #facc15;
+        }
+        .tl-trim-left { left: 0; border-right: 1px solid rgba(0,0,0,0.35); }
+        .tl-trim-right { right: 0; border-left: 1px solid rgba(0,0,0,0.35); }
         .tl-main-video { background: #2563eb; color: #fff; border: 1px solid #93c5fd; }
         .tl-main-image { background: #7c3aed; color: #fff; border: 1px solid #c4b5fd; }
-        .tl-main-selected { outline: 2px solid #facc15; z-index: 6; }
+        .tl-main-selected { outline: 2px solid #facc15; z-index: 8; }
         .tl-ov-item { background: #10b981; color: #fff; border: 1px solid #6ee7b7; }
         .tl-ov-img { background: #f59e0b; color: #111; border: 1px solid #fde68a; }
         .tl-audio-item { background: #0891b2; color: #fff; border: 1px solid #67e8f9; }
@@ -232,7 +250,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
                     <div class="d-flex align-items-center gap-2">
                         <h5 class="mb-0 fw-bold text-dark">✂️ Estudio Editor de Videos (Estilo Camtasia)</h5>
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">Arrastra medios hacia abajo a la línea de tiempo</span>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">Arrastra, recorta bordes (↔), divide con ✂️ y doble clic en textos</span>
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <button type="button" id="toggleCamBtn" class="btn btn-danger btn-sm py-0 px-3 fw-bold">
@@ -286,7 +304,7 @@
                         <div id="binTabText" class="d-none flex-column flex-grow-1" style="min-height:0;">
                             <div class="input-group input-group-sm mb-2">
                                 <input type="text" id="customTextDraft" class="form-control" placeholder="Escribe tu texto...">
-                                <input type="color" id="customTextColor" class="form-control form-control-color" value="#ffffff">
+                                <input type="color" id="customTextColor" class="form-control form-control-color" value="#ffffff" title="Color de texto">
                                 <button type="button" id="btnCreateTextCard" class="btn btn-success fw-bold">+</button>
                             </div>
                             <div id="textBinList" class="bin-list-vertical"></div>
@@ -294,7 +312,7 @@
 
                         <!-- TAB 3: TRANSICIONES ARRASTRABLES -->
                         <div id="binTabTrans" class="d-none flex-column flex-grow-1" style="min-height:0;">
-                            <p class="small text-muted mb-2">Arrastra una transición sobre un clip de la Pista 1:</p>
+                            <p class="small text-muted mb-2">Arrastra una transición sobre un clip de la Pista 1 o Pista 2:</p>
                             <div id="transBinList" class="bin-list-vertical">
                                 <div class="media-row-card" draggable="true" data-drag-kind="transition" data-trans-type="fade" data-trans-name="Fundido suave">
                                     <div class="media-row-icon bg-dark text-white">🌗</div>
@@ -353,19 +371,19 @@
 
                                     <div class="row g-1 mb-1">
                                         <div class="col-6">
-                                            <label class="text-muted mb-0">Inicio (s):</label>
-                                            <input type="number" id="inspStart" class="form-control form-control-sm py-0" value="0" min="0" step="0.5" disabled>
+                                            <label class="text-muted mb-0">Inicio / Recorte (s):</label>
+                                            <input type="number" id="inspStart" class="form-control form-control-sm py-0" value="0" min="0" step="0.2" disabled>
                                         </div>
                                         <div class="col-6">
                                             <label class="text-muted mb-0">Fin / Dur (s):</label>
-                                            <input type="number" id="inspEnd" class="form-control form-control-sm py-0" value="0" min="0.5" step="0.5" disabled>
+                                            <input type="number" id="inspEnd" class="form-control form-control-sm py-0" value="0" min="0.5" step="0.2" disabled>
                                         </div>
                                     </div>
 
                                     <div class="row g-1 mb-1">
                                         <div class="col-6">
-                                            <label class="text-muted mb-0">Zoom (%):</label>
-                                            <input type="number" id="inspZoom" class="form-control form-control-sm py-0" value="100" min="40" max="200" step="5" disabled>
+                                            <label class="text-muted mb-0">Zoom / Tam (%):</label>
+                                            <input type="number" id="inspZoom" class="form-control form-control-sm py-0" value="100" min="40" max="250" step="5" disabled>
                                         </div>
                                         <div class="col-6">
                                             <label class="text-muted mb-0">Transición:</label>
@@ -384,11 +402,17 @@
                                         </select>
                                     </div>
 
-                                    <div class="d-flex gap-1 mb-2">
-                                        <button type="button" id="btnMoveLeft" class="btn btn-outline-secondary btn-sm flex-fill py-0" disabled title="Mover antes">◀</button>
-                                        <button type="button" id="btnMoveRight" class="btn btn-outline-secondary btn-sm flex-fill py-0" disabled title="Mover después">▶</button>
-                                        <button type="button" id="btnDeleteSelected" class="btn btn-outline-danger btn-sm flex-fill py-0" disabled title="Quitar">🗑️</button>
+                                    <!-- Botones de edición rápida: Mover, Cortar/Dividir, Editar Texto, Eliminar -->
+                                    <div class="d-flex gap-1 mb-1">
+                                        <button type="button" id="btnMoveLeft" class="btn btn-outline-secondary btn-sm flex-fill py-0" disabled title="Mover antes en Pista 1">◀</button>
+                                        <button type="button" id="btnMoveRight" class="btn btn-outline-secondary btn-sm flex-fill py-0" disabled title="Mover después en Pista 1">▶</button>
+                                        <button type="button" id="btnSplitClip" class="btn btn-warning btn-sm flex-fill py-0 fw-bold" disabled title="Cortar / Dividir clip donde está la línea roja">✂️ Cortar</button>
+                                        <button type="button" id="btnDeleteSelected" class="btn btn-outline-danger btn-sm flex-fill py-0" disabled title="Eliminar clip seleccionado">🗑️</button>
                                     </div>
+
+                                    <button type="button" id="btnEditTextStyle" class="btn btn-outline-success btn-sm w-100 py-0 mb-1 fw-bold d-none">
+                                        ✏️ Editar Texto, Color y Letra
+                                    </button>
 
                                     <!-- Opciones rápidas de Cámara Flotante -->
                                     <div class="bg-white p-1 rounded border mb-1">
@@ -427,12 +451,15 @@
                             </div>
                         </div>
 
-                        <!-- LÍNEA DE TIEMPO MULTIPISTA CON 3 PISTAS ARRASTRABLES -->
+                        <!-- LÍNEA DE TIEMPO MULTIPISTA CON 3 PISTAS INTERACTIVAS -->
                         <div id="timelineContainer">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="small fw-bold">🎞️ Línea de Tiempo Multipista (arrastra medios aquí · clic para ubicarte):</span>
+                            <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
+                                <span class="small fw-bold">🎞️ Línea de Tiempo (arrastra para mover · bordes ↔ para recortar · doble clic en texto):</span>
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="progress" style="width: 110px; height: 8px;">
+                                    <button type="button" id="btnSplitTimeline" class="btn btn-warning btn-sm py-0 px-2 fw-bold" style="font-size: 11px;" disabled title="Dividir en la posición actual del cabezal rojo">
+                                        ✂️ Dividir aquí
+                                    </button>
+                                    <div class="progress" style="width: 95px; height: 8px;">
                                         <div id="renderProgress" class="progress-bar bg-danger" style="width: 0%;"></div>
                                     </div>
                                     <span class="badge bg-primary font-monospace" id="timeBadge">00:00 / 00:00</span>
@@ -441,13 +468,13 @@
 
                             <div id="timelineWrapper" style="position: relative;">
                                 <div class="track-row" id="trackOverlay" data-track="overlay">
-                                    <span class="track-label-tag">Pista 2 (Arriba): Arrastra aquí Logos, Imágenes sin fondo o Textos</span>
+                                    <span class="track-label-tag">Pista 2 (Arriba): Logos, Imágenes sin fondo o Textos (doble clic para editar texto)</span>
                                 </div>
                                 <div class="track-row" id="trackMain" data-track="main">
-                                    <span class="track-label-tag">Pista 1 (Principal): Arrastra aquí Videos (.mp4) e Imágenes de escena</span>
+                                    <span class="track-label-tag">Pista 1 (Principal): Videos (.mp4) e Imágenes (arrastra orillas ↔ para recortar)</span>
                                 </div>
                                 <div class="track-row mb-0" id="trackAudio" data-track="audio">
-                                    <span class="track-label-tag">Pista 3 (Audio): Arrastra aquí Música o Voz (.mp3 / .wav)</span>
+                                    <span class="track-label-tag">Pista 3 (Audio): Música o Voz (.mp3 / .wav) (arrastra para mover o recorta orillas)</span>
                                 </div>
                                 <div id="timelinePlayhead" style="left: 0%;"></div>
                             </div>
@@ -459,6 +486,59 @@
 
         <div id="footer-placeholder"></div>
         <script src="footer.js"></script>
+    </div>
+
+    <!-- Modal para editar Texto, Color, Fuente y Tamaño -->
+    <div class="modal fade" id="textEditorModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-success border-2">
+                <div class="modal-header bg-success text-white py-2">
+                    <h6 class="modal-title fw-bold">✏️ Personalizar Rótulo de Texto</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body text-start small">
+                    <div class="mb-2">
+                        <label class="form-label fw-bold mb-1">Texto que aparecerá en el video:</label>
+                        <input type="text" id="modalTextValue" class="form-control form-control-sm" placeholder="Escribe el título o subtítulo...">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label fw-bold mb-1">Tipo de letra:</label>
+                            <select id="modalTextFont" class="form-select form-select-sm">
+                                <option value="Calibri, Arial, sans-serif">Moderna (Calibri / Arial)</option>
+                                <option value="Impact, 'Arial Black', sans-serif">Impacto / Titular YouTube</option>
+                                <option value="Georgia, 'Times New Roman', serif">Elegante (Georgia Serif)</option>
+                                <option value="'Courier New', monospace">Máquina / Código</option>
+                                <option value="'Comic Sans MS', cursive">Juvenil / Informal</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold mb-1">Tamaño de letra (%):</label>
+                            <input type="number" id="modalTextScale" class="form-control form-control-sm" min="50" max="220" step="10" value="100">
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label fw-bold mb-1">Color de letra:</label>
+                            <input type="color" id="modalTextColor" class="form-control form-control-color w-100" value="#ffffff">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold mb-1">Fondo del rótulo:</label>
+                            <select id="modalTextBgMode" class="form-select form-select-sm">
+                                <option value="dark">Caja oscura translúcida</option>
+                                <option value="blue">Caja azul</option>
+                                <option value="red">Caja roja</option>
+                                <option value="none">Sin fondo (solo sombra)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-1">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnSaveTextModal" class="btn btn-success btn-sm fw-bold">💾 Aplicar Cambios</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <video id="camVideo" autoplay playsinline muted style="display:none;"></video>
@@ -506,7 +586,10 @@
         const filterSelect = document.getElementById('filterSelect');
         const btnMoveLeft = document.getElementById('btnMoveLeft');
         const btnMoveRight = document.getElementById('btnMoveRight');
+        const btnSplitClip = document.getElementById('btnSplitClip');
+        const btnSplitTimeline = document.getElementById('btnSplitTimeline');
         const btnDeleteSelected = document.getElementById('btnDeleteSelected');
+        const btnEditTextStyle = document.getElementById('btnEditTextStyle');
 
         const previewBtn = document.getElementById('previewBtn');
         const renderBtn = document.getElementById('renderBtn');
@@ -525,6 +608,15 @@
         const renderCanvas = document.getElementById('renderCanvas');
         const ctx = renderCanvas.getContext('2d');
         const camVideo = document.getElementById('camVideo');
+
+        const textEditorModal = new bootstrap.Modal(document.getElementById('textEditorModal'));
+        const modalTextValue = document.getElementById('modalTextValue');
+        const modalTextFont = document.getElementById('modalTextFont');
+        const modalTextScale = document.getElementById('modalTextScale');
+        const modalTextColor = document.getElementById('modalTextColor');
+        const modalTextBgMode = document.getElementById('modalTextBgMode');
+        const btnSaveTextModal = document.getElementById('btnSaveTextModal');
+        let editingOverlayId = null;
 
         let mediaLibrary = [];
         let nextMediaId = 1;
@@ -562,6 +654,9 @@
         let dragOffsetY = 0;
         let draggedLibraryPayload = null;
 
+        // Estado para arrastrar y recortar bloques en la línea de tiempo
+        let tlDragState = null;
+
         const Toast = Swal.mixin({
             toast: true, position: 'top-end', showConfirmButton: false, timer: 2300, timerProgressBar: true
         });
@@ -577,10 +672,14 @@
             return Math.max(0.5, (c.trimEnd || 0) - (c.trimStart || 0));
         }
 
+        function durAudioClip(a) {
+            return Math.max(0.5, (a.trimEnd !== undefined ? a.trimEnd : a.duration) - (a.trimStart || 0));
+        }
+
         function obtenerDuracionTotal() {
             const dMain = mainClips.reduce((acc, c) => acc + durMainClip(c), 0);
             const dOv = overlayClips.reduce((mx, o) => Math.max(mx, o.end), 0);
-            const dAud = audioClips.reduce((mx, a) => Math.max(mx, a.start + a.duration), 0);
+            const dAud = audioClips.reduce((mx, a) => Math.max(mx, a.start + durAudioClip(a)), 0);
             return Math.max(dMain, dOv, dAud);
         }
 
@@ -778,7 +877,7 @@
         });
 
         /* ============================================================
-           2. DRAG & DROP EN PISTAS DE LA LÍNEA DE TIEMPO
+           2. DRAG & DROP DESDE BIBLIOTECA A PISTAS
            ============================================================ */
         [trackMain, trackOverlay, trackAudio].forEach(trackEl => {
             trackEl.addEventListener('dragover', (e) => {
@@ -814,6 +913,10 @@
                         name: payload.text,
                         text: payload.text,
                         color: payload.color || '#ffffff',
+                        fontFamily: 'Calibri, Arial, sans-serif',
+                        fontScale: 100,
+                        bgMode: 'dark',
+                        transition: null,
                         start,
                         end,
                         xNorm: 0.25,
@@ -824,13 +927,22 @@
                     actualizarTodoUI();
                     saltarATiempo(start + 0.05);
                 } else if (payload.dragKind === 'transition') {
-                    if (!mainClips.length) return;
-                    const info = obtenerClipPrincipalEnTiempo(dropTime);
-                    const targetClip = info ? info.clip : mainClips[0];
-                    targetClip.transition = { type: payload.transType, name: payload.transName };
-                    selectedItem = { track: 'main', id: targetClip.id };
-                    actualizarTodoUI();
-                    Toast.fire({ icon: 'success', title: `Transición "${payload.transName}" aplicada` });
+                    if (targetTrack === 'overlay') {
+                        const ovTarget = overlayClips.find(o => dropTime >= o.start && dropTime <= o.end) || overlayClips[0];
+                        if (ovTarget) {
+                            ovTarget.transition = { type: payload.transType, name: payload.transName };
+                            selectedItem = { track: 'overlay', id: ovTarget.id };
+                            actualizarTodoUI();
+                            Toast.fire({ icon: 'success', title: `Transición "${payload.transName}" aplicada en Pista 2` });
+                        }
+                    } else if (mainClips.length) {
+                        const info = obtenerClipPrincipalEnTiempo(dropTime);
+                        const targetClip = info ? info.clip : mainClips[0];
+                        targetClip.transition = { type: payload.transType, name: payload.transName };
+                        selectedItem = { track: 'main', id: targetClip.id };
+                        actualizarTodoUI();
+                        Toast.fire({ icon: 'success', title: `Transición "${payload.transName}" aplicada` });
+                    }
                 }
                 draggedLibraryPayload = null;
             });
@@ -849,6 +961,9 @@
                     url: mediaItem.url,
                     audioEl: audEl,
                     start: dropTime,
+                    rawDuration: mediaItem.duration,
+                    trimStart: 0,
+                    trimEnd: mediaItem.duration,
                     duration: mediaItem.duration
                 };
                 audioClips.push(nuevoAud);
@@ -865,6 +980,7 @@
                     type: 'image',
                     name: mediaItem.name,
                     imgEl: mediaItem.imgEl,
+                    transition: null,
                     start,
                     end,
                     xNorm: 0.06,
@@ -889,6 +1005,7 @@
                     id: nextTrackItemId++,
                     type: 'video',
                     name: mediaItem.name,
+                    url: mediaItem.url,
                     videoEl: v,
                     rawDuration: mediaItem.duration,
                     trimStart: 0,
@@ -918,8 +1035,322 @@
         }
 
         /* ============================================================
-           3. PISTAS E INSPECTOR
+           3. EDITOR DE TEXTO CON DOBLE CLIC
            ============================================================ */
+        function abrirModalEditarTexto(ov) {
+            if (!ov || ov.type !== 'text') return;
+            editingOverlayId = ov.id;
+            modalTextValue.value = ov.text || '';
+            modalTextFont.value = ov.fontFamily || 'Calibri, Arial, sans-serif';
+            modalTextScale.value = ov.fontScale || 100;
+            modalTextColor.value = ov.color || '#ffffff';
+            modalTextBgMode.value = ov.bgMode || 'dark';
+            textEditorModal.show();
+            setTimeout(() => modalTextValue.focus(), 200);
+        }
+
+        btnEditTextStyle.addEventListener('click', () => {
+            if (!selectedItem || selectedItem.track !== 'overlay') return;
+            const ov = overlayClips.find(o => o.id === selectedItem.id);
+            if (ov && ov.type === 'text') abrirModalEditarTexto(ov);
+        });
+
+        btnSaveTextModal.addEventListener('click', () => {
+            const ov = overlayClips.find(o => o.id === editingOverlayId);
+            if (ov) {
+                const nuevoTexto = modalTextValue.value.trim();
+                if (nuevoTexto) {
+                    ov.text = nuevoTexto;
+                    ov.name = nuevoTexto;
+                }
+                ov.fontFamily = modalTextFont.value;
+                ov.fontScale = Math.max(50, Math.min(220, parseInt(modalTextScale.value, 10) || 100));
+                ov.color = modalTextColor.value || '#ffffff';
+                ov.bgMode = modalTextBgMode.value;
+                actualizarTodoUI();
+                dibujarEscena(currentTimelineSec);
+                Toast.fire({ icon: 'success', title: 'Rótulo actualizado' });
+            }
+            textEditorModal.hide();
+        });
+
+        /* ============================================================
+           4. DIVIDIR / CORTAR CLIP EN EL CABEZAL ROJO (✂️)
+           ============================================================ */
+        async function dividirClipEnCabezal() {
+            const total = obtenerDuracionTotal();
+            if (total <= 0) return;
+            const t = currentTimelineSec;
+
+            // 1. Si hay un clip seleccionado, intentar dividir ese primero
+            if (selectedItem) {
+                if (selectedItem.track === 'main') {
+                    let acc = 0;
+                    for (let i = 0; i < mainClips.length; i++) {
+                        const c = mainClips[i];
+                        const dur = durMainClip(c);
+                        if (c.id === selectedItem.id) {
+                            const localOffset = t - acc;
+                            if (localOffset >= 0.4 && (dur - localOffset) >= 0.4) {
+                                await ejecutarCorteMain(i, localOffset);
+                                return;
+                            }
+                            break;
+                        }
+                        acc += dur;
+                    }
+                } else if (selectedItem.track === 'overlay') {
+                    const idx = overlayClips.findIndex(o => o.id === selectedItem.id);
+                    if (idx >= 0) {
+                        const ov = overlayClips[idx];
+                        if (t - ov.start >= 0.3 && ov.end - t >= 0.3) {
+                            const segundaMitad = { ...ov, id: nextTrackItemId++, start: t, transition: null };
+                            ov.end = t;
+                            overlayClips.splice(idx + 1, 0, segundaMitad);
+                            selectedItem = { track: 'overlay', id: segundaMitad.id };
+                            actualizarTodoUI();
+                            Toast.fire({ icon: 'success', title: '✂️ Elemento de Pista 2 dividido en 2' });
+                            return;
+                        }
+                    }
+                } else if (selectedItem.track === 'audio') {
+                    const idx = audioClips.findIndex(a => a.id === selectedItem.id);
+                    if (idx >= 0) {
+                        const au = audioClips[idx];
+                        const dur = durAudioClip(au);
+                        const localOffset = t - au.start;
+                        if (localOffset >= 0.4 && (dur - localOffset) >= 0.4) {
+                            const corteEnAudio = (au.trimStart || 0) + localOffset;
+                            const segundoAudio = {
+                                id: nextTrackItemId++,
+                                name: au.name,
+                                url: au.url,
+                                audioEl: new Audio(au.url),
+                                start: t,
+                                rawDuration: au.rawDuration || au.duration,
+                                trimStart: corteEnAudio,
+                                trimEnd: (au.trimEnd !== undefined ? au.trimEnd : au.duration),
+                                duration: (au.trimEnd !== undefined ? au.trimEnd : au.duration) - corteEnAudio
+                            };
+                            au.trimEnd = corteEnAudio;
+                            au.duration = localOffset;
+                            audioClips.splice(idx + 1, 0, segundoAudio);
+                            selectedItem = { track: 'audio', id: segundoAudio.id };
+                            actualizarTodoUI();
+                            Toast.fire({ icon: 'success', title: '✂️ Audio dividido en 2 partes' });
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // 2. Si no se pudo sobre el seleccionado, dividir el clip de Pista 1 que esté bajo la línea roja
+            let acc = 0;
+            for (let i = 0; i < mainClips.length; i++) {
+                const c = mainClips[i];
+                const dur = durMainClip(c);
+                if (t > acc + 0.4 && t < acc + dur - 0.4) {
+                    await ejecutarCorteMain(i, t - acc);
+                    return;
+                }
+                acc += dur;
+            }
+
+            Toast.fire({ icon: 'info', title: 'Coloca la línea roja dentro de un clip (no en la orilla) para cortarlo' });
+        }
+
+        async function ejecutarCorteMain(index, localOffset) {
+            const c = mainClips[index];
+            const puntoCorte = c.trimStart + localOffset;
+            let segundoClip = null;
+
+            if (c.type === 'video') {
+                const v2 = document.createElement('video');
+                v2.src = c.url;
+                v2.muted = true;
+                v2.playsInline = true;
+                v2.preload = 'auto';
+                await new Promise(r => { v2.onloadedmetadata = r; v2.onerror = r; });
+
+                segundoClip = {
+                    id: nextTrackItemId++,
+                    type: 'video',
+                    name: c.name,
+                    url: c.url,
+                    videoEl: v2,
+                    rawDuration: c.rawDuration,
+                    trimStart: puntoCorte,
+                    trimEnd: c.trimEnd,
+                    zoom: c.zoom || 100,
+                    transition: null
+                };
+            } else {
+                segundoClip = {
+                    id: nextTrackItemId++,
+                    type: 'image',
+                    name: c.name,
+                    imgEl: c.imgEl,
+                    rawDuration: c.rawDuration,
+                    trimStart: puntoCorte,
+                    trimEnd: c.trimEnd,
+                    zoom: c.zoom || 105,
+                    transition: null
+                };
+            }
+
+            c.trimEnd = puntoCorte;
+            mainClips.splice(index + 1, 0, segundoClip);
+            selectedItem = { track: 'main', id: segundoClip.id };
+            actualizarTodoUI();
+            saltarATiempo(currentTimelineSec);
+            Toast.fire({ icon: 'success', title: '✂️ Clip dividido en dos partes' });
+        }
+
+        btnSplitClip.addEventListener('click', dividirClipEnCabezal);
+        btnSplitTimeline.addEventListener('click', dividirClipEnCabezal);
+
+        /* ============================================================
+           5. PISTAS INTERACTIVAS (ARRASTRE HORIZONTAL + RECORTE EN ORILLAS ↔)
+           ============================================================ */
+        function instalarInteraccionBloque(el, trackName, itemObj, startSecEnTimeline, durSecEnTimeline) {
+            // Tirador izquierdo (recorte inicio ↔)
+            const handleLeft = document.createElement('div');
+            handleLeft.className = 'tl-trim-handle tl-trim-left';
+            handleLeft.title = 'Arrastra ↔ para recortar el inicio';
+            el.appendChild(handleLeft);
+
+            // Tirador derecho (recorte final ↔)
+            const handleRight = document.createElement('div');
+            handleRight.className = 'tl-trim-handle tl-trim-right';
+            handleRight.title = 'Arrastra ↔ para recortar o estirar el final';
+            el.appendChild(handleRight);
+
+            const iniciarDrag = (mode, e) => {
+                e.stopPropagation();
+                if (isRendering) return;
+                if (isPlayingPreview) detenerTodoProceso();
+
+                selectedItem = { track: trackName, id: itemObj.id };
+                actualizarInspector();
+
+                const rect = timelineWrapper.getBoundingClientRect();
+                const total = Math.max(1, obtenerDuracionTotal());
+
+                tlDragState = {
+                    mode, // 'move' | 'trim-left' | 'trim-right'
+                    track: trackName,
+                    item: itemObj,
+                    startX: e.clientX,
+                    wrapperWidth: rect.width,
+                    totalSnapshot: total,
+                    origStart: itemObj.start || 0,
+                    origEnd: itemObj.end || 0,
+                    origTrimStart: itemObj.trimStart || 0,
+                    origTrimEnd: itemObj.trimEnd !== undefined ? itemObj.trimEnd : (itemObj.duration || 4),
+                    moved: false
+                };
+            };
+
+            handleLeft.addEventListener('pointerdown', (e) => iniciarDrag('trim-left', e));
+            handleRight.addEventListener('pointerdown', (e) => iniciarDrag('trim-right', e));
+            el.addEventListener('pointerdown', (e) => {
+                if (e.target.classList.contains('tl-trim-handle')) return;
+                iniciarDrag('move', e);
+            });
+
+            el.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                if (trackName === 'overlay' && itemObj.type === 'text') {
+                    abrirModalEditarTexto(itemObj);
+                }
+            });
+        }
+
+        window.addEventListener('pointermove', (e) => {
+            if (!tlDragState) return;
+            const dx = e.clientX - tlDragState.startX;
+            if (Math.abs(dx) > 2) tlDragState.moved = true;
+            if (!tlDragState.moved) return;
+
+            const deltaSec = (dx / Math.max(50, tlDragState.wrapperWidth)) * tlDragState.totalSnapshot;
+            const { mode, track, item } = tlDragState;
+
+            if (track === 'main') {
+                if (mode === 'trim-left') {
+                    const maxStart = tlDragState.origTrimEnd - 0.5;
+                    item.trimStart = Math.max(0, Math.min(maxStart, Number((tlDragState.origTrimStart + deltaSec).toFixed(2))));
+                } else if (mode === 'trim-right') {
+                    const maxEnd = item.type === 'video' ? item.rawDuration : 120;
+                    item.trimEnd = Math.max(item.trimStart + 0.5, Math.min(maxEnd, Number((tlDragState.origTrimEnd + deltaSec).toFixed(2))));
+                } else if (mode === 'move') {
+                    // Intercambiar orden en Pista 1 si se arrastra lo suficiente a izq/der
+                    const idx = mainClips.findIndex(c => c.id === item.id);
+                    if (deltaSec > 1.2 && idx < mainClips.length - 1) {
+                        [mainClips[idx], mainClips[idx + 1]] = [mainClips[idx + 1], mainClips[idx]];
+                        tlDragState.startX = e.clientX;
+                    } else if (deltaSec < -1.2 && idx > 0) {
+                        [mainClips[idx - 1], mainClips[idx]] = [mainClips[idx], mainClips[idx - 1]];
+                        tlDragState.startX = e.clientX;
+                    }
+                }
+            } else if (track === 'overlay') {
+                const durOrig = tlDragState.origEnd - tlDragState.origStart;
+                if (mode === 'move') {
+                    const nuevoInicio = Math.max(0, Number((tlDragState.origStart + deltaSec).toFixed(2)));
+                    item.start = nuevoInicio;
+                    item.end = Number((nuevoInicio + durOrig).toFixed(2));
+                } else if (mode === 'trim-left') {
+                    item.start = Math.max(0, Math.min(tlDragState.origEnd - 0.5, Number((tlDragState.origStart + deltaSec).toFixed(2))));
+                } else if (mode === 'trim-right') {
+                    item.end = Math.max(item.start + 0.5, Number((tlDragState.origEnd + deltaSec).toFixed(2)));
+                }
+            } else if (track === 'audio') {
+                const trimS = item.trimStart || 0;
+                const trimE = item.trimEnd !== undefined ? item.trimEnd : item.duration;
+                const durOrig = trimE - trimS;
+
+                if (mode === 'move') {
+                    item.start = Math.max(0, Number((tlDragState.origStart + deltaSec).toFixed(2)));
+                } else if (mode === 'trim-left') {
+                    const nuevoTrimStart = Math.max(0, Math.min(tlDragState.origTrimEnd - 0.5, Number((tlDragState.origTrimStart + deltaSec).toFixed(2))));
+                    const diff = nuevoTrimStart - tlDragState.origTrimStart;
+                    item.trimStart = nuevoTrimStart;
+                    item.start = Math.max(0, Number((tlDragState.origStart + diff).toFixed(2)));
+                    item.duration = Number((item.trimEnd - item.trimStart).toFixed(2));
+                } else if (mode === 'trim-right') {
+                    const maxAudio = item.rawDuration || 600;
+                    item.trimEnd = Math.max(item.trimStart + 0.5, Math.min(maxAudio, Number((tlDragState.origTrimEnd + deltaSec).toFixed(2))));
+                    item.duration = Number((item.trimEnd - item.trimStart).toFixed(2));
+                }
+            }
+
+            renderizarPistas();
+            actualizarInspector();
+            dibujarEscena(currentTimelineSec);
+        });
+
+        window.addEventListener('pointerup', () => {
+            if (!tlDragState) return;
+            const fueClicSimple = !tlDragState.moved;
+            const { track, item } = tlDragState;
+            tlDragState = null;
+
+            if (fueClicSimple) {
+                if (track === 'main') {
+                    let acc = 0;
+                    for (const c of mainClips) {
+                        if (c.id === item.id) { saltarATiempo(acc + 0.05); break; }
+                        acc += durMainClip(c);
+                    }
+                } else if (track === 'overlay') {
+                    saltarATiempo(item.start + 0.05);
+                } else if (track === 'audio') {
+                    saltarATiempo(item.start + 0.05);
+                }
+            }
+            actualizarTodoUI();
+        });
+
         function actualizarTodoUI() {
             renderizarPistas();
             actualizarInspector();
@@ -942,56 +1373,43 @@
             mainClips.forEach((c, idx) => {
                 const dur = durMainClip(c);
                 const leftPct = (acc / total) * 100;
-                const widthPct = Math.max(2, (dur / total) * 100);
+                const widthPct = Math.max(2.5, (dur / total) * 100);
                 const el = document.createElement('div');
                 const isSel = selectedItem && selectedItem.track === 'main' && selectedItem.id === c.id;
                 el.className = `tl-block ${c.type === 'image' ? 'tl-main-image' : 'tl-main-video'} ${isSel ? 'tl-main-selected' : ''}`;
                 el.style.left = `${leftPct}%`;
                 el.style.width = `${widthPct}%`;
-                el.textContent = `${idx + 1}. ${c.name}${c.transition ? ' ✨' : ''}`;
-                const startT = acc;
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    selectedItem = { track: 'main', id: c.id };
-                    actualizarTodoUI();
-                    saltarATiempo(startT + 0.05);
-                });
+                el.textContent = `${idx + 1}. ${c.name} (${dur.toFixed(1)}s)${c.transition ? ' ✨' : ''}`;
+                instalarInteraccionBloque(el, 'main', c, acc, dur);
                 trackMain.appendChild(el);
                 acc += dur;
             });
 
             overlayClips.forEach(ov => {
-                const leftPct = Math.min(98, (ov.start / total) * 100);
-                const widthPct = Math.max(2.5, Math.min(100 - leftPct, ((ov.end - ov.start) / total) * 100));
+                const dur = Math.max(0.5, ov.end - ov.start);
+                const leftPct = Math.min(97.5, (ov.start / total) * 100);
+                const widthPct = Math.max(2.5, Math.min(100 - leftPct, (dur / total) * 100));
                 const el = document.createElement('div');
                 const isSel = selectedItem && selectedItem.track === 'overlay' && selectedItem.id === ov.id;
                 el.className = `tl-block ${ov.type === 'image' ? 'tl-ov-img' : 'tl-ov-item'} ${isSel ? 'tl-main-selected' : ''}`;
                 el.style.left = `${leftPct}%`;
                 el.style.width = `${widthPct}%`;
-                el.textContent = `${ov.type === 'image' ? '🖼️' : '🏷️'} ${ov.name}`;
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    selectedItem = { track: 'overlay', id: ov.id };
-                    actualizarTodoUI();
-                    saltarATiempo(ov.start + 0.05);
-                });
+                el.textContent = `${ov.type === 'image' ? '🖼️' : '🏷️'} ${ov.name}${ov.transition ? ' ✨' : ''}`;
+                instalarInteraccionBloque(el, 'overlay', ov, ov.start, dur);
                 trackOverlay.appendChild(el);
             });
 
             audioClips.forEach(au => {
-                const leftPct = Math.min(98, (au.start / total) * 100);
-                const widthPct = Math.max(3, Math.min(100 - leftPct, (au.duration / total) * 100));
+                const dur = durAudioClip(au);
+                const leftPct = Math.min(97.5, (au.start / total) * 100);
+                const widthPct = Math.max(3, Math.min(100 - leftPct, (dur / total) * 100));
                 const el = document.createElement('div');
                 const isSel = selectedItem && selectedItem.track === 'audio' && selectedItem.id === au.id;
                 el.className = `tl-block tl-audio-item ${isSel ? 'tl-main-selected' : ''}`;
                 el.style.left = `${leftPct}%`;
                 el.style.width = `${widthPct}%`;
-                el.textContent = `🎵 ${au.name}`;
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    selectedItem = { track: 'audio', id: au.id };
-                    actualizarTodoUI();
-                });
+                el.textContent = `🎵 ${au.name} (${dur.toFixed(1)}s)`;
+                instalarInteraccionBloque(el, 'audio', au, au.start, dur);
                 trackAudio.appendChild(el);
             });
 
@@ -999,14 +1417,17 @@
         }
 
         function actualizarInspector() {
+            btnEditTextStyle.classList.add('d-none');
+
             if (!selectedItem) {
                 inspTitle.textContent = 'Ningún clip seleccionado';
                 inspStart.disabled = inspEnd.disabled = inspZoom.disabled = true;
-                btnMoveLeft.disabled = btnMoveRight.disabled = btnDeleteSelected.disabled = true;
+                btnMoveLeft.disabled = btnMoveRight.disabled = btnDeleteSelected.disabled = btnSplitClip.disabled = true;
                 inspTrans.value = 'Ninguna';
                 return;
             }
             btnDeleteSelected.disabled = false;
+            btnSplitClip.disabled = false;
 
             if (selectedItem.track === 'main') {
                 const idx = mainClips.findIndex(c => c.id === selectedItem.id);
@@ -1016,8 +1437,8 @@
                 inspStart.disabled = c.type === 'image';
                 inspEnd.disabled = false;
                 inspZoom.disabled = false;
-                inspStart.value = c.trimStart;
-                inspEnd.value = c.trimEnd;
+                inspStart.value = c.trimStart.toFixed(1);
+                inspEnd.value = c.trimEnd.toFixed(1);
                 inspZoom.value = c.zoom || 100;
                 inspTrans.value = c.transition ? c.transition.name : 'Ninguna';
                 btnMoveLeft.disabled = idx <= 0;
@@ -1028,21 +1449,22 @@
                 inspTitle.textContent = `Pista 2: ${ov.name}`;
                 inspStart.disabled = false;
                 inspEnd.disabled = false;
-                inspZoom.disabled = ov.type !== 'image';
+                inspZoom.disabled = false;
                 inspStart.value = ov.start.toFixed(1);
                 inspEnd.value = ov.end.toFixed(1);
-                inspZoom.value = ov.type === 'image' ? Math.round((ov.wNorm || 0.24) * 400) : 100;
-                inspTrans.value = 'Superposición';
+                inspZoom.value = ov.type === 'image' ? Math.round((ov.wNorm || 0.24) * 400) : (ov.fontScale || 100);
+                inspTrans.value = ov.transition ? ov.transition.name : 'Superposición';
                 btnMoveLeft.disabled = btnMoveRight.disabled = true;
+                if (ov.type === 'text') btnEditTextStyle.classList.remove('d-none');
             } else if (selectedItem.track === 'audio') {
                 const au = audioClips.find(a => a.id === selectedItem.id);
                 if (!au) return;
                 inspTitle.textContent = `Pista 3: ${au.name}`;
                 inspStart.disabled = false;
-                inspEnd.disabled = true;
+                inspEnd.disabled = false;
                 inspZoom.disabled = true;
                 inspStart.value = au.start.toFixed(1);
-                inspEnd.value = (au.start + au.duration).toFixed(1);
+                inspEnd.value = (au.start + durAudioClip(au)).toFixed(1);
                 inspTrans.value = 'Audio';
                 btnMoveLeft.disabled = btnMoveRight.disabled = true;
             }
@@ -1074,6 +1496,14 @@
             } else if (selectedItem.track === 'overlay') {
                 const ov = overlayClips.find(x => x.id === selectedItem.id);
                 if (ov) ov.end = Math.max(ov.start + 0.5, val);
+            } else if (selectedItem.track === 'audio') {
+                const au = audioClips.find(x => x.id === selectedItem.id);
+                if (au) {
+                    const nuevaDur = Math.max(0.5, val - au.start);
+                    const maxAudio = au.rawDuration || 600;
+                    au.trimEnd = Math.min(maxAudio, (au.trimStart || 0) + nuevaDur);
+                    au.duration = au.trimEnd - (au.trimStart || 0);
+                }
             }
             actualizarTodoUI();
             saltarATiempo(currentTimelineSec);
@@ -1081,13 +1511,14 @@
 
         inspZoom.addEventListener('input', () => {
             if (!selectedItem) return;
-            const val = Math.max(40, Math.min(200, parseFloat(inspZoom.value) || 100));
+            const val = Math.max(40, Math.min(250, parseFloat(inspZoom.value) || 100));
             if (selectedItem.track === 'main') {
                 const c = mainClips.find(x => x.id === selectedItem.id);
                 if (c) c.zoom = val;
             } else if (selectedItem.track === 'overlay') {
                 const ov = overlayClips.find(x => x.id === selectedItem.id);
                 if (ov && ov.type === 'image') ov.wNorm = val / 400;
+                else if (ov && ov.type === 'text') ov.fontScale = val;
             }
             dibujarEscena(currentTimelineSec);
         });
@@ -1119,7 +1550,7 @@
         });
 
         /* ============================================================
-           4. SCRUBBER, CÁMARA FLOTANTE Y DIBUJO EN CANVAS
+           6. SCRUBBER, CÁMARA FLOTANTE Y DIBUJO EN CANVAS
            ============================================================ */
         function actualizarPlayhead(sec) {
             const total = obtenerDuracionTotal();
@@ -1130,6 +1561,7 @@
         }
 
         timelineWrapper.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('.tl-block')) return;
             const total = obtenerDuracionTotal();
             if (total <= 0 || isRendering) return;
             if (isPlayingPreview) detenerTodoProceso();
@@ -1177,13 +1609,15 @@
                 const h = Math.round(w * (ov.imgEl.height / Math.max(1, ov.imgEl.width)));
                 return { x: Math.round(ov.xNorm * cw), y: Math.round(ov.yNorm * ch), w, h };
             }
-            const fontSize = Math.max(22, Math.round(ch * 0.055));
+            const scaleFactor = (ov.fontScale || 100) / 100;
+            const fontSize = Math.max(18, Math.round(ch * 0.055 * scaleFactor));
+            const fontFam = ov.fontFamily || 'Calibri, Arial, sans-serif';
             ctx.save();
-            ctx.font = `bold ${fontSize}px Calibri, Arial, sans-serif`;
-            const w = Math.min(cw - 24, ctx.measureText(ov.text).width + 26);
+            ctx.font = `bold ${fontSize}px ${fontFam}`;
+            const w = Math.min(cw - 24, ctx.measureText(ov.text).width + 28);
             ctx.restore();
-            const h = fontSize + 16;
-            return { x: Math.round(ov.xNorm * cw), y: Math.round(ov.yNorm * ch), w, h, fontSize };
+            const h = fontSize + 18;
+            return { x: Math.round(ov.xNorm * cw), y: Math.round(ov.yNorm * ch), w, h, fontSize, fontFam };
         }
 
         function dibujarEscena(tSec) {
@@ -1199,15 +1633,16 @@
                 const c = info.clip;
                 const dur = durMainClip(c);
                 const prog = Math.max(0, Math.min(1, info.localOffset / dur));
-                const zoomManual = (c.zoom || 100) / 100;
+                let zoomManual = (c.zoom || 100) / 100;
 
                 ctx.save();
                 ctx.filter = filterSelect.value || 'none';
 
                 if (c.transition && info.localOffset < 1.0) {
-                    const p = info.localOffset;
+                    const p = Math.max(0, Math.min(1, info.localOffset));
                     if (c.transition.type === 'fade') ctx.globalAlpha = p;
-                    if (c.transition.type === 'slide') ctx.translate((1 - p) * cw, 0);
+                    else if (c.transition.type === 'slide') ctx.translate((1 - p) * cw, 0);
+                    else if (c.transition.type === 'zoom') zoomManual *= (0.7 + 0.3 * p);
                 }
 
                 if (c.type === 'video' && c.videoEl && c.videoEl.readyState >= 2) {
@@ -1230,16 +1665,32 @@
             for (const ov of overlayClips) {
                 if (tSec < ov.start || tSec > ov.end) continue;
                 const r = obtenerRectOverlay(ov);
+                const localOv = tSec - ov.start;
                 ctx.save();
+
+                if (ov.transition && localOv < 0.8) {
+                    const p = Math.max(0, Math.min(1, localOv / 0.8));
+                    if (ov.transition.type === 'fade') ctx.globalAlpha = p;
+                    else if (ov.transition.type === 'slide') ctx.translate((1 - p) * 180, 0);
+                }
+
                 if (ov.type === 'image' && ov.imgEl) {
                     ctx.drawImage(ov.imgEl, r.x, r.y, r.w, r.h);
                 } else {
-                    ctx.fillStyle = 'rgba(0,0,0,0.62)';
-                    ctx.beginPath();
-                    ctx.roundRect ? ctx.roundRect(r.x, r.y, r.w, r.h, 8) : ctx.rect(r.x, r.y, r.w, r.h);
-                    ctx.fill();
+                    const bgMode = ov.bgMode || 'dark';
+                    if (bgMode !== 'none') {
+                        ctx.fillStyle = bgMode === 'blue' ? 'rgba(13, 110, 253, 0.82)'
+                                      : bgMode === 'red' ? 'rgba(220, 53, 69, 0.82)'
+                                      : 'rgba(0, 0, 0, 0.65)';
+                        ctx.beginPath();
+                        ctx.roundRect ? ctx.roundRect(r.x, r.y, r.w, r.h, 8) : ctx.rect(r.x, r.y, r.w, r.h);
+                        ctx.fill();
+                    } else {
+                        ctx.shadowColor = 'rgba(0,0,0,0.9)';
+                        ctx.shadowBlur = 6;
+                    }
                     ctx.fillStyle = ov.color || '#ffffff';
-                    ctx.font = `bold ${r.fontSize}px Calibri, Arial, sans-serif`;
+                    ctx.font = `bold ${r.fontSize}px ${r.fontFam}`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(ov.text, r.x + r.w / 2, r.y + r.h / 2, r.w - 16);
@@ -1351,10 +1802,29 @@
                 if (currentTimelineSec < ov.start || currentTimelineSec > ov.end) continue;
                 const ro = obtenerRectOverlay(ov);
                 if (pt.x >= ro.x && pt.x <= ro.x + ro.w && pt.y >= ro.y && pt.y <= ro.y + ro.h) {
+                    selectedItem = { track: 'overlay', id: ov.id };
+                    actualizarInspector();
                     dragCanvasTarget = { kind: 'overlay', item: ov };
                     dragOffsetX = pt.x - ro.x;
                     dragOffsetY = pt.y - ro.y;
                     renderCanvas.setPointerCapture(e.pointerId);
+                    return;
+                }
+            }
+        });
+
+        renderCanvas.addEventListener('dblclick', (e) => {
+            const rect = renderCanvas.getBoundingClientRect();
+            const pt = {
+                x: (e.clientX - rect.left) * (renderCanvas.width / rect.width),
+                y: (e.clientY - rect.top) * (renderCanvas.height / rect.height)
+            };
+            for (let i = overlayClips.length - 1; i >= 0; i--) {
+                const ov = overlayClips[i];
+                if (ov.type !== 'text' || currentTimelineSec < ov.start || currentTimelineSec > ov.end) continue;
+                const ro = obtenerRectOverlay(ov);
+                if (pt.x >= ro.x && pt.x <= ro.x + ro.w && pt.y >= ro.y && pt.y <= ro.y + ro.h) {
+                    abrirModalEditarTexto(ov);
                     return;
                 }
             }
@@ -1385,13 +1855,14 @@
         });
 
         /* ============================================================
-           5. REPRODUCCIÓN Y RENDERIZADO FINAL
+           7. REPRODUCCIÓN Y RENDERIZADO FINAL
            ============================================================ */
         function actualizarBotones() {
             const total = obtenerDuracionTotal();
             const soloCam = camActive && total <= 0;
             const listo = total > 0 || soloCam;
             previewBtn.disabled = total <= 0 || isRendering;
+            btnSplitTimeline.disabled = total <= 0 || isRendering;
             renderBtn.disabled = !listo || isRendering;
             renderBtn.innerHTML = soloCam ? '🔴 Grabar Cámara' : '🎬 Renderizar Video';
             clearAllBtn.disabled = !listo && !renderedBlobUrl;
@@ -1551,9 +2022,11 @@
                 }
 
                 audioClips.forEach(au => {
-                    if (elapsed >= au.start && elapsed <= au.start + au.duration) {
+                    const durAu = durAudioClip(au);
+                    const trimS = au.trimStart || 0;
+                    if (elapsed >= au.start && elapsed <= au.start + durAu) {
                         if (au.audioEl.paused) {
-                            au.audioEl.currentTime = elapsed - au.start;
+                            au.audioEl.currentTime = trimS + (elapsed - au.start);
                             au.audioEl.play().catch(() => {});
                         }
                     } else if (!au.audioEl.paused) {
