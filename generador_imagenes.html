@@ -10,7 +10,7 @@
         }
     </script>
     <title>Multimedia Online - Generador de Imágenes IA Gratis</title>
-    <meta name="description" content="Crea imágenes gratis con Inteligencia Artificial dictando con tu voz o escribiendo tu idea al instante sin marcas de agua." />
+    <meta name="description" content="Crea imágenes gratis con Inteligencia Artificial dictando con tu voz o escribiendo tu idea al instante sin registro ni marcas de agua." />
     <meta name="author" content="Lic. Antonio Ramírez Bogantes" />
     <link rel="icon" type="image/x-icon" href="img/principal.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -115,11 +115,11 @@
             <div class="tool-box">
                 <div class="mb-2">
                     <h4 class="mb-0 fw-bold text-dark text-center">🎨 Generador de Imágenes con Inteligencia Artificial</h4>
-                    <p class="text-muted small mb-0 text-center">Dicta con tu voz o escribe tu idea para crear imágenes gratis al instante con tu cuenta de Google / Puter</p>
+                    <p class="text-muted small mb-0 text-center">Dicta con tu voz o escribe tu idea para crear imágenes gratis al instante sin marcas de agua</p>
                 </div>
 
                 <div class="row g-3 content-grid">
-                    <!-- Columna izquierda: Dictado/Prompt + Estilo + Motor + Botones -->
+                    <!-- Columna izquierda: Dictado/Prompt + Estilo + Motor + Ayuda + Botones -->
                     <div class="col-md-5 text-start left-col-panel">
                         <div>
                             <div class="d-flex justify-content-between align-items-center mb-1">
@@ -130,7 +130,7 @@
                                     🎙️ Dictar descripción
                                 </button>
                             </div>
-                            <textarea id="promptInput" class="form-control form-control-sm mb-2" rows="5" placeholder="Presiona el botón rojo '🎙️ Dictar descripción' para hablar o escribe aquí lo que imaginas..."></textarea>
+                            <textarea id="promptInput" class="form-control form-control-sm mb-2" rows="4" placeholder="Presiona el botón rojo '🎙️ Dictar descripción' para hablar o escribe aquí lo que imaginas..."></textarea>
 
                             <div class="row g-2 mb-2">
                                 <div class="col-6">
@@ -147,26 +147,26 @@
                                 <div class="col-6">
                                     <label for="motorSelect" class="form-label fw-bold small text-secondary mb-1">⚙️ Motor IA:</label>
                                     <select id="motorSelect" class="form-select form-select-sm">
-                                        <option value="puter" selected>Puter IA (Entrar con Google)</option>
-                                        <option value="auto">Automático (Puter + Respaldo)</option>
+                                        <option value="cloudflare" selected>Cloudflare AI (~170/día Gratis)</option>
                                         <option value="pollinations">Pollinations AI (1 cada 45s)</option>
+                                        <option value="puter">Puter IA (Cuenta Google)</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div class="row g-2 mb-2">
-                                <div class="col-6">
+                                <div class="col-5">
                                     <label for="sizeSelect" class="form-label fw-bold small text-secondary mb-1">📐 Proporción:</label>
                                     <select id="sizeSelect" class="form-select form-select-sm">
                                         <option value="1024x1024" selected>Cuadrada (1:1)</option>
-                                        <option value="1280x720">Panorámica YouTube (16:9)</option>
-                                        <option value="720x1280">Vertical Short/Reel (9:16)</option>
+                                        <option value="1280x720">YouTube (16:9)</option>
+                                        <option value="720x1280">Short/Reel (9:16)</option>
                                     </select>
                                 </div>
-                                <div class="col-6">
-                                    <label class="form-label fw-bold small text-secondary mb-1">🔑 Sesión Puter / Google:</label>
-                                    <button type="button" id="puterAccountBtn" class="btn btn-outline-primary btn-sm w-100 fw-bold text-truncate">
-                                        👤 Conectar / Cambiar cuenta
+                                <div class="col-7">
+                                    <label class="form-label fw-bold small text-secondary mb-1">⚡ Acelerador IA Rápida:</label>
+                                    <button type="button" id="helpConfigBtn" class="btn btn-outline-primary btn-sm w-100 fw-bold text-truncate">
+                                        ℹ️ Activar IA Rápida Gratis
                                     </button>
                                 </div>
                             </div>
@@ -214,12 +214,12 @@
                             <div id="emptyPlaceholder" class="text-center text-muted small px-4">
                                 <div style="font-size: 3rem;">🎨</div>
                                 Presiona <b>🎙️ Dictar descripción</b> para hablar o escribe tu idea a la izquierda.<br>
-                                Al darle <b>✨ Generar Imagen Ahora</b> podrás elegir tu cuenta de Google en Puter para crear imágenes gratis.
+                                Puedes usarlo al instante o presionar <b>ℹ️ Activar IA Rápida Gratis</b> para generar hasta ~170 imágenes al día sin esperas.
                             </div>
                             <div id="loadingSpinner" class="text-center" style="display: none;">
                                 <div class="spinner-border text-primary mb-2" style="width: 2.5rem; height: 2.5rem;" role="status"></div>
                                 <div class="fw-bold text-primary">Creando tu imagen con Inteligencia Artificial...</div>
-                                <div class="text-muted small">Si se abre la ventana de Puter, selecciona tu cuenta de Google</div>
+                                <div class="text-muted small" id="spinnerSubtext">Esto toma solo unos segundos</div>
                             </div>
                             <img id="generatedImg" alt="Imagen generada por IA" />
                         </div>
@@ -239,25 +239,97 @@
         <script src="footer.js"></script>
     </div>
 
+    <!-- Modal de Ayuda y Configuración de IA Rápida (Cloudflare Workers AI) -->
+    <div class="modal fade" id="configHelpModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-primary border-2">
+                <div class="modal-header bg-primary text-white py-2">
+                    <h6 class="modal-title fw-bold">⚡ Cómo activar la IA Rápida Gratuita (~170 imágenes/día sin esperas)</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body text-start small">
+                    <p class="mb-2">
+                        Por defecto esta página funciona gratis con <b>Pollinations AI</b> (1 imagen cada 45 segundos). Si deseas generar hasta <b>~170 imágenes diarias en 2 segundos</b> sin esperar, conecta tu propio puente gratuito en <b>Cloudflare Workers AI</b>:
+                    </p>
+                    <ol class="mb-2 ps-3">
+                        <li class="mb-1">Entra a <a href="https://dash.cloudflare.com" target="_blank" rel="noopener">dash.cloudflare.com</a> e inicia sesión con tu cuenta gratuita (no pide tarjeta).</li>
+                        <li class="mb-1">En el menú izquierdo entra a <b>Compute (Workers &amp; Pages)</b> → <b>Create</b> → <b>Create Worker</b>, ponle un nombre (ej. <code>generador-ia</code>) y haz clic en <b>Deploy</b>.</li>
+                        <li class="mb-1">Presiona <b>Edit code</b>, borra todo, pega el código de abajo y haz clic en <b>Deploy</b>:</li>
+                    </ol>
+
+                    <div class="position-relative mb-2">
+                        <button type="button" id="copyWorkerCodeBtn" class="btn btn-sm btn-warning fw-bold position-absolute top-0 end-0 m-1 py-0 px-2">
+                            📋 Copiar código Worker
+                        </button>
+                        <pre id="workerCodeSample" class="bg-dark text-light p-2 rounded mb-0" style="font-size: 11px; max-height: 155px; overflow-y: auto;">export default {
+  async fetch(request, env) {
+    const cors = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    };
+    if (request.method === "OPTIONS") return new Response(null, { headers: cors });
+    if (request.method !== "POST") return new Response("OK", { headers: cors });
+    try {
+      const { prompt } = await request.json();
+      const res = await env.AI.run("@cf/black-forest-labs/flux-1-schnell", { prompt, steps: 4 });
+      const bin = atob(res.image);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i &lt; bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new Response(bytes, { headers: { ...cors, "Content-Type": "image/jpeg" } });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: cors });
+    }
+  }
+};</pre>
+                    </div>
+
+                    <ol start="4" class="mb-2 ps-3">
+                        <li class="mb-1">Regresa al Worker → <b>Settings</b> → <b>Bindings</b> → <b>Add</b> → selecciona <b>Workers AI</b>, escribe exactamente <code>AI</code> en <i>Variable name</i> y guarda.</li>
+                        <li>Copia la URL de tu Worker y pégala aquí abajo para guardarla:</li>
+                    </ol>
+
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text fw-bold">URL Worker:</span>
+                        <input type="url" id="workerUrlInput" class="form-control" placeholder="https://generador-ia.tuusuario.workers.dev">
+                        <button type="button" id="saveWorkerUrlBtn" class="btn btn-success fw-bold">💾 Guardar y Activar</button>
+                        <button type="button" id="clearWorkerUrlBtn" class="btn btn-outline-danger" title="Quitar URL">✕</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     (() => {
         'use strict';
+
+        // Puedes pegar aquí tu URL fija de Cloudflare o guardarla desde el botón "ℹ️ Activar IA Rápida Gratis"
+        const DEFAULT_CLOUDFLARE_URL = "";
 
         const promptInput = document.getElementById('promptInput');
         const dictateBtn = document.getElementById('dictateBtn');
         const styleSelect = document.getElementById('styleSelect');
         const motorSelect = document.getElementById('motorSelect');
         const sizeSelect = document.getElementById('sizeSelect');
-        const puterAccountBtn = document.getElementById('puterAccountBtn');
+        const helpConfigBtn = document.getElementById('helpConfigBtn');
         const generateBtn = document.getElementById('generateBtn');
         const downloadBtn = document.getElementById('downloadBtn');
         const clearBtn = document.getElementById('clearBtn');
         const statusBadge = document.getElementById('statusBadge');
         const emptyPlaceholder = document.getElementById('emptyPlaceholder');
         const loadingSpinner = document.getElementById('loadingSpinner');
+        const spinnerSubtext = document.getElementById('spinnerSubtext');
         const generatedImg = document.getElementById('generatedImg');
         const historyStrip = document.getElementById('historyStrip');
+
+        const configHelpModal = new bootstrap.Modal(document.getElementById('configHelpModal'));
+        const workerUrlInput = document.getElementById('workerUrlInput');
+        const saveWorkerUrlBtn = document.getElementById('saveWorkerUrlBtn');
+        const clearWorkerUrlBtn = document.getElementById('clearWorkerUrlBtn');
+        const copyWorkerCodeBtn = document.getElementById('copyWorkerCodeBtn');
+        const workerCodeSample = document.getElementById('workerCodeSample');
 
         let currentImageUrl = null;
         let sessionImages = [];
@@ -267,46 +339,61 @@
         let lastPollinationsCall = 0;
 
         const Toast = Swal.mixin({
-            toast: true, position: 'top-end', showConfirmButton: false, timer: 2500, timerProgressBar: true
+            toast: true, position: 'top-end', showConfirmButton: false, timer: 2600, timerProgressBar: true
         });
 
-        /* ============================================================
-           GESTIÓN DE CUENTA GOOGLE / PUTER (CAMBIAR DE CORREO FÁCIL)
-           ============================================================ */
-        async function actualizarEstadoCuentaPuter() {
-            try {
-                if (window.puter && puter.auth && puter.auth.isSignedIn()) {
-                    const user = await puter.auth.getUser();
-                    const nombre = (user && (user.username || user.email)) || 'Conectado';
-                    puterAccountBtn.textContent = `✅ ${nombre} (Cambiar)`;
-                    puterAccountBtn.classList.remove('btn-outline-primary');
-                    puterAccountBtn.classList.add('btn-outline-success');
-                } else {
-                    puterAccountBtn.textContent = '👤 Entrar con Google';
-                    puterAccountBtn.classList.remove('btn-outline-success');
-                    puterAccountBtn.classList.add('btn-outline-primary');
-                }
-            } catch {}
+        function obtenerCloudflareUrl() {
+            const guardada = (localStorage.getItem('multimedia_cf_worker_url') || '').trim();
+            return guardada || DEFAULT_CLOUDFLARE_URL;
         }
 
-        puterAccountBtn.addEventListener('click', async () => {
-            if (!window.puter || !puter.auth) {
-                Toast.fire({ icon: 'warning', title: 'Puter aún está cargando, intenta en 2 segundos' });
-                return;
+        function refrescarEstadoBotonConfig() {
+            const url = obtenerCloudflareUrl();
+            if (url && url.startsWith('http')) {
+                helpConfigBtn.textContent = '✅ IA Rápida Activa (Config)';
+                helpConfigBtn.classList.remove('btn-outline-primary');
+                helpConfigBtn.classList.add('btn-outline-success');
+            } else {
+                helpConfigBtn.textContent = 'ℹ️ Activar IA Rápida Gratis';
+                helpConfigBtn.classList.remove('btn-outline-success');
+                helpConfigBtn.classList.add('btn-outline-primary');
             }
+        }
+        refrescarEstadoBotonConfig();
+
+        helpConfigBtn.addEventListener('click', () => {
+            workerUrlInput.value = obtenerCloudflareUrl();
+            configHelpModal.show();
+        });
+
+        copyWorkerCodeBtn.addEventListener('click', async () => {
             try {
-                if (puter.auth.isSignedIn()) {
-                    await puter.auth.signOut();
-                }
-                await puter.auth.signIn();
-                await actualizarEstadoCuentaPuter();
-                Toast.fire({ icon: 'success', title: 'Cuenta conectada lista para generar imágenes' });
+                await navigator.clipboard.writeText(workerCodeSample.textContent);
+                Toast.fire({ icon: 'success', title: 'Código del Worker copiado al portapapeles' });
             } catch {
-                await actualizarEstadoCuentaPuter();
+                Toast.fire({ icon: 'info', title: 'Selecciona y copia el código manualmente' });
             }
         });
 
-        setTimeout(actualizarEstadoCuentaPuter, 1200);
+        saveWorkerUrlBtn.addEventListener('click', () => {
+            const val = workerUrlInput.value.trim();
+            if (!val.startsWith('http')) {
+                Swal.fire('URL inválida', 'Ingresa la dirección completa que empieza con https://...', 'warning');
+                return;
+            }
+            localStorage.setItem('multimedia_cf_worker_url', val);
+            motorSelect.value = 'cloudflare';
+            refrescarEstadoBotonConfig();
+            configHelpModal.hide();
+            Toast.fire({ icon: 'success', title: '¡IA Rápida de Cloudflare activada!' });
+        });
+
+        clearWorkerUrlBtn.addEventListener('click', () => {
+            localStorage.removeItem('multimedia_cf_worker_url');
+            workerUrlInput.value = '';
+            refrescarEstadoBotonConfig();
+            Toast.fire({ icon: 'info', title: 'URL eliminada; se usará el modo gratuito automático' });
+        });
 
         /* ============================================================
            DICTADO POR VOZ (Web Speech API)
@@ -416,32 +503,40 @@
         }
 
         /* ============================================================
-           MOTOR PRINCIPAL: PUTER IA (LOGIN CON GOOGLE, MODELO ESTÁNDAR)
+           MOTOR 1: CLOUDFLARE WORKERS AI (~170/DÍA GRATIS)
            ============================================================ */
-        async function generarViaPuter(promptFinal) {
-            if (!window.puter || !puter.ai || !puter.ai.txt2img) {
-                throw new Error('Puter IA aún no ha terminado de cargar.');
+        async function generarViaCloudflare(promptFinal) {
+            const cfUrl = obtenerCloudflareUrl();
+            if (!cfUrl || !cfUrl.startsWith('http')) {
+                throw new Error('SIN_URL_CLOUDFLARE');
             }
-            if (puter.auth && !puter.auth.isSignedIn()) {
-                await puter.auth.signIn();
-                await actualizarEstadoCuentaPuter();
-            }
-            // Llamada estándar gratuita sin modelos caros
-            const imgEl = await puter.ai.txt2img(promptFinal);
-            return imgEl.src;
+            spinnerSubtext.textContent = 'Generando con Cloudflare Workers AI...';
+            const resp = await fetch(cfUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: promptFinal, steps: 4 })
+            });
+            if (!resp.ok) throw new Error('Cuota diaria de Cloudflare alcanzada o Worker ocupado');
+            const blob = await resp.blob();
+            return URL.createObjectURL(blob);
         }
 
         /* ============================================================
-           MOTOR DE RESPALDO: POLLINATIONS AI (1 IMAGEN CADA 45s)
+           MOTOR 2: POLLINATIONS AI (RESPALDO GRATUITO CADA 45s)
            ============================================================ */
         async function generarViaPollinations(promptFinal) {
             const ahora = Date.now();
             const faltanMs = 46000 - (ahora - lastPollinationsCall);
             if (lastPollinationsCall > 0 && faltanMs > 0) {
-                const segs = Math.ceil(faltanMs / 1000);
-                statusBadge.textContent = `⏳ Esperando ${segs}s (límite gratuito)...`;
-                await new Promise(r => setTimeout(r, faltanMs));
+                let restantes = Math.ceil(faltanMs / 1000);
+                while (restantes > 0) {
+                    statusBadge.textContent = `⏳ Esperando ${restantes}s...`;
+                    spinnerSubtext.textContent = `Modo gratuito abierto: generando en ${restantes} segundos (o activa Cloudflare para 0s de espera)`;
+                    await new Promise(r => setTimeout(r, 1000));
+                    restantes--;
+                }
             }
+            spinnerSubtext.textContent = 'Creando imagen en servidor gratuito...';
             lastPollinationsCall = Date.now();
 
             return new Promise((resolve, reject) => {
@@ -457,6 +552,21 @@
                 tester.onerror = () => { clearTimeout(timeout); reject(new Error('No se pudo conectar con Pollinations')); };
                 tester.src = url;
             });
+        }
+
+        /* ============================================================
+           MOTOR 3: PUTER IA (OPCIONAL CON CUENTA GOOGLE)
+           ============================================================ */
+        async function generarViaPuter(promptFinal) {
+            if (!window.puter || !puter.ai || !puter.ai.txt2img) {
+                throw new Error('Puter IA aún no ha terminado de cargar.');
+            }
+            spinnerSubtext.textContent = 'Conectando con tu sesión de Puter...';
+            if (puter.auth && !puter.auth.isSignedIn()) {
+                await puter.auth.signIn();
+            }
+            const imgEl = await puter.ai.txt2img(promptFinal);
+            return imgEl.src;
         }
 
         generateBtn.addEventListener('click', async () => {
@@ -475,21 +585,26 @@
             emptyPlaceholder.style.display = 'none';
             generatedImg.style.display = 'none';
             loadingSpinner.style.display = 'block';
+            spinnerSubtext.textContent = 'Esto toma solo unos segundos';
             statusBadge.className = 'badge bg-warning text-dark';
             statusBadge.textContent = '⏳ Generando imagen...';
 
             try {
                 let imgUrl = null;
-                if (modo === 'puter') {
-                    imgUrl = await generarViaPuter(promptFinal);
+                if (modo === 'cloudflare') {
+                    try {
+                        imgUrl = await generarViaCloudflare(promptFinal);
+                    } catch (cfErr) {
+                        if (cfErr.message === 'SIN_URL_CLOUDFLARE') {
+                            imgUrl = await generarViaPollinations(promptFinal);
+                        } else {
+                            throw cfErr;
+                        }
+                    }
                 } else if (modo === 'pollinations') {
                     imgUrl = await generarViaPollinations(promptFinal);
-                } else {
-                    try {
-                        imgUrl = await generarViaPuter(promptFinal);
-                    } catch {
-                        imgUrl = await generarViaPollinations(promptFinal);
-                    }
+                } else if (modo === 'puter') {
+                    imgUrl = await generarViaPuter(promptFinal);
                 }
 
                 mostrarImagen(imgUrl, basePrompt);
@@ -502,11 +617,11 @@
                 else generatedImg.style.display = 'block';
 
                 statusBadge.className = 'badge bg-danger';
-                statusBadge.textContent = '⚠️ Cuota alcanzada o error';
+                statusBadge.textContent = '⚠️ Error al generar';
                 Swal.fire({
                     icon: 'info',
-                    title: 'Cuota diaria de esta cuenta alcanzada',
-                    text: 'Si Puter te indicó saldo bajo, presiona el botón "👤 Conectar / Cambiar cuenta" para entrar con otro correo de Google, o cambia Motor IA a "Pollinations AI".'
+                    title: 'No se pudo generar con este motor',
+                    text: (err && err.message) || 'Revisa la configuración en "ℹ️ Activar IA Rápida Gratis" o cambia el Motor IA.'
                 });
             } finally {
                 generateBtn.disabled = false;
