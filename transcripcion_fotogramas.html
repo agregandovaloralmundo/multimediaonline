@@ -23,15 +23,15 @@
             justify-content: center; align-items: center; padding: 0.75rem 1.25rem;
         }
         .tool-box {
-            width: 96%; max-width: 1240px; background: #ffffff;
-            border: 3px solid #0d6efd; border-radius: 20px; padding: 18px 26px;
+            width: 98%; max-width: 1720px; background: #ffffff;
+            border: 3px solid #0d6efd; border-radius: 20px; padding: 14px 22px;
             box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15); margin: auto;
         }
         #videoPlayer, #youtubeFrame {
-            width: 100%; height: 255px; background: #000000; border-radius: 12px; border: none;
+            width: 100%; aspect-ratio: 16 / 9; height: auto; background: #000000; border-radius: 12px; border: none;
         }
         #timelinePreview {
-            height: 320px; max-height: 320px; overflow-y: auto;
+            height: 400px; max-height: 400px; overflow-y: auto;
             border: 1.5px solid #0d6efd; border-radius: 12px; padding: 12px;
             background: #f8f9fa; text-align: left;
         }
@@ -48,6 +48,8 @@
             max-width: 100%; max-height: 195px; border-radius: 8px;
             border: 1px solid #ced4da; margin-top: 8px; display: block;
         }
+        .tool-box .btn { font-size: .8rem; padding: .22rem .6rem; }
+        .tool-box .form-check-label { font-size: .8rem; }
         #liveText { max-height: 62px; overflow-y: auto; line-height: 1.4; }
         #liveText:empty::before { content: attr(data-ph); color: #6c757d; }
         .mic-active { animation: pulsoMic 1.2s infinite; }
@@ -89,8 +91,8 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <label for="videoFile" class="form-label fw-bold small text-secondary mb-1">🎬 O subir video desde tu equipo (sin límite de horas):</label>
-                        <input type="file" id="videoFile" class="form-control form-control-sm" accept="video/*">
+                        <label for="videoFile" class="form-label fw-bold small text-secondary mb-1">🎬 O subir video / audio (.mp4, .mp3...) desde tu equipo:</label>
+                        <input type="file" id="videoFile" class="form-control form-control-sm" accept="video/*,audio/*,.mp3,.m4a,.wav,.aac,.ogg,.mp4">
                     </div>
                     <div class="col-md-3">
                         <label for="srtFile" class="form-label fw-bold small text-secondary mb-1">📝 Subtítulos (.srt / .vtt) <span class="text-muted fw-normal">(opcional)</span>:</label>
@@ -99,7 +101,7 @@
                 </div>
 
                 <div class="row g-3 mb-3">
-                    <div class="col-md-5 text-start">
+                    <div class="col-lg-5 text-start">
                         <video id="videoPlayer" controls crossorigin="anonymous"></video>
                         <iframe id="youtubeFrame" style="display: none;" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
                         <canvas id="captureCanvas" style="display: none;"></canvas>
@@ -118,6 +120,13 @@
                             <button id="liveTranscribeBtn" class="btn btn-danger btn-sm fw-bold" disabled>
                                 ▶️ Reproducir y Transcribir Audio Interno + Filminas
                             </button>
+                            <button id="btnRapido" class="btn btn-outline-danger btn-sm fw-bold" disabled title="Para archivos .mp3 / .mp4 o enlaces directos. No reproduce el video: lee el audio y lo transcribe a toda velocidad.">
+                                ⚡ Transcribir archivo sin reproducir (rápido)
+                            </button>
+                            <div class="form-check small mb-0">
+                                <input class="form-check-input" type="checkbox" id="chkRapidoImg" checked>
+                                <label class="form-check-label text-secondary" for="chkRapidoImg">Incluir filminas en modo rápido (solo videos; tarda más)</label>
+                            </div>
                             <button id="autoProcessBtn" class="btn btn-outline-primary btn-sm fw-bold" disabled>
                                 ⚡ Armar Secciones desde Archivo .SRT / .VTT
                             </button>
@@ -134,7 +143,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-7 text-start">
+                    <div class="col-lg-7 text-start">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <span class="fw-bold small text-primary">📑 Vista previa del documento Word (texto + filminas en orden):</span>
                             <div class="d-flex align-items-center gap-1 flex-wrap justify-content-end">
@@ -162,15 +171,51 @@
                     <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%;"></div>
                 </div>
 
-                <div class="row g-2">
-                    <div class="col-md-4">
-                        <button id="exportWordBtn" class="btn btn-success w-100 fw-bold" disabled>📘 Generar Documento Word (.doc)</button>
+                <details id="panelEstudio" class="border rounded mb-2 px-2 py-1 bg-light text-start">
+                    <summary class="small fw-bold text-primary" style="cursor: pointer;">
+                        📚 Resumen y preguntas de estudio
+                        <span class="form-check form-check-inline ms-2 mb-0 align-middle">
+                            <input class="form-check-input" type="checkbox" id="chkEstudio" checked>
+                            <label class="form-check-label fw-normal text-secondary" for="chkEstudio">Agregar al final del Word / PDF completo</label>
+                        </span>
+                    </summary>
+                    <div class="mt-2">
+                        <div class="d-flex flex-wrap gap-1 mb-2">
+                            <button type="button" id="btnGenerarEstudio" class="btn btn-primary btn-sm fw-bold">🧠 Generar resumen y preguntas</button>
+                            <button type="button" id="btnCopiarPrompt" class="btn btn-outline-secondary btn-sm">📋 Copiar clase + instrucciones para una IA externa</button>
+                            <button type="button" id="btnPegarIA" class="btn btn-outline-secondary btn-sm">📥 Pegar respuesta de la IA</button>
+                            <button type="button" id="btnVaciarEstudio" class="btn btn-outline-danger btn-sm">Vaciar</button>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold mb-1" for="resumenTexto">📌 Resumen de puntos clave (editable)</label>
+                                <textarea id="resumenTexto" class="form-control form-control-sm" rows="7" placeholder="Pulsa «Generar resumen y preguntas». También se genera solo al exportar si esta caja está vacía."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold mb-1" for="preguntasTexto">❓ Preguntas y respuestas (editable, formato P: / R:)</label>
+                                <textarea id="preguntasTexto" class="form-control form-control-sm" rows="7" placeholder="P: ¿Qué es ...?&#10;R: ..."></textarea>
+                            </div>
+                        </div>
+                        <p class="small text-muted mb-1 mt-1">El resumen se arma automáticamente con las frases más importantes de la clase; revísalo y edítalo si quieres. Para uno de mayor calidad, usa «Copiar clase…», pídeselo a Claude o ChatGPT y pega su respuesta.</p>
                     </div>
-                    <div class="col-md-4">
-                        <button id="exportPdfBtn" class="btn btn-outline-danger w-100 fw-bold" disabled>📕 Guardar / Imprimir en PDF</button>
+                </details>
+
+                <div class="row g-2 align-items-start">
+                    <div class="col-6 col-md-3">
+                        <button id="exportWordBtn" class="btn btn-success btn-sm w-100 fw-bold" disabled>📘 Word completo (.doc)</button>
                     </div>
-                    <div class="col-md-4">
-                        <button id="clearAllBtn" class="btn btn-outline-dark w-100 fw-bold" disabled>🗑️ Limpiar Todo</button>
+                    <div class="col-6 col-md-3">
+                        <button id="btnSoloTexto" class="btn btn-outline-success btn-sm w-100 fw-bold" disabled>📄 Solo transcripción (.doc)</button>
+                        <div class="form-check mt-1 mb-0">
+                            <input class="form-check-input" type="checkbox" id="chkSinTiempo">
+                            <label class="form-check-label text-secondary" for="chkSinTiempo">Sin líneas de tiempo</label>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <button id="exportPdfBtn" class="btn btn-outline-danger btn-sm w-100 fw-bold" disabled>📕 Guardar / Imprimir en PDF</button>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <button id="clearAllBtn" class="btn btn-outline-dark btn-sm w-100 fw-bold" disabled>🗑️ Limpiar Todo</button>
                     </div>
                 </div>
             </div>
@@ -284,6 +329,7 @@
             liveText.textContent = liveTexto;
             liveText.scrollTop = liveText.scrollHeight;
         }
+        let rapidoActivo = false;   // modo rápido (módulo extra) en curso
         function reiniciarEnVivo() { liveTexto = ''; liveText.textContent = ''; }
         setInterval(() => {
             nivelAudio *= 0.7;
@@ -938,13 +984,20 @@
             renderizarBloques();
         }
 
+        // Audios (.mp3) sin imagen: se corta una sección cada 30 s para que el texto no quede en un solo bloque
+        function seccionarSinVideo() {
+            if (modoYoutube || videoPlayer.videoWidth > 0 || videoPlayer.readyState < 1) return;
+            const act = asegurarBloqueActivo();
+            if (obtenerTiempoActual() - act.tiempoSeg >= 30) { nuevoBloque(obtenerTiempoActual()); renderizarBloques(); }
+        }
+
         function vigilarEscenas() {
             if (!capturandoEscenas) return;
             if (!modoYoutube && videoPlayer.paused) return;
             if (modoYoutube && (ytEstado === 2 || ytEstado === 0)) return;
             if (ignorandoAnuncio()) return;
             const sig = leerFirma();
-            if (!sig) return;
+            if (!sig) { seccionarSinVideo(); return; }
             if (!lastFrameSignature) { lastFrameSignature = sig; ultimoFotogramaEstable = capturarFotogramaActual(); return; }
 
             const diff = diferenciaFirmas(sig, lastFrameSignature);
@@ -1207,6 +1260,10 @@
            EXPORTAR (espera a que la IA termine todo el audio pendiente)
            ============================================================ */
         async function asegurarTranscripcionCompleta() {
+            if (rapidoActivo) {
+                await Swal.fire({ icon: 'info', title: 'La transcripción rápida sigue en curso', text: 'Espera a que termine o deténla con el mismo botón, y luego exporta.' });
+                return false;
+            }
             if (capturandoEscenas) {
                 await Swal.fire({ icon: 'info', title: 'Detén primero la reproducción', text: 'Presiona el botón rojo para terminar y luego exporta.' });
                 return false;
@@ -1225,6 +1282,8 @@
         exportWordBtn.addEventListener('click', async () => {
             if (!bloquesDocumento.length) return;
             if (!(await asegurarTranscripcionCompleta())) return;
+            let extraEstudio = '';
+            try { extraEstudio = (window.MOExtra && window.MOExtra.htmlEstudio('word')) || ''; } catch (e) { console.warn('Resumen/preguntas:', e); }
 
             const fechaHoy = new Date().toLocaleDateString('es-CR', { year: 'numeric', month: 'long', day: 'numeric' });
             const boundary = '----=_NextPart_MultimediaOnline_001';
@@ -1262,6 +1321,7 @@
     <h1>${esc(nombreVideoActual)}</h1>
     <div class="meta">Generado el ${fechaHoy} · Multimedia Online</div>
     ${seccionesHtml}
+    ${extraEstudio}
 </body>
 </html>`;
 
@@ -1282,13 +1342,15 @@
         exportPdfBtn.addEventListener('click', async () => {
             if (!bloquesDocumento.length) return;
             if (!(await asegurarTranscripcionCompleta())) return;
+            let extraPdf = '';
+            try { extraPdf = (window.MOExtra && window.MOExtra.htmlEstudio('pdf')) || ''; } catch (e) { console.warn('Resumen/preguntas:', e); }
             const fechaHoy = new Date().toLocaleDateString('es-CR', { year: 'numeric', month: 'long', day: 'numeric' });
             printArea.innerHTML = `<h2>${esc(nombreVideoActual)}</h2><div class="meta">Generado el ${fechaHoy} · Multimedia Online</div>` +
                 bloquesDocumento.map(b => {
                     const t = (b.textoConfirmado || '').trim();
                     if (!t && !b.imagenBase64) return '';
                     return `<div class="sec">${b.imagenBase64 ? `<img src="${b.imagenBase64}" alt="Filmina">` : ''}${t ? `<p>${esc(t)}</p>` : ''}</div>`;
-                }).join('');
+                }).join('') + extraPdf;
             window.print();
         });
 
@@ -1329,7 +1391,572 @@
             }
             renderizarBloques();
         })();
+        // API mínima y de solo lectura/uso que consume el módulo extra (script aparte)
+        window.MO = {
+            get bloques() { return bloquesDocumento; },
+            get nombreVideo() { return nombreVideoActual; },
+            get capturando() { return capturandoEscenas; },
+            get errorIA() { return errorIA; },
+            get generacion() { return generacion; },
+            nuevoBloque, renderizarBloques, bloquePorTiempo, formatearTiempo, esc, Toast,
+            setIndiceSesion(v) { indiceSesion = v; },
+            setRapido(v) { rapidoActivo = !!v; },
+            iniciarWhisper, pendientes: pendientesIA,
+            encolar(item) { colaAudio.push(item); procesarCola(); actualizarEstadoIA(); },
+            vaciarCola() { colaAudio = []; actualizarEstadoIA(); },
+            asegurarTranscripcion: asegurarTranscripcionCompleta,
+            fotograma: capturarFotogramaActual, firma: leerFirma, difFirmas: diferenciaFirmas,
+            umbral: UMBRAL_CAMBIO, minSeccion: MIN_SECCION
+        };
     })();
+    </script>
+
+    <script>
+/* ===========================================================
+   MÓDULO EXTRA (aditivo). Va en su propio <script>: si algo fallara
+   aquí, la parte principal (transcribir + filminas) NO se afecta.
+   Incluye: 1) Resumen + preguntas  2) Solo transcripción
+            3) Transcripción rápida de archivos (mp3 / mp4) sin reproducir
+   =========================================================== */
+(function () {
+    'use strict';
+    if (!window.MO) { console.warn('Módulo extra: API principal no disponible.'); return; }
+    const MO = window.MO;
+    const $ = (id) => document.getElementById(id);
+    const esc = MO.esc, Toast = MO.Toast;
+
+    try {
+        /* ==================== 1) RESUMEN + PREGUNTAS ==================== */
+        const chkEstudio = $('chkEstudio'), panelEstudio = $('panelEstudio');
+        const resumenTexto = $('resumenTexto'), preguntasTexto = $('preguntasTexto');
+        const btnGenerarEstudio = $('btnGenerarEstudio'), btnCopiarPrompt = $('btnCopiarPrompt');
+        const btnPegarIA = $('btnPegarIA'), btnVaciarEstudio = $('btnVaciarEstudio');
+        const ESTUDIO_KEY = 'multimedia_estudio_v1';
+
+        const sinTildes = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+        const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+        const punto = (s) => (/[.!?…]$/.test(s) ? s : s + '.');
+        const STOP = new Set(sinTildes('de la que el en y a los del se las por un para con no una su al lo como mas pero sus le ya o este si porque esta entre cuando muy sin sobre tambien me hasta hay donde quien desde todo nos durante todos uno les ni contra otros ese eso ante ellos e esto mi antes algunos unos yo otro otras otra tanto esa estos mucho quienes nada muchos cual poco ella estar estas algunas algo nosotros tu te ti tus ellas esos esas estoy estamos estan ser es son soy eres somos fue era eran sera seran sido siendo hacer hace hacen hacemos puede pueden podemos puedo asi aqui ahi alli entonces bueno vamos vale pues ver vez veces cosa cosas forma manera parte tipo tiene tienen tener tenemos haber ha han he hemos habia hoy ahora luego despues siempre nunca solo menos mismo misma mismos mismas cada va van voy vas ir dice dicen decir digamos osea cuales cuanto cuantos mucha muchas pueda puedan sea sean fueron estaba estaban estado tan aunque mientras segun hacia tras bajo sino amigos gracias').split(/\s+/));
+        const esContenido = (w) => w.length >= 4 && !STOP.has(sinTildes(w)) && !/^\d+$/.test(w);
+        const PAT_IMPORTANTE = /\b(es|son|se define|se llama|se conoce|se denomina|consiste|significa|sirve para|permite|se utiliza|se usa|se divide|se clasifica|tipos de|existen|importante|fundamental|clave|principal|objetivo|por ejemplo|ventaja|desventaja|diferencia)\b/i;
+        const RELLENO = /\b(gracias|suscr[ií]b|bienvenid|hola|saludos|chao|hasta luego|nos vemos|dale like|campana|me escuchan|se escucha|se ve mi pantalla)\b/i;
+
+        function textoCompletoClase() {
+            return MO.bloques.map(b => (b.textoConfirmado || '').trim()).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+        }
+        function dividirOraciones(texto) {
+            const partes = texto.split(/(?<=[.!?…])\s+/);
+            const out = []; let acum = '';
+            for (const p of partes) {
+                const t = (acum ? acum + ' ' : '') + p.trim();
+                if (t.split(/\s+/).length < 5) { acum = t; continue; }
+                out.push(t); acum = '';
+            }
+            if (acum) { if (out.length) out[out.length - 1] += ' ' + acum; else out.push(acum); }
+            return out;
+        }
+        const limpiarInicio = (s) => cap(s.replace(/^(?:(?:y|pero|entonces|bueno|pues|ok|vale|o sea|a ver|ahora bien|bien)[,\s]+)+/i, '').trim());
+
+        function analizarTexto(texto) {
+            const oraciones = dividirOraciones(texto).map(limpiarInicio).map(s => s.replace(/\s+/g, ' ').trim()).filter(s => s.split(/\s+/).length >= 5);
+            const tf = new Map(), bi = new Map();
+            const info = oraciones.map((s, idx) => {
+                const palabras = s.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+                const contenido = palabras.filter(esContenido);
+                contenido.forEach(w => tf.set(w, (tf.get(w) || 0) + 1));
+                for (let i = 0; i < palabras.length - 1; i++) {
+                    if (esContenido(palabras[i]) && esContenido(palabras[i + 1])) {
+                        const k = palabras[i] + ' ' + palabras[i + 1];
+                        bi.set(k, (bi.get(k) || 0) + 1);
+                    }
+                }
+                return { idx, texto: s, palabras, contenido, set: new Set(contenido), score: 0, def: null };
+            });
+            for (const o of info) {
+                const uniq = [...o.set];
+                let sc = uniq.reduce((a, w) => a + Math.min(tf.get(w), 12), 0) / Math.pow(uniq.length || 1, 0.55);
+                const n = o.palabras.length;
+                if (n > 45) sc *= 0.65;
+                if (n < 8) sc *= 0.6;
+                if (PAT_IMPORTANTE.test(o.texto)) sc *= 1.4;
+                if (RELLENO.test(o.texto)) sc *= 0.15;
+                if (/\?\s*$/.test(o.texto)) sc *= 0.6;
+                o.score = sc;
+            }
+            return { info, tf, bi };
+        }
+        function duplicada(o, lista) {
+            return lista.some(x => {
+                let inter = 0; o.set.forEach(w => { if (x.set.has(w)) inter++; });
+                const uni = new Set([...o.set, ...x.set]).size || 1;
+                return inter / uni > 0.5;
+            });
+        }
+        // Reparte la selección a lo largo de TODA la clase para que cubra todos los temas
+        function elegirPorSegmentos(lista, n, usados) {
+            const res = [];
+            if (!lista.length || n <= 0) return res;
+            const tam = lista.length / n;
+            for (let k = 0; k < n; k++) {
+                const ini = Math.floor(k * tam), fin = Math.max(Math.floor((k + 1) * tam), ini + 1);
+                let mejor = null;
+                for (let i = ini; i < fin && i < lista.length; i++) {
+                    const o = lista[i];
+                    if (usados.has(o.idx) || duplicada(o, res)) continue;
+                    if (!mejor || o.score > mejor.score) mejor = o;
+                }
+                if (mejor) { res.push(mejor); usados.add(mejor.idx); }
+            }
+            return res;
+        }
+        function terminosClave(tf, bi, max) {
+            const res = [], usadas = new Set();
+            [...bi.entries()].filter(([, c]) => c >= 3).sort((a, b) => b[1] - a[1]).forEach(([k]) => {
+                if (res.length >= 6) return;
+                const [a, b] = k.split(' ');
+                if (usadas.has(a) || usadas.has(b)) return;
+                res.push(k); usadas.add(a); usadas.add(b);
+            });
+            [...tf.entries()].filter(([w]) => w.length >= 5).sort((a, b) => b[1] - a[1]).forEach(([w, c]) => {
+                if (res.length >= max || c < 2 || usadas.has(w)) return;
+                res.push(w); usadas.add(w);
+            });
+            return res.map(cap);
+        }
+
+        const VERBOS_DEF = 'es|son|se define como|se conoce como|se llama|se denomina|consiste en|significa|sirve para|permite';
+        const RE_DEF = new RegExp('^((?:(?:el|la|los|las|un|una|unos|unas)\\s+)?[\\p{L}\\p{N}][\\p{L}\\p{N}\\-]*(?:\\s+[\\p{L}\\p{N}\\-]+){0,5}?)\\s+(' + VERBOS_DEF + ')\\s+(.{10,})$', 'iu');
+        function detectarDefinicion(s) {
+            const m = s.match(RE_DEF);
+            if (!m) return null;
+            let sujeto = m[1].trim();
+            const verbo = m[2].toLowerCase(), resto = m[3].trim();
+            const pal = sujeto.toLowerCase().split(/\s+/);
+            if (pal.length > 7 || sujeto.length < 4) return null;
+            if (/^(esto|eso|esta|este|ese|esa|estos|esos|lo|que|yo|tu|tú|él|ella|nosotros|aqui|aquí|ahi|ahí|ello|ellos)$/.test(pal[0])) return null;
+            if (pal.some(w => /^(que|cuando|porque|si|como|donde|entonces|pero|aunque)$/.test(w))) return null;
+            if (!pal.some(esContenido)) return null;
+            if ((verbo === 'es' || verbo === 'son') && !/^(un|una|unos|unas|el|la|los|las|lo|aquel|aquella|aquellos|cualquier|toda|todo|todos|todas)\s/i.test(resto)) return null;
+            if (/^(el|la|los|las|un|una|unos|unas)\s/i.test(sujeto)) sujeto = sujeto.charAt(0).toLowerCase() + sujeto.slice(1);
+            let q;
+            switch (verbo) {
+                case 'es': case 'son': q = `¿Qué ${verbo} ${sujeto}?`; break;
+                case 'se define como': q = `¿Cómo se define ${sujeto}?`; break;
+                case 'se conoce como': q = `¿Cómo se conoce ${sujeto}?`; break;
+                case 'se llama': case 'se denomina': q = `¿Cómo se llama ${sujeto}?`; break;
+                case 'consiste en': q = `¿En qué consiste ${sujeto}?`; break;
+                case 'significa': q = `¿Qué significa ${sujeto}?`; break;
+                case 'sirve para': q = `¿Para qué sirve ${sujeto}?`; break;
+                default: q = `¿Qué permite ${sujeto}?`;
+            }
+            return { q, a: punto(s) };
+        }
+        const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        function armarCloze(o, tf) {
+            const cand = o.contenido.slice(1).filter(w => w.length >= 6);
+            if (!cand.length) return null;
+            cand.sort((a, b) => (tf.get(b) - tf.get(a)) || (b.length - a.length));
+            const w = cand[0];
+            const re = new RegExp('(^|[^\\p{L}\\p{N}])(' + escRe(w) + ')(?![\\p{L}\\p{N}])', 'iu');
+            const m = o.texto.match(re);
+            if (!m) return null;
+            const conHueco = o.texto.replace(re, '$1______');
+            return { q: 'Complete la idea: «' + punto(conHueco) + '»', a: m[2] };
+        }
+
+        function construirEstudio(texto) {
+            const palabrasTotal = texto.split(/\s+/).length;
+            const { info, tf, bi } = analizarTexto(texto);
+            if (!info.length) return { resumen: '', preguntas: '' };
+            info.forEach(o => { o.def = detectarDefinicion(o.texto); });
+
+            // ---- Resumen
+            const nRes = Math.max(4, Math.min(20, Math.round(palabrasTotal / 110)));
+            const resumenOr = elegirPorSegmentos(info, Math.min(nRes, info.length), new Set());
+            const terminos = terminosClave(tf, bi, 12);
+            let resumen = resumenOr.map(o => '• ' + punto(o.texto)).join('\n');
+            if (terminos.length) resumen += '\n\nTérminos clave:\n' + terminos.join(' · ');
+
+            // ---- Preguntas y respuestas
+            const nQA = Math.max(6, Math.min(16, Math.round(palabrasTotal / 140)));
+            const usados = new Set();
+            const largoOk = (o, a, b) => o.palabras.length >= a && o.palabras.length <= b && !RELLENO.test(o.texto);
+            const defCands = info.filter(o => o.def && largoOk(o, 6, 38));
+            const defs = elegirPorSegmentos(defCands, Math.min(Math.ceil(nQA * 0.6), defCands.length), usados);
+            const items = defs.map(o => ({ idx: o.idx, q: o.def.q, a: o.def.a }));
+            const faltan = nQA - items.length;
+            if (faltan > 0) {
+                const clozeCands = info.filter(o => !usados.has(o.idx) && largoOk(o, 8, 30) && armarCloze(o, tf));
+                elegirPorSegmentos(clozeCands, Math.min(faltan, clozeCands.length), usados).forEach(o => {
+                    const c = armarCloze(o, tf);
+                    if (c) items.push({ idx: o.idx, q: c.q, a: c.a });
+                });
+            }
+            items.sort((a, b) => a.idx - b.idx);
+            const preguntas = items.map(it => 'P: ' + it.q + '\nR: ' + it.a).join('\n\n');
+            return { resumen, preguntas };
+        }
+
+        function generarEstudio(silencioso) {
+            const texto = textoCompletoClase();
+            const nPal = texto ? texto.split(/\s+/).length : 0;
+            if (nPal < 60) {
+                if (!silencioso) Swal.fire('Aún falta texto', 'Hace falta más transcripción (al menos unas 60 palabras) para armar el resumen y las preguntas.', 'info');
+                return false;
+            }
+            const r = construirEstudio(texto);
+            if (!r.resumen && !r.preguntas) return false;
+            resumenTexto.value = r.resumen; preguntasTexto.value = r.preguntas;
+            guardarEstudio();
+            if (!silencioso) {
+                panelEstudio.open = true;
+                Toast.fire({ icon: 'success', title: 'Resumen y preguntas listos. Puedes editarlos antes de exportar.' });
+            }
+            return true;
+        }
+
+        // ---- Lectura de lo que hay en las cajas (editable por el usuario)
+        function parsearResumen(texto) {
+            const out = [];
+            for (const raw of texto.split('\n')) {
+                const l = raw.trim();
+                if (!l) continue;
+                if (/^[•·\-*]\s*/.test(l)) out.push({ t: 'li', x: l.replace(/^[•·\-*]\s*/, '') });
+                else if (/^\d+[.)]\s+/.test(l)) out.push({ t: 'li', x: l.replace(/^\d+[.)]\s+/, '') });
+                else if (/:$/.test(l) && l.length < 70) out.push({ t: 'h', x: l.replace(/:$/, '') });
+                else out.push({ t: 'p', x: l });
+            }
+            return out;
+        }
+        function parsearPreguntas(texto) {
+            const out = []; let cur = null, enR = false, m;
+            for (const raw of texto.split('\n')) {
+                const l = raw.trim();
+                if (!l) continue;
+                if ((m = l.match(/^(?:\d+[.)]\s*)?(?:P|Pregunta)\s*\d*\s*[:.)-]\s*(.*)$/i)) && !/^(?:R|Respuesta)\s*[:.)-]/i.test(l)) { cur = { q: m[1], a: '' }; out.push(cur); enR = false; }
+                else if (cur && (m = l.match(/^(?:R|Respuesta)\s*[:.)-]\s*(.*)$/i))) { cur.a = m[1]; enR = true; }
+                else if (cur) { if (enR) cur.a += ' ' + l; else cur.q += ' ' + l; }
+            }
+            return out.filter(x => x.q.trim());
+        }
+
+        function htmlEstudio(modo) {
+            const resumen = parsearResumen(resumenTexto.value), qa = parsearPreguntas(preguntasTexto.value);
+            if (!resumen.length && !qa.length) return '';
+            const H = (txt, salto) => modo === 'word'
+                ? `<h1 style="${salto ? 'page-break-before: always; ' : ''}font-size: 16pt; color: #0d6efd; margin: ${salto ? 0 : 18}pt 0 8pt 0;">${esc(txt)}</h1>`
+                : `<h2 style="${salto ? 'page-break-before: always; ' : ''}margin-top: ${salto ? 0 : 18}pt;">${esc(txt)}</h2>`;
+            let h = '';
+            if (resumen.length) {
+                h += H('Resumen de puntos clave', true);
+                let enLista = false;
+                for (const it of resumen) {
+                    if (it.t === 'li') {
+                        if (!enLista) { h += '<ul>'; enLista = true; }
+                        h += `<li style="font-size: 11.5pt; margin-bottom: 4pt;">${esc(it.x)}</li>`;
+                    } else {
+                        if (enLista) { h += '</ul>'; enLista = false; }
+                        h += it.t === 'h'
+                            ? `<p style="font-size: 12pt; margin: 10pt 0 4pt 0;"><b>${esc(it.x)}</b></p>`
+                            : `<p style="font-size: 11.5pt; margin: 0 0 6pt 0;">${esc(it.x)}</p>`;
+                    }
+                }
+                if (enLista) h += '</ul>';
+            }
+            if (qa.length) {
+                h += H('Preguntas y respuestas de estudio', !resumen.length);
+                qa.forEach((p, i) => {
+                    h += `<p style="font-size: 11.5pt; margin: 10pt 0 2pt 0;"><b>${i + 1}. ${esc(p.q.trim())}</b></p>`;
+                    h += `<p style="font-size: 11.5pt; margin: 0 0 6pt 16pt;"><b>Respuesta:</b> ${esc((p.a || '').trim())}</p>`;
+                });
+            }
+            return h;
+        }
+        // Lo llama el exportador principal (Word / PDF)
+        function obtenerSeccionEstudio(modo) {
+            if (!chkEstudio.checked) return '';
+            if (!resumenTexto.value.trim() && !preguntasTexto.value.trim()) generarEstudio(true);
+            return htmlEstudio(modo);
+        }
+        window.MOExtra = { htmlEstudio: obtenerSeccionEstudio, construirEstudio };
+
+        // ---- Persistencia ligera
+        let estudioTimer = null;
+        function guardarEstudio() {
+            clearTimeout(estudioTimer);
+            estudioTimer = setTimeout(() => {
+                try { localStorage.setItem(ESTUDIO_KEY, JSON.stringify({ r: resumenTexto.value, p: preguntasTexto.value })); } catch (e) {}
+            }, 1000);
+        }
+        resumenTexto.addEventListener('input', guardarEstudio);
+        preguntasTexto.addEventListener('input', guardarEstudio);
+        try {
+            const g = JSON.parse(localStorage.getItem(ESTUDIO_KEY) || 'null');
+            if (g) { resumenTexto.value = g.r || ''; preguntasTexto.value = g.p || ''; }
+        } catch (e) {}
+
+        btnGenerarEstudio.addEventListener('click', async () => {
+            if (resumenTexto.value.trim() || preguntasTexto.value.trim()) {
+                const r = await Swal.fire({ title: 'Ya hay un resumen', text: 'Se reemplazará por uno nuevo (perderás lo que hayas editado). ¿Continuar?', icon: 'question', showCancelButton: true, confirmButtonText: 'Reemplazar', cancelButtonText: 'Cancelar' });
+                if (!r.isConfirmed) return;
+            }
+            if (!(await MO.asegurarTranscripcion())) return;
+            generarEstudio(false);
+        });
+        btnVaciarEstudio.addEventListener('click', () => { resumenTexto.value = ''; preguntasTexto.value = ''; guardarEstudio(); });
+
+        // ---- Opción de mayor calidad: pedirle el resumen a una IA externa (Claude, ChatGPT...) y pegar el resultado
+        btnCopiarPrompt.addEventListener('click', async () => {
+            const texto = textoCompletoClase();
+            if (!texto) { Swal.fire('Sin texto', 'Todavía no hay transcripción para copiar.', 'info'); return; }
+            const prompt = 'Actúa como un tutor académico. Abajo está la transcripción de una clase virtual (puede tener pequeños errores de reconocimiento de voz; corrígelos con el contexto).\n\n' +
+                'Haz dos cosas:\n1) RESUMEN: lista con viñetas (•) de los puntos clave y conceptos que probablemente serán evaluados (máximo 15 viñetas, claras y breves).\n' +
+                '2) PREGUNTAS: entre 12 y 20 preguntas de estudio con respuestas cortas, que cubran todos los temas de la clase.\n\n' +
+                'Responde EXACTAMENTE con este formato, sin texto adicional:\n\nRESUMEN:\n• punto clave\n• punto clave\n\nPREGUNTAS:\nP: pregunta\nR: respuesta\nP: pregunta\nR: respuesta\n\nTRANSCRIPCIÓN DE LA CLASE:\n' + texto;
+            try { await navigator.clipboard.writeText(prompt); }
+            catch (e) {
+                const ta = document.createElement('textarea'); ta.value = prompt; document.body.appendChild(ta); ta.select();
+                try { document.execCommand('copy'); } catch (e2) {}
+                ta.remove();
+            }
+            Toast.fire({ icon: 'success', title: 'Copiado. Pégalo en Claude o ChatGPT y luego usa "Pegar respuesta de la IA".' });
+        });
+        btnPegarIA.addEventListener('click', async () => {
+            const r = await Swal.fire({ title: 'Pega la respuesta de la IA', input: 'textarea', inputPlaceholder: 'RESUMEN:\n• ...\n\nPREGUNTAS:\nP: ...\nR: ...', width: 720, showCancelButton: true, confirmButtonText: 'Usar', cancelButtonText: 'Cancelar' });
+            if (!r.isConfirmed || !r.value) return;
+            const t = r.value.replace(/\r/g, '').replace(/\*\*/g, '').replace(/^#+\s*/gm, '').replace(/^\s*[-*]\s+/gm, '• ');
+            const iR = t.search(/^\s*(?:\d+[.)]\s*)?RESUMEN[^\n]*$/im), iP = t.search(/^\s*(?:\d+[.)]\s*)?PREGUNTAS[^\n]*$/im);
+            const despuesDeLinea = (i) => { const e = t.indexOf('\n', i); return e < 0 ? t.length : e + 1; };
+            if (iR < 0 && iP < 0) { Swal.fire('No encontré los títulos', 'La respuesta debe tener las líneas "RESUMEN:" y "PREGUNTAS:".', 'warning'); return; }
+            let res = '', pre = '';
+            if (iR >= 0 && iP >= 0) {
+                if (iR < iP) { res = t.slice(despuesDeLinea(iR), iP); pre = t.slice(despuesDeLinea(iP)); }
+                else { pre = t.slice(despuesDeLinea(iP), iR); res = t.slice(despuesDeLinea(iR)); }
+            } else if (iR >= 0) res = t.slice(despuesDeLinea(iR)); else pre = t.slice(despuesDeLinea(iP));
+            resumenTexto.value = res.trim(); preguntasTexto.value = pre.trim();
+            guardarEstudio(); panelEstudio.open = true;
+            Toast.fire({ icon: 'success', title: 'Resumen y preguntas cargados.' });
+        });
+
+        /* ==================== 2) SOLO TRANSCRIPCIÓN ==================== */
+        const btnSoloTexto = $('btnSoloTexto'), chkSinTiempo = $('chkSinTiempo');
+        function enParrafos(texto) {
+            const oraciones = texto.split(/(?<=[.!?…])\s+/).filter(Boolean), out = [];
+            for (let i = 0; i < oraciones.length; i += 5) out.push(oraciones.slice(i, i + 5).join(' '));
+            return out;
+        }
+        btnSoloTexto.addEventListener('click', async () => {
+            if (!MO.bloques.some(b => (b.textoConfirmado || '').trim())) { Swal.fire('Sin texto', 'Todavía no hay transcripción para exportar.', 'info'); return; }
+            if (!(await MO.asegurarTranscripcion())) return;
+            const conTexto = MO.bloques.filter(b => (b.textoConfirmado || '').trim());
+            const estilo = 'font-size: 11.5pt; text-align: justify; margin: 0 0 8pt 0;';
+            let cuerpo;
+            if (chkSinTiempo.checked) {
+                const todo = conTexto.map(b => b.textoConfirmado.trim()).join(' ').replace(/\s+/g, ' ');
+                cuerpo = enParrafos(todo).map(p => `<p style="${estilo}">${esc(p)}</p>`).join('');
+            } else {
+                cuerpo = conTexto.map(b => `<p style="${estilo}"><b style="color: #0d6efd;">[${esc(b.tiempoTxt)}]</b> ${esc(b.textoConfirmado.trim())}</p>`).join('');
+            }
+            const fecha = new Date().toLocaleDateString('es-CR', { year: 'numeric', month: 'long', day: 'numeric' });
+            const nombre = MO.nombreVideo;
+            const html = `<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>${esc(nombre)}</title>
+<style>body { font-family: 'Calibri', 'Arial', sans-serif; color: #111111; line-height: 1.55; } h1 { font-size: 16pt; color: #0d6efd; margin-bottom: 4pt; } .meta { font-size: 9pt; color: #666666; margin-bottom: 16pt; border-bottom: 1px solid #cccccc; padding-bottom: 6pt; }</style>
+</head><body><h1>${esc(nombre)}</h1><div class="meta">Transcripción · generada el ${fecha} · Multimedia Online</div>${cuerpo}</body></html>`;
+            const blob = new Blob([html], { type: 'application/msword;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `${nombre.replace(/[\\/:*?"<>|]/g, '')}_solo_transcripcion.doc`;
+            document.body.appendChild(a); a.click(); a.remove();
+            URL.revokeObjectURL(url);
+            Toast.fire({ icon: 'success', title: 'Transcripción (.doc) generada' });
+        });
+
+        /* ==================== 3) TRANSCRIPCIÓN RÁPIDA (sin reproducir) ==================== */
+        const btnRapido = $('btnRapido'), chkRapidoImg = $('chkRapidoImg');
+        const videoFile = $('videoFile'), videoPlayer = $('videoPlayer');
+        const progressWrapper = $('progressWrapper'), progressBar = $('progressBar'), liveBtn = $('liveTranscribeBtn');
+        const TXT_RAPIDO = '⚡ Transcribir archivo sin reproducir (rápido)';
+        let rapidoCorriendo = false, cancelarRapido = false;
+
+        function fuenteActual() {
+            const src = videoPlayer.getAttribute('src') || '';
+            if (src.startsWith('blob:') && videoFile.files && videoFile.files[0]) return { tipo: 'archivo', file: videoFile.files[0] };
+            if (/^https?:/i.test(src)) return { tipo: 'url', url: src };
+            return null;
+        }
+        setInterval(() => {
+            btnSoloTexto.disabled = !MO.bloques.length;
+            btnRapido.disabled = rapidoCorriendo ? false : (!fuenteActual() || MO.capturando);
+        }, 600);
+
+        const dormir = (ms) => new Promise(r => setTimeout(r, ms));
+        function mezclarMono16k(audioBuf) {
+            const n = audioBuf.length, ch = audioBuf.numberOfChannels, sr = audioBuf.sampleRate;
+            let mono = new Float32Array(n);
+            for (let c = 0; c < ch; c++) { const d = audioBuf.getChannelData(c); for (let i = 0; i < n; i++) mono[i] += d[i] / ch; }
+            if (sr === 16000) return mono;
+            const ratio = sr / 16000, m = Math.floor(n / ratio), out = new Float32Array(m);
+            for (let i = 0; i < m; i++) {
+                const a = Math.floor(i * ratio), b = Math.min(n, Math.floor((i + 1) * ratio)); let s = 0;
+                for (let j = a; j < b; j++) s += mono[j];
+                out[i] = s / Math.max(1, b - a);
+            }
+            return out;
+        }
+        // Espera a que el video tenga imagen lista (si no, la primera comparación sale en negro)
+        async function esperarFrame() {
+            if (videoPlayer.readyState < 2) await new Promise(r => { videoPlayer.addEventListener('loadeddata', () => r(), { once: true }); setTimeout(r, 5000); });
+        }
+        function buscar(t) {
+            const v = videoPlayer;
+            return new Promise((res) => {
+                if (Math.abs(v.currentTime - t) < 0.01) { res(); return; }
+                let hecho = false;
+                const fin = () => { if (hecho) return; hecho = true; v.removeEventListener('seeked', fin); clearTimeout(to); requestAnimationFrame(() => res()); };
+                const to = setTimeout(fin, 4000);
+                v.addEventListener('seeked', fin);
+                v.currentTime = Math.min(t, (v.duration || t));
+            });
+        }
+        // Recorre el video saltando cada 3 s y crea una sección cada vez que cambia la filmina (misma lógica que el modo normal)
+        async function escanearEscenas(dur) {
+            const PASO = 3;
+            videoPlayer.pause();
+            await esperarFrame();
+            await buscar(0.1);                       // salto real (no 0): obliga al navegador a pintar un cuadro válido
+            await esperarFrame();
+            MO.firma();                              // lectura de calentamiento (se descarta)
+            await dormir(120);
+            const ref0 = MO.firma();
+            if (!ref0) return false;                 // sin acceso a los píxeles (CORS): se usarán secciones por tiempo
+            let ref = ref0, estable = MO.fotograma();
+            let bloque = MO.nuevoBloque(0);
+            MO.renderizarBloques();
+            for (let t = PASO; t < dur && !cancelarRapido; t += PASO) {
+                await buscar(t);
+                const sig = MO.firma();
+                if (!sig) continue;
+                const d = MO.difFirmas(sig, ref);
+                if (d > MO.umbral) {
+                    if (t - bloque.tiempoSeg >= MO.minSeccion) {
+                        bloque.imagenBase64 = estable || MO.fotograma();
+                        bloque = MO.nuevoBloque(t); ref = sig; estable = null;
+                        MO.renderizarBloques();
+                    }
+                } else { estable = MO.fotograma(); }
+                progressBar.style.width = Math.round(t / dur * 100) + '%';
+            }
+            if (!bloque.imagenBase64) bloque.imagenBase64 = estable || MO.fotograma();
+            MO.renderizarBloques();
+            try { videoPlayer.currentTime = 0; } catch (e) {}
+            return true;
+        }
+
+        async function ejecutarRapido(fuente) {
+            MO.iniciarWhisper();
+            Swal.fire({ title: 'Leyendo el audio…', html: 'Decodificando el archivo. En archivos largos puede tardar un momento.', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+            let pcm;
+            try {
+                const ab = fuente.tipo === 'archivo' ? await fuente.file.arrayBuffer() : await (await fetch(fuente.url)).arrayBuffer();
+                const Ctx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+                const audioBuf = await new Ctx(1, 16000, 16000).decodeAudioData(ab);
+                pcm = mezclarMono16k(audioBuf);
+            } catch (e) {
+                Swal.close();
+                throw new Error('No se pudo leer el audio de este archivo (formato no compatible, enlace sin permiso o archivo demasiado grande). Usa el botón rojo para transcribirlo reproduciéndolo.');
+            }
+            Swal.close();
+            const dur = pcm.length / 16000;
+            const gen = MO.generacion;
+
+            // Secciones: por cambio de filmina (videos) o cada 30 s (audio / sin acceso a imagen)
+            const inicio = MO.bloques.length;
+            MO.setIndiceSesion(inicio);
+            let hechasPorEscena = false;
+            if (chkRapidoImg.checked && videoPlayer.videoWidth > 0) {
+                Toast.fire({ icon: 'info', title: 'Buscando las filminas del video…' });
+                hechasPorEscena = await escanearEscenas(dur);
+            }
+            if (cancelarRapido || MO.generacion !== gen) return;
+            if (!hechasPorEscena && MO.bloques.length === inicio) { for (let t = 0; t < dur; t += 30) MO.nuevoBloque(t); }
+            MO.renderizarBloques();
+
+            // Alimenta a la IA a su ritmo (sin saturar la memoria)
+            progressBar.style.width = '0%';
+            Toast.fire({ icon: 'info', title: 'Transcribiendo el audio sin reproducirlo…' });
+            let pos = 0, fin = false;
+            const SEGMIN = 4 * 16000, SEGOBJ = 7 * 16000;
+            const siguiente = () => {
+                if (pos >= pcm.length) return null;
+                let f = Math.min(pcm.length, pos + SEGOBJ);
+                if (pcm.length - f < 3 * 16000) f = pcm.length;
+                else {                                   // cortar en el punto más silencioso (entre frases)
+                    const win = 800, step = 400, desde = Math.max(pos + SEGMIN, f - 3 * 16000);
+                    let mejor = Infinity, mp = f - win;
+                    for (let p = desde; p + win <= f; p += step) {
+                        let e = 0; for (let i = p; i < p + win; i++) e += pcm[i] * pcm[i];
+                        if (e < mejor) { mejor = e; mp = p; }
+                    }
+                    f = mp + (win >> 1);
+                }
+                const seg = pcm.slice(pos, f), tIni = pos / 16000;
+                pos = f;
+                let pico = 0; for (let i = 0; i < seg.length; i++) { const v = Math.abs(seg[i]); if (v > pico) pico = v; }
+                if (pico < 0.002) return { omitir: true };
+                if (pico < 0.5) { const g = Math.min(8, 0.7 / pico); for (let i = 0; i < seg.length; i++) seg[i] *= g; }
+                return { audio: seg, tIni, dur: seg.length / 16000 };
+            };
+            while (!cancelarRapido && MO.generacion === gen) {
+                if (MO.errorIA) throw new Error('La IA no pudo cargarse. Revisa tu conexión e inténtalo de nuevo.');
+                while (!fin && MO.pendientes() < 3) {
+                    const s = siguiente();
+                    if (!s) { fin = true; break; }
+                    if (s.omitir) continue;
+                    const b = MO.bloquePorTiempo(s.tIni + s.dur / 2);
+                    MO.encolar({ audio: s.audio, bloqueId: b ? b.id : null, gen, tIni: s.tIni, dur: s.dur });
+                }
+                progressBar.style.width = Math.min(100, Math.round(pos / pcm.length * 100)) + '%';
+                if (fin && MO.pendientes() === 0) break;
+                await dormir(300);
+            }
+            if (MO.generacion !== gen) return;
+            if (cancelarRapido) { MO.vaciarCola(); Toast.fire({ icon: 'info', title: 'Transcripción rápida detenida' }); }
+            else Toast.fire({ icon: 'success', title: '¡Transcripción rápida completa!' });
+        }
+
+        btnRapido.addEventListener('click', async () => {
+            if (rapidoCorriendo) { cancelarRapido = true; return; }
+            const fuente = fuenteActual();
+            if (!fuente) { Swal.fire('Sin archivo', 'Carga primero un archivo (.mp3, .mp4...) o un enlace directo a un .mp4 / .mp3.', 'info'); return; }
+            if (fuente.tipo === 'archivo' && fuente.file.size > 1.6e9) { Swal.fire('Archivo muy grande', 'Para archivos de más de ~1.5 GB usa el botón rojo (modo normal).', 'warning'); return; }
+            if (MO.bloques.some(b => b.textoConfirmado || b.imagenBase64)) {
+                const r = await Swal.fire({ title: 'Ya hay contenido', text: 'La transcripción rápida se agregará al final de lo que ya tienes. ¿Continuar?', icon: 'question', showCancelButton: true, confirmButtonText: 'Continuar', cancelButtonText: 'Cancelar' });
+                if (!r.isConfirmed) return;
+            }
+            rapidoCorriendo = true; cancelarRapido = false; MO.setRapido(true);
+            btnRapido.innerHTML = '⏹️ Detener transcripción rápida';
+            liveBtn.disabled = true;
+            progressWrapper.style.display = 'block'; progressBar.style.width = '0%';
+            try { await ejecutarRapido(fuente); }
+            catch (e) { console.error(e); Swal.close(); Swal.fire({ icon: 'error', title: 'No se pudo completar', text: String((e && e.message) || e) }); }
+            finally {
+                MO.setRapido(false); rapidoCorriendo = false;
+                liveBtn.disabled = false;
+                btnRapido.innerHTML = TXT_RAPIDO;
+                setTimeout(() => { progressWrapper.style.display = 'none'; }, 1200);
+            }
+        });
+
+        // "Limpiar todo" (botón existente): también limpia lo nuevo y cancela el modo rápido
+        $('clearAllBtn').addEventListener('click', () => {
+            cancelarRapido = true;
+            resumenTexto.value = ''; preguntasTexto.value = ''; guardarEstudio();
+        });
+    } catch (e) { console.error('Módulo extra:', e); }
+})();
+
     </script>
 </body>
 </html>
