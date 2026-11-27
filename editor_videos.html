@@ -10,7 +10,7 @@
         }
     </script>
     <title>Multimedia Online - Editor y Creador de Videos Gratis</title>
-    <meta name="description" content="Edita, recorta videos MP4/WebM o crea videos animados a partir de imágenes con texto y música directamente en tu navegador sin programas." />
+    <meta name="description" content="Edita, recorta videos MP4/WebM o crea videos animados a partir de imágenes con cámara flotante, micrófono, texto y música en tu navegador." />
     <meta name="author" content="Lic. Antonio Ramírez Bogantes" />
     <link rel="icon" type="image/x-icon" href="img/principal.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -62,13 +62,20 @@
             max-height: 355px;
             background: #000000;
             border-radius: 8px;
+            touch-action: none;
         }
         .slide-thumb {
-            width: 54px;
-            height: 54px;
+            width: 48px;
+            height: 48px;
             object-fit: cover;
             border-radius: 8px;
             border: 2px solid #dee2e6;
+        }
+        .cam-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 6px 10px;
         }
     </style>
 </head>
@@ -79,9 +86,9 @@
 
         <div class="main-content">
             <div class="tool-box">
-                <div class="mb-2">
+                <div class="mb-1">
                     <h4 class="mb-0 fw-bold text-dark text-center">✂️ Editor y Creador de Videos en el Navegador</h4>
-                    <p class="text-muted small mb-0 text-center">Recorta videos, agrega títulos, filtros y música, o crea un video animado desde tus imágenes 100% gratis</p>
+                    <p class="text-muted small mb-0 text-center">Recorta videos, crea presentaciones animadas, activa tu cámara flotante con micrófono y renderiza 100% gratis</p>
                 </div>
 
                 <div class="row g-3 content-grid align-items-stretch">
@@ -119,7 +126,7 @@
                                         <input type="number" id="trimEnd" class="form-control form-control-sm" value="0" min="0" step="0.5" disabled>
                                     </div>
                                     <div class="col-4">
-                                        <label for="audioModeSelect" class="form-label fw-bold small text-secondary mb-1">🔊 Audio:</label>
+                                        <label for="audioModeSelect" class="form-label fw-bold small text-secondary mb-1">🔊 Audio video:</label>
                                         <select id="audioModeSelect" class="form-select form-select-sm">
                                             <option value="keep" selected>Original</option>
                                             <option value="mute">Silenciar</option>
@@ -132,7 +139,7 @@
                             <!-- PANEL MODO 2: CREAR DESDE IMÁGENES -->
                             <div id="panelImages" style="display: none;">
                                 <div class="mb-2">
-                                    <label for="imagesInput" class="form-label fw-bold small text-secondary mb-1">🖼️ Selecciona varias imágenes (2 o más):</label>
+                                    <label for="imagesInput" class="form-label fw-bold small text-secondary mb-1">🖼️ Selecciona varias imágenes (o usa solo cámara):</label>
                                     <input type="file" id="imagesInput" class="form-control form-control-sm" accept="image/*" multiple>
                                 </div>
 
@@ -159,10 +166,41 @@
                                 </div>
                             </div>
 
+                            <!-- PANEL CÁMARA FLOTANTE (PiP) Y MICRÓFONO -->
+                            <div class="cam-box mb-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold small text-dark">📹 Cámara Flotante (Tutorial / Reacción):</span>
+                                    <button type="button" id="toggleCamBtn" class="btn btn-outline-danger btn-sm py-0 px-2 fw-bold">
+                                        📹 Activar Cámara
+                                    </button>
+                                </div>
+                                <div class="row g-1 align-items-center">
+                                    <div class="col-4">
+                                        <select id="camShapeSelect" class="form-select form-select-sm" title="Forma de cámara">
+                                            <option value="rect" selected>Rectangular</option>
+                                            <option value="circle">Circular</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-4">
+                                        <select id="camSizeSelect" class="form-select form-select-sm" title="Tamaño de cámara">
+                                            <option value="0.20">Pequeña</option>
+                                            <option value="0.27" selected>Mediana</option>
+                                            <option value="0.35">Grande</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="form-check form-switch mb-0 ms-1">
+                                            <input class="form-check-input" type="checkbox" id="chkMicLive" checked>
+                                            <label class="form-check-label small fw-bold text-secondary" for="chkMicLive">🎙️ Mic</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Controles comunes: Título superpuesto, Filtro y Audio extra -->
-                            <div class="row g-2 mb-2">
+                            <div class="row g-2 mb-1">
                                 <div class="col-7">
-                                    <label for="overlayText" class="form-label fw-bold small text-secondary mb-1">🏷️ Texto / Cintillo en pantalla (opcional):</label>
+                                    <label for="overlayText" class="form-label fw-bold small text-secondary mb-1">🏷️ Texto / Cintillo (opcional):</label>
                                     <input type="text" id="overlayText" class="form-control form-control-sm" placeholder="Ej. Agregando Valor Al Mundo">
                                 </div>
                                 <div class="col-5">
@@ -183,7 +221,7 @@
                             </div>
                         </div>
 
-                        <div class="d-grid gap-2 mt-2">
+                        <div class="d-grid gap-1 mt-1">
                             <div class="row g-2">
                                 <div class="col-6">
                                     <button id="previewBtn" class="btn btn-outline-primary btn-sm w-100 fw-bold" disabled>
@@ -215,8 +253,8 @@
                     <div class="col-md-7 text-start d-flex flex-column justify-content-between">
                         <div class="d-flex flex-column flex-grow-1">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold small text-primary">📺 Lienzo de Previsualización y Renderizado:</span>
-                                <span id="statusBadge" class="badge bg-light text-secondary border">Esperando archivo...</span>
+                                <span class="fw-bold small text-primary">📺 Lienzo (si activas cámara, arrastra el cuadrito donde quieras):</span>
+                                <span id="statusBadge" class="badge bg-light text-secondary border">Esperando archivo o cámara...</span>
                             </div>
 
                             <div id="previewStage">
@@ -233,7 +271,7 @@
                                 <div id="renderProgress" class="progress-bar progress-bar-striped progress-bar-animated bg-danger" style="width: 0%;"></div>
                             </div>
                             <div id="slidesStrip" class="d-flex gap-2 flex-wrap align-items-center" style="min-height: 44px;">
-                                <span class="text-muted small">Carga un video o varias imágenes a la izquierda para comenzar a editar.</span>
+                                <span class="text-muted small">Carga un video, varias imágenes o activa la cámara para comenzar.</span>
                             </div>
                         </div>
                     </div>
@@ -247,6 +285,7 @@
 
     <!-- Elementos multimedia ocultos para procesamiento -->
     <video id="hiddenVideo" playsinline style="display:none;"></video>
+    <video id="camVideo" autoplay playsinline muted style="display:none;"></video>
     <audio id="hiddenAudio" style="display:none;"></audio>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -269,6 +308,11 @@
         const aspectSelect = document.getElementById('aspectSelect');
         const zoomEffect = document.getElementById('zoomEffect');
 
+        const toggleCamBtn = document.getElementById('toggleCamBtn');
+        const camShapeSelect = document.getElementById('camShapeSelect');
+        const camSizeSelect = document.getElementById('camSizeSelect');
+        const chkMicLive = document.getElementById('chkMicLive');
+
         const overlayText = document.getElementById('overlayText');
         const filterSelect = document.getElementById('filterSelect');
         const extraAudioInput = document.getElementById('extraAudioInput');
@@ -286,6 +330,7 @@
         const renderCanvas = document.getElementById('renderCanvas');
         const ctx = renderCanvas.getContext('2d');
         const hiddenVideo = document.getElementById('hiddenVideo');
+        const camVideo = document.getElementById('camVideo');
         const hiddenAudio = document.getElementById('hiddenAudio');
 
         let modoActual = 'video'; // 'video' | 'images'
@@ -294,9 +339,19 @@
         let renderedBlobUrl = null;
         let renderedExt = 'webm';
         let animFrameId = null;
+        let camIdleLoopId = null;
         let isPlayingPreview = false;
         let isRendering = false;
         let mediaRecorder = null;
+
+        // Estado de Cámara Flotante (coordenadas normalizadas 0..1)
+        let camStream = null;
+        let camActive = false;
+        let camNormX = 0.70;
+        let camNormY = 0.64;
+        let draggingCam = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
 
         const Toast = Swal.mixin({
             toast: true, position: 'top-end', showConfirmButton: false, timer: 2500, timerProgressBar: true
@@ -309,19 +364,210 @@
             return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         }
 
-        function dibujarBienvenidaCanvas() {
-            renderCanvas.width = 854;
-            renderCanvas.height = 480;
+        function dibujarFondoBase() {
             ctx.fillStyle = '#111827';
             ctx.fillRect(0, 0, renderCanvas.width, renderCanvas.height);
             ctx.fillStyle = '#9ca3af';
-            ctx.font = 'bold 22px Calibri, sans-serif';
+            ctx.font = 'bold 21px Calibri, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('🎬 Vista previa del editor de video', renderCanvas.width / 2, renderCanvas.height / 2 - 10);
+            ctx.fillText('🎬 Lienzo de edición y grabación', renderCanvas.width / 2, renderCanvas.height / 2 - 12);
             ctx.font = '15px Calibri, sans-serif';
-            ctx.fillText('Selecciona un video (.mp4) o varias imágenes para comenzar', renderCanvas.width / 2, renderCanvas.height / 2 + 20);
+            ctx.fillText('Carga un video, imágenes o activa tu cámara flotante para grabar', renderCanvas.width / 2, renderCanvas.height / 2 + 16);
         }
-        dibujarBienvenidaCanvas();
+
+        function refrescarLienzoEstatico() {
+            if (isPlayingPreview || isRendering) return;
+            if (modoActual === 'video' && hiddenVideo.src && hiddenVideo.readyState >= 2) {
+                dibujarFrameVideo();
+            } else if (modoActual === 'images' && loadedImages.length > 0) {
+                dibujarFrameImagen(0, 0);
+            } else {
+                dibujarFondoBase();
+                dibujarCintilloTexto();
+                dibujarCamaraFlotante();
+            }
+        }
+
+        /* ============================================================
+           CÁMARA FLOTANTE (PiP) + ARRASTRE EN CANVAS
+           ============================================================ */
+        function obtenerRectCamara() {
+            const cw = renderCanvas.width;
+            const ch = renderCanvas.height;
+            const ratioSize = parseFloat(camSizeSelect.value) || 0.27;
+            const shape = camShapeSelect.value;
+
+            let w, h;
+            if (shape === 'circle') {
+                const lado = Math.round(Math.min(cw, ch) * (ratioSize + 0.06));
+                w = lado;
+                h = lado;
+            } else {
+                w = Math.round(cw * ratioSize);
+                const camAspect = (camVideo.videoWidth && camVideo.videoHeight)
+                    ? (camVideo.videoHeight / camVideo.videoWidth)
+                    : (9 / 16);
+                h = Math.round(w * camAspect);
+            }
+
+            const x = Math.max(8, Math.min(cw - w - 8, Math.round(camNormX * cw)));
+            const y = Math.max(8, Math.min(ch - h - 8, Math.round(camNormY * ch)));
+            return { x, y, w, h, shape };
+        }
+
+        function dibujarCamaraFlotante() {
+            if (!camActive || !camVideo || camVideo.readyState < 2) return;
+            const { x, y, w, h, shape } = obtenerRectCamara();
+
+            ctx.save();
+            ctx.filter = 'none';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+            ctx.shadowBlur = 12;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 4;
+
+            ctx.beginPath();
+            if (shape === 'circle') {
+                const r = Math.min(w, h) / 2;
+                ctx.arc(x + r, y + r, r, 0, Math.PI * 2);
+            } else {
+                const rad = 12;
+                ctx.roundRect ? ctx.roundRect(x, y, w, h, rad) : ctx.rect(x, y, w, h);
+            }
+            ctx.closePath();
+            ctx.clip();
+
+            // Efecto espejo horizontal natural para webcam
+            ctx.translate(x + w, y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(camVideo, 0, 0, w, h);
+            ctx.restore();
+
+            // Borde blanco limpio alrededor de la cámara
+            ctx.save();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            if (shape === 'circle') {
+                const r = Math.min(w, h) / 2;
+                ctx.arc(x + r, y + r, r, 0, Math.PI * 2);
+            } else {
+                const rad = 12;
+                ctx.roundRect ? ctx.roundRect(x, y, w, h, rad) : ctx.rect(x, y, w, h);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function iniciarBucleCamaraReposo() {
+            if (camIdleLoopId) cancelAnimationFrame(camIdleLoopId);
+            const tick = () => {
+                if (!camActive) return;
+                if (!isPlayingPreview && !isRendering) {
+                    refrescarLienzoEstatico();
+                }
+                camIdleLoopId = requestAnimationFrame(tick);
+            };
+            camIdleLoopId = requestAnimationFrame(tick);
+        }
+
+        async function activarCamara() {
+            try {
+                camStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 640 }, height: { ideal: 360 } },
+                    audio: true
+                });
+                camVideo.srcObject = camStream;
+                await camVideo.play();
+                camActive = true;
+
+                toggleCamBtn.classList.remove('btn-outline-danger');
+                toggleCamBtn.classList.add('btn-danger');
+                toggleCamBtn.innerHTML = '⏹️ Apagar Cámara';
+
+                statusBadge.className = 'badge bg-success';
+                statusBadge.textContent = '📹 Cámara activa (arrástrala en el cuadro)';
+                iniciarBucleCamaraReposo();
+                actualizarBotones();
+                Toast.fire({ icon: 'success', title: 'Cámara activada: puedes arrastrarla a cualquier esquina' });
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Permiso de cámara requerido', 'Autoriza el uso de la cámara y micrófono en el navegador para mostrar tu recuadro en el video.', 'warning');
+            }
+        }
+
+        function desactivarCamara() {
+            camActive = false;
+            if (camIdleLoopId) { cancelAnimationFrame(camIdleLoopId); camIdleLoopId = null; }
+            if (camStream) {
+                camStream.getTracks().forEach(t => t.stop());
+                camStream = null;
+            }
+            camVideo.srcObject = null;
+            toggleCamBtn.classList.remove('btn-danger');
+            toggleCamBtn.classList.add('btn-outline-danger');
+            toggleCamBtn.innerHTML = '📹 Activar Cámara';
+            refrescarLienzoEstatico();
+            actualizarBotones();
+        }
+
+        toggleCamBtn.addEventListener('click', () => {
+            if (camActive) desactivarCamara();
+            else activarCamara();
+        });
+
+        camShapeSelect.addEventListener('change', refrescarLienzoEstatico);
+        camSizeSelect.addEventListener('change', refrescarLienzoEstatico);
+
+        // Eventos de puntero para mover libremente el cuadrito de cámara en el canvas
+        function obtenerCoordsCanvas(clientX, clientY) {
+            const rect = renderCanvas.getBoundingClientRect();
+            const scaleX = renderCanvas.width / rect.width;
+            const scaleY = renderCanvas.height / rect.height;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        renderCanvas.addEventListener('pointerdown', (e) => {
+            if (!camActive) return;
+            const pt = obtenerCoordsCanvas(e.clientX, e.clientY);
+            const r = obtenerRectCamara();
+            if (pt.x >= r.x && pt.x <= r.x + r.w && pt.y >= r.y && pt.y <= r.y + r.h) {
+                draggingCam = true;
+                dragOffsetX = pt.x - r.x;
+                dragOffsetY = pt.y - r.y;
+                renderCanvas.setPointerCapture(e.pointerId);
+            }
+        });
+
+        renderCanvas.addEventListener('pointermove', (e) => {
+            if (!camActive) { renderCanvas.style.cursor = 'default'; return; }
+            const pt = obtenerCoordsCanvas(e.clientX, e.clientY);
+            const r = obtenerRectCamara();
+
+            if (!draggingCam) {
+                const inside = pt.x >= r.x && pt.x <= r.x + r.w && pt.y >= r.y && pt.y <= r.y + r.h;
+                renderCanvas.style.cursor = inside ? 'grab' : 'default';
+                return;
+            }
+
+            renderCanvas.style.cursor = 'grabbing';
+            const newX = Math.max(8, Math.min(renderCanvas.width - r.w - 8, pt.x - dragOffsetX));
+            const newY = Math.max(8, Math.min(renderCanvas.height - r.h - 8, pt.y - dragOffsetY));
+            camNormX = newX / renderCanvas.width;
+            camNormY = newY / renderCanvas.height;
+            refrescarLienzoEstatico();
+        });
+
+        renderCanvas.addEventListener('pointerup', (e) => {
+            if (draggingCam) {
+                draggingCam = false;
+                renderCanvas.style.cursor = 'grab';
+                try { renderCanvas.releasePointerCapture(e.pointerId); } catch {}
+            }
+        });
 
         /* ============================================================
            CAMBIO DE MODO
@@ -333,6 +579,7 @@
             btnModeImages.classList.remove('active');
             panelVideo.style.display = 'block';
             panelImages.style.display = 'none';
+            refrescarLienzoEstatico();
             actualizarBotones();
         });
 
@@ -344,7 +591,7 @@
             panelImages.style.display = 'block';
             panelVideo.style.display = 'none';
             aplicarAspectoCanvas();
-            if (loadedImages.length > 0) dibujarFrameImagen(0, 0);
+            refrescarLienzoEstatico();
             actualizarBotones();
         });
 
@@ -357,16 +604,20 @@
         aspectSelect.addEventListener('change', () => {
             if (modoActual === 'images') {
                 aplicarAspectoCanvas();
-                if (loadedImages.length > 0) dibujarFrameImagen(0, 0);
+                refrescarLienzoEstatico();
             }
         });
 
         function actualizarBotones() {
-            const listo = (modoActual === 'video' && hiddenVideo.src && hiddenVideo.duration > 0) ||
-                          (modoActual === 'images' && loadedImages.length > 0);
-            previewBtn.disabled = !listo || isRendering;
+            const tieneVideo = modoActual === 'video' && hiddenVideo.src && hiddenVideo.duration > 0;
+            const tieneImagenes = modoActual === 'images' && loadedImages.length > 0;
+            const soloCamara = camActive && !tieneVideo && !tieneImagenes;
+
+            const listo = tieneVideo || tieneImagenes || soloCamara;
+            previewBtn.disabled = !listo || isRendering || soloCamara;
             renderBtn.disabled = !listo || isRendering;
-            clearAllBtn.disabled = !listo && !renderedBlobUrl;
+            renderBtn.innerHTML = soloCamara ? '🔴 Grabar Cámara' : '🎬 Renderizar Video';
+            clearAllBtn.disabled = !listo && !renderedBlobUrl && !camActive;
         }
 
         /* ============================================================
@@ -444,7 +695,7 @@
         });
 
         /* ============================================================
-           DIBUJO EN CANVAS (FILTROS + TEXTO + EFECTO KEN BURNS)
+           DIBUJO EN CANVAS (FILTROS + TEXTO + CÁMARA FLOTANTE)
            ============================================================ */
         function dibujarCintilloTexto() {
             const txt = overlayText.value.trim();
@@ -473,6 +724,7 @@
             ctx.drawImage(hiddenVideo, 0, 0, renderCanvas.width, renderCanvas.height);
             ctx.restore();
             dibujarCintilloTexto();
+            dibujarCamaraFlotante();
         }
 
         function dibujarFrameImagen(index, progresoEnSlide) {
@@ -496,18 +748,11 @@
             ctx.drawImage(img, dx, dy, dw, dh);
             ctx.restore();
             dibujarCintilloTexto();
+            dibujarCamaraFlotante();
         }
 
-        filterSelect.addEventListener('change', () => {
-            if (isPlayingPreview || isRendering) return;
-            if (modoActual === 'video' && hiddenVideo.src) dibujarFrameVideo();
-            else if (modoActual === 'images' && loadedImages.length) dibujarFrameImagen(0, 0);
-        });
-        overlayText.addEventListener('input', () => {
-            if (isPlayingPreview || isRendering) return;
-            if (modoActual === 'video' && hiddenVideo.src) dibujarFrameVideo();
-            else if (modoActual === 'images' && loadedImages.length) dibujarFrameImagen(0, 0);
-        });
+        filterSelect.addEventListener('change', refrescarLienzoEstatico);
+        overlayText.addEventListener('input', refrescarLienzoEstatico);
 
         /* ============================================================
            VISTA PREVIA Y RENDERIZADO FINAL CON MEDIARECORDER
@@ -522,7 +767,7 @@
             isPlayingPreview = false;
             isRendering = false;
             previewBtn.innerHTML = '▶️ Vista Previa';
-            renderBtn.disabled = false;
+            actualizarBotones();
         }
 
         previewBtn.addEventListener('click', () => {
@@ -536,30 +781,45 @@
         });
 
         renderBtn.addEventListener('click', () => {
-            if (isRendering) return;
+            if (isRendering) {
+                detenerTodoProceso();
+                return;
+            }
             ejecutarLineaTiempo(true);
         });
 
         async function ejecutarLineaTiempo(grabarArchivo) {
             detenerTodoProceso();
+
+            const tieneVideo = modoActual === 'video' && hiddenVideo.src && hiddenVideo.duration > 0;
+            const tieneImagenes = modoActual === 'images' && loadedImages.length > 0;
+            const soloCamara = camActive && !tieneVideo && !tieneImagenes;
+
             const chunks = [];
             let audioCtx = null;
             let destAudio = null;
 
             if (grabarArchivo) {
                 isRendering = true;
-                renderBtn.disabled = true;
                 previewBtn.disabled = true;
                 downloadVideoBtn.disabled = true;
                 renderProgress.style.width = '0%';
                 statusBadge.className = 'badge bg-danger';
-                statusBadge.textContent = '🔴 Renderizando video...';
+                statusBadge.textContent = soloCamara ? '🔴 Grabando cámara (clic en Detener al terminar)...' : '🔴 Renderizando video...';
+
+                if (soloCamara) {
+                    renderBtn.disabled = false;
+                    renderBtn.innerHTML = '⏹️ Detener Grabación';
+                } else {
+                    renderBtn.disabled = true;
+                }
 
                 const canvasStream = renderCanvas.captureStream(30);
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 destAudio = audioCtx.createMediaStreamDestination();
 
-                if (modoActual === 'video' && audioModeSelect.value === 'keep') {
+                // 1. Audio del video base
+                if (tieneVideo && audioModeSelect.value === 'keep') {
                     try {
                         const vStream = hiddenVideo.captureStream ? hiddenVideo.captureStream() : hiddenVideo.mozCaptureStream();
                         if (vStream && vStream.getAudioTracks().length) {
@@ -569,7 +829,8 @@
                     } catch {}
                 }
 
-                if (extraAudioUrl && (modoActual === 'images' || audioModeSelect.value === 'replace')) {
+                // 2. Audio extra / música de fondo
+                if (extraAudioUrl && (tieneImagenes || soloCamara || audioModeSelect.value === 'replace')) {
                     try {
                         hiddenAudio.currentTime = 0;
                         const aStream = hiddenAudio.captureStream ? hiddenAudio.captureStream() : hiddenAudio.mozCaptureStream();
@@ -577,6 +838,14 @@
                             const srcA = audioCtx.createMediaStreamSource(new MediaStream(aStream.getAudioTracks()));
                             srcA.connect(destAudio);
                         }
+                    } catch {}
+                }
+
+                // 3. Micrófono en vivo de la cámara
+                if (camActive && chkMicLive.checked && camStream && camStream.getAudioTracks().length) {
+                    try {
+                        const srcMic = audioCtx.createMediaStreamSource(new MediaStream(camStream.getAudioTracks()));
+                        srcMic.connect(destAudio);
                     } catch {}
                 }
 
@@ -613,7 +882,7 @@
                 statusBadge.textContent = '▶️ Reproduciendo vista previa...';
             }
 
-            if (modoActual === 'video') {
+            if (tieneVideo) {
                 const ini = Math.max(0, parseFloat(trimStart.value) || 0);
                 const fin = Math.min(hiddenVideo.duration, parseFloat(trimEnd.value) || hiddenVideo.duration);
                 const durTotal = Math.max(0.5, fin - ini);
@@ -647,7 +916,7 @@
                 };
                 animFrameId = requestAnimationFrame(loopVideo);
 
-            } else {
+            } else if (tieneImagenes) {
                 const segPorFoto = Math.max(1, parseFloat(secPerSlide.value) || 3);
                 const durTotal = loadedImages.length * segPorFoto;
                 const tInicioWall = performance.now();
@@ -680,6 +949,24 @@
                     animFrameId = requestAnimationFrame(loopImages);
                 };
                 animFrameId = requestAnimationFrame(loopImages);
+
+            } else if (soloCamara) {
+                const tInicioWall = performance.now();
+                if (extraAudioUrl) {
+                    hiddenAudio.currentTime = 0;
+                    hiddenAudio.play().catch(() => {});
+                }
+                const loopSoloCam = (now) => {
+                    if (!isRendering) return;
+                    const elapsed = (now - tInicioWall) / 1000;
+                    dibujarFondoBase();
+                    dibujarCintilloTexto();
+                    dibujarCamaraFlotante();
+                    timeBadge.textContent = `${fmtTime(elapsed)} / EN VIVO`;
+                    renderProgress.style.width = '100%';
+                    animFrameId = requestAnimationFrame(loopSoloCam);
+                };
+                animFrameId = requestAnimationFrame(loopSoloCam);
             }
         }
 
@@ -695,6 +982,7 @@
 
         clearAllBtn.addEventListener('click', () => {
             detenerTodoProceso();
+            if (camActive) desactivarCamara();
             videoInput.value = '';
             imagesInput.value = '';
             extraAudioInput.value = '';
@@ -712,12 +1000,14 @@
             downloadVideoBtn.disabled = true;
             renderProgress.style.width = '0%';
             timeBadge.textContent = '00:00 / 00:00';
-            slidesStrip.innerHTML = '<span class="text-muted small">Carga un video o varias imágenes a la izquierda para comenzar a editar.</span>';
+            slidesStrip.innerHTML = '<span class="text-muted small">Carga un video, varias imágenes o activa la cámara para comenzar.</span>';
             statusBadge.className = 'badge bg-light text-secondary border';
-            statusBadge.textContent = 'Esperando archivo...';
-            dibujarBienvenidaCanvas();
+            statusBadge.textContent = 'Esperando archivo o cámara...';
+            dibujarFondoBase();
             actualizarBotones();
         });
+
+        dibujarFondoBase();
     })();
     </script>
 </body>
