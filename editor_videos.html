@@ -541,6 +541,8 @@
         </div>
     </div>
 
+    <!-- Contenedor oculto para mantener los <video> y <audio> activos dentro del DOM -->
+    <div id="hiddenMediaPool" style="display:none;"></div>
     <video id="camVideo" autoplay playsinline muted style="display:none;"></video>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -608,6 +610,7 @@
         const renderCanvas = document.getElementById('renderCanvas');
         const ctx = renderCanvas.getContext('2d');
         const camVideo = document.getElementById('camVideo');
+        const hiddenMediaPool = document.getElementById('hiddenMediaPool');
 
         const textEditorModal = new bootstrap.Modal(document.getElementById('textEditorModal'));
         const modalTextValue = document.getElementById('modalTextValue');
@@ -654,7 +657,6 @@
         let dragOffsetY = 0;
         let draggedLibraryPayload = null;
 
-        // Estado para arrastrar y recortar bloques en la línea de tiempo
         let tlDragState = null;
 
         const Toast = Swal.mixin({
@@ -954,7 +956,12 @@
                     Toast.fire({ icon: 'warning', title: 'La Pista 3 es exclusiva para archivos de audio' });
                     return;
                 }
-                const audEl = new Audio(mediaItem.url);
+                const audEl = document.createElement('audio');
+                audEl.src = mediaItem.url;
+                audEl.preload = 'auto';
+                audEl.volume = 1.0;
+                hiddenMediaPool.appendChild(audEl);
+
                 const nuevoAud = {
                     id: nextTrackItemId++,
                     name: mediaItem.name,
@@ -998,9 +1005,12 @@
                 const v = document.createElement('video');
                 v.src = mediaItem.url;
                 v.muted = true;
+                v.volume = 1.0;
                 v.playsInline = true;
                 v.preload = 'auto';
+                hiddenMediaPool.appendChild(v);
                 await new Promise(r => { v.onloadedmetadata = r; v.onerror = r; });
+
                 const nuevoClip = {
                     id: nextTrackItemId++,
                     type: 'video',
@@ -1082,7 +1092,6 @@
             if (total <= 0) return;
             const t = currentTimelineSec;
 
-            // 1. Si hay un clip seleccionado, intentar dividir ese primero
             if (selectedItem) {
                 if (selectedItem.track === 'main') {
                     let acc = 0;
@@ -1121,11 +1130,17 @@
                         const localOffset = t - au.start;
                         if (localOffset >= 0.4 && (dur - localOffset) >= 0.4) {
                             const corteEnAudio = (au.trimStart || 0) + localOffset;
+                            const aud2 = document.createElement('audio');
+                            aud2.src = au.url;
+                            aud2.preload = 'auto';
+                            aud2.volume = 1.0;
+                            hiddenMediaPool.appendChild(aud2);
+
                             const segundoAudio = {
                                 id: nextTrackItemId++,
                                 name: au.name,
                                 url: au.url,
-                                audioEl: new Audio(au.url),
+                                audioEl: aud2,
                                 start: t,
                                 rawDuration: au.rawDuration || au.duration,
                                 trimStart: corteEnAudio,
@@ -1144,7 +1159,6 @@
                 }
             }
 
-            // 2. Si no se pudo sobre el seleccionado, dividir el clip de Pista 1 que esté bajo la línea roja
             let acc = 0;
             for (let i = 0; i < mainClips.length; i++) {
                 const c = mainClips[i];
@@ -1168,8 +1182,10 @@
                 const v2 = document.createElement('video');
                 v2.src = c.url;
                 v2.muted = true;
+                v2.volume = 1.0;
                 v2.playsInline = true;
                 v2.preload = 'auto';
+                hiddenMediaPool.appendChild(v2);
                 await new Promise(r => { v2.onloadedmetadata = r; v2.onerror = r; });
 
                 segundoClip = {
@@ -1212,14 +1228,12 @@
         /* ============================================================
            5. PISTAS INTERACTIVAS (ARRASTRE HORIZONTAL + RECORTE EN ORILLAS ↔)
            ============================================================ */
-        function instalarInteraccionBloque(el, trackName, itemObj, startSecEnTimeline, durSecEnTimeline) {
-            // Tirador izquierdo (recorte inicio ↔)
+        function instalarInteraccionBloque(el, trackName, itemObj) {
             const handleLeft = document.createElement('div');
             handleLeft.className = 'tl-trim-handle tl-trim-left';
             handleLeft.title = 'Arrastra ↔ para recortar el inicio';
             el.appendChild(handleLeft);
 
-            // Tirador derecho (recorte final ↔)
             const handleRight = document.createElement('div');
             handleRight.className = 'tl-trim-handle tl-trim-right';
             handleRight.title = 'Arrastra ↔ para recortar o estirar el final';
@@ -1237,7 +1251,7 @@
                 const total = Math.max(1, obtenerDuracionTotal());
 
                 tlDragState = {
-                    mode, // 'move' | 'trim-left' | 'trim-right'
+                    mode,
                     track: trackName,
                     item: itemObj,
                     startX: e.clientX,
@@ -1283,7 +1297,6 @@
                     const maxEnd = item.type === 'video' ? item.rawDuration : 120;
                     item.trimEnd = Math.max(item.trimStart + 0.5, Math.min(maxEnd, Number((tlDragState.origTrimEnd + deltaSec).toFixed(2))));
                 } else if (mode === 'move') {
-                    // Intercambiar orden en Pista 1 si se arrastra lo suficiente a izq/der
                     const idx = mainClips.findIndex(c => c.id === item.id);
                     if (deltaSec > 1.2 && idx < mainClips.length - 1) {
                         [mainClips[idx], mainClips[idx + 1]] = [mainClips[idx + 1], mainClips[idx]];
@@ -1305,10 +1318,6 @@
                     item.end = Math.max(item.start + 0.5, Number((tlDragState.origEnd + deltaSec).toFixed(2)));
                 }
             } else if (track === 'audio') {
-                const trimS = item.trimStart || 0;
-                const trimE = item.trimEnd !== undefined ? item.trimEnd : item.duration;
-                const durOrig = trimE - trimS;
-
                 if (mode === 'move') {
                     item.start = Math.max(0, Number((tlDragState.origStart + deltaSec).toFixed(2)));
                 } else if (mode === 'trim-left') {
@@ -1380,7 +1389,7 @@
                 el.style.left = `${leftPct}%`;
                 el.style.width = `${widthPct}%`;
                 el.textContent = `${idx + 1}. ${c.name} (${dur.toFixed(1)}s)${c.transition ? ' ✨' : ''}`;
-                instalarInteraccionBloque(el, 'main', c, acc, dur);
+                instalarInteraccionBloque(el, 'main', c);
                 trackMain.appendChild(el);
                 acc += dur;
             });
@@ -1395,7 +1404,7 @@
                 el.style.left = `${leftPct}%`;
                 el.style.width = `${widthPct}%`;
                 el.textContent = `${ov.type === 'image' ? '🖼️' : '🏷️'} ${ov.name}${ov.transition ? ' ✨' : ''}`;
-                instalarInteraccionBloque(el, 'overlay', ov, ov.start, dur);
+                instalarInteraccionBloque(el, 'overlay', ov);
                 trackOverlay.appendChild(el);
             });
 
@@ -1409,7 +1418,7 @@
                 el.style.left = `${leftPct}%`;
                 el.style.width = `${widthPct}%`;
                 el.textContent = `🎵 ${au.name} (${dur.toFixed(1)}s)`;
-                instalarInteraccionBloque(el, 'audio', au, au.start, dur);
+                instalarInteraccionBloque(el, 'audio', au);
                 trackAudio.appendChild(el);
             });
 
@@ -1855,7 +1864,7 @@
         });
 
         /* ============================================================
-           7. REPRODUCCIÓN Y RENDERIZADO FINAL
+           7. REPRODUCCIÓN Y RENDERIZADO FINAL (CON AUDIO DESBLOQUEADO)
            ============================================================ */
         function actualizarBotones() {
             const total = obtenerDuracionTotal();
@@ -1890,7 +1899,7 @@
             ejecutarSecuencia(true);
         });
 
-        async function ejecutarSecuencia(grabarArchivo) {
+        function ejecutarSecuencia(grabarArchivo) {
             const total = obtenerDuracionTotal();
             const soloCam = camActive && total <= 0;
             if (total <= 0 && !soloCam) return;
@@ -1917,11 +1926,14 @@
 
                 const canvasStream = renderCanvas.captureStream(30);
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
                 destAudio = audioCtx.createMediaStreamDestination();
 
                 mainClips.forEach(c => {
                     if (c.type === 'video' && c.videoEl) {
                         try {
+                            c.videoEl.muted = false;
+                            c.videoEl.volume = 1.0;
                             const vs = c.videoEl.captureStream ? c.videoEl.captureStream() : c.videoEl.mozCaptureStream();
                             if (vs && vs.getAudioTracks().length) {
                                 audioCtx.createMediaStreamSource(new MediaStream(vs.getAudioTracks())).connect(destAudio);
@@ -1932,6 +1944,8 @@
                 audioClips.forEach(a => {
                     if (a.audioEl) {
                         try {
+                            a.audioEl.muted = false;
+                            a.audioEl.volume = 1.0;
                             const as = a.audioEl.captureStream ? a.audioEl.captureStream() : a.audioEl.mozCaptureStream();
                             if (as && as.getAudioTracks().length) {
                                 audioCtx.createMediaStreamSource(new MediaStream(as.getAudioTracks())).connect(destAudio);
@@ -1988,8 +2002,31 @@
             }
 
             const startOffset = grabarArchivo ? 0 : (currentTimelineSec >= total - 0.15 ? 0 : currentTimelineSec);
-            const tWallStart = performance.now() - startOffset * 1000;
+
+            // Arrancar reproducción de sonido directamente dentro del clic del usuario
             let activeVideoId = null;
+            const infoInit = obtenerClipPrincipalEnTiempo(startOffset);
+            if (infoInit && infoInit.clip.type === 'video' && infoInit.clip.videoEl) {
+                const vInit = infoInit.clip.videoEl;
+                activeVideoId = infoInit.clip.id;
+                vInit.muted = false;
+                vInit.volume = 1.0;
+                vInit.currentTime = infoInit.clip.trimStart + infoInit.localOffset;
+                vInit.play().catch(() => {});
+            }
+
+            audioClips.forEach(au => {
+                const durAu = durAudioClip(au);
+                const trimS = au.trimStart || 0;
+                au.audioEl.muted = false;
+                au.audioEl.volume = 1.0;
+                if (startOffset >= au.start && startOffset <= au.start + durAu) {
+                    au.audioEl.currentTime = trimS + (startOffset - au.start);
+                    au.audioEl.play().catch(() => {});
+                }
+            });
+
+            const tWallStart = performance.now() - startOffset * 1000;
 
             const step = (now) => {
                 if (!isPlayingPreview && !isRendering) return;
@@ -2013,7 +2050,11 @@
                         mainClips.forEach(c => { if (c.videoEl) c.videoEl.pause(); });
                         activeVideoId = info.clip.id;
                         v.muted = false;
+                        v.volume = 1.0;
                         v.currentTime = info.clip.trimStart + info.localOffset;
+                        v.play().catch(() => {});
+                    } else if (v.paused) {
+                        v.muted = false;
                         v.play().catch(() => {});
                     }
                 } else if (activeVideoId !== null) {
@@ -2026,6 +2067,8 @@
                     const trimS = au.trimStart || 0;
                     if (elapsed >= au.start && elapsed <= au.start + durAu) {
                         if (au.audioEl.paused) {
+                            au.audioEl.muted = false;
+                            au.audioEl.volume = 1.0;
                             au.audioEl.currentTime = trimS + (elapsed - au.start);
                             au.audioEl.play().catch(() => {});
                         }
