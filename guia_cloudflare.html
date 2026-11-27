@@ -3,74 +3,184 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Guía Paso a Paso - Configurar IA Rápida Gratuita (Cloudflare Workers AI)</title>
+    <title>Multimedia Online - Guía Paso a Paso Cloudflare Workers AI</title>
+    <meta name="description" content="Manual paso a paso para activar tu cuenta gratuita de Cloudflare Workers AI en el Generador de Imágenes IA." />
+    <meta name="author" content="Lic. Antonio Ramírez Bogantes" />
     <link rel="icon" type="image/x-icon" href="img/principal.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <style>
-        body { background-color: #f4f7fb; color: #212529; }
-        .guide-container { max-width: 920px; margin: 24px auto; background: #fff; border-radius: 16px; border: 2px solid #0d6efd; padding: 28px 34px; box-shadow: 0 6px 20px rgba(13,110,253,0.12); }
-        .step-card { border-left: 5px solid #0d6efd; background: #f8faff; border-radius: 8px; padding: 16px 20px; margin-bottom: 18px; }
-        .step-badge { display: inline-block; background: #0d6efd; color: #fff; font-weight: 700; padding: 2px 10px; border-radius: 20px; font-size: 0.85rem; margin-bottom: 6px; }
-        .ui-btn-ref { display: inline-block; background: #e9ecef; border: 1px solid #ced4da; border-radius: 5px; padding: 1px 7px; font-family: monospace; font-weight: 600; color: #0b5ed7; }
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden; /* Bloquea el scroll de la página completa para fijar header y footer */
+        }
+        .main-wrapper {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 8px 18px;
+            min-height: 0;
+        }
+        .tool-box {
+            width: 98%;
+            max-width: 1440px;
+            height: calc(100vh - 182px);
+            min-height: 460px;
+            background: #ffffff;
+            border: 3px solid #0d6efd;
+            border-radius: 20px;
+            padding: 14px 24px;
+            box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Mantiene fijo el encabezado interno de la caja */
+        }
+        .guide-header-fixed {
+            flex-shrink: 0;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .guide-scroll-area {
+            flex: 1;
+            overflow-y: auto; /* Scroll exclusivo para los pasos de la guía */
+            padding-right: 10px;
+            min-height: 0;
+        }
+        /* Estilo limpio para la barra de desplazamiento interna */
+        .guide-scroll-area::-webkit-scrollbar {
+            width: 8px;
+        }
+        .guide-scroll-area::-webkit-scrollbar-track {
+            background: #f1f3f5;
+            border-radius: 8px;
+        }
+        .guide-scroll-area::-webkit-scrollbar-thumb {
+            background: #0d6efd;
+            border-radius: 8px;
+        }
+        .step-card {
+            border-left: 5px solid #0d6efd;
+            background: #f8faff;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 14px;
+        }
+        .step-badge {
+            display: inline-block;
+            background: #0d6efd;
+            color: #fff;
+            font-weight: 700;
+            padding: 2px 11px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            margin-bottom: 6px;
+        }
+        .ui-btn-ref {
+            display: inline-block;
+            background: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            padding: 1px 7px;
+            font-family: monospace;
+            font-weight: 600;
+            color: #0b5ed7;
+        }
+        /* Al guardar en PDF o imprimir, libera la altura para imprimir todas las páginas */
         @media print {
-            .no-print { display: none !important; }
-            body { background: #fff; }
-            .guide-container { border: none; box-shadow: none; margin: 0; padding: 0; max-width: 100%; }
+            html, body {
+                height: auto !important;
+                overflow: visible !important;
+            }
+            .no-print, #navbar-placeholder, #footer-placeholder {
+                display: none !important;
+            }
+            .main-wrapper, .main-content, .tool-box, .guide-scroll-area {
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                display: block !important;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="guide-container">
-        <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-3 gap-2">
-            <div>
-                <h4 class="fw-bold text-primary mb-1">📘 Guía Completa: Activar tu Propia IA Rápida Gratuita</h4>
-                <p class="text-muted small mb-0">Manual paso a paso para conectar tu cuenta gratuita de Cloudflare Workers AI (~170 imágenes/día sin espera)</p>
-            </div>
-            <div class="d-flex gap-2 no-print">
-                <button onclick="window.print()" class="btn btn-danger btn-sm fw-bold">🖨️ Guardar / Imprimir PDF</button>
-                <a href="generador_imagenes.html" class="btn btn-outline-primary btn-sm fw-bold">← Volver al Generador</a>
-            </div>
-        </div>
+    <div class="main-wrapper">
+        <!-- Header fijo de la plataforma -->
+        <div id="navbar-placeholder"></div>
+        <script src="navbar.js"></script>
 
-        <div class="alert alert-info small mb-4">
-            <strong>ℹ️ Aviso importante sobre el servicio de Inteligencia Artificial:</strong><br>
-            Nuestra plataforma ofrece de forma gratuita una cuota compartida para todos los visitantes. Si dicha cuota diaria se agota o deseas tu propia capacidad privada (~170 imágenes por día sin esperar), puedes enlazar tu propia cuenta gratuita de <strong>Cloudflare Workers AI</strong>. Cloudflare es un proveedor externo independiente; si ocurre algún cambio en su panel o tienes dudas sobre tu cuenta con ellos, consulta directamente su documentación oficial en <a href="https://developers.cloudflare.com/workers-ai/" target="_blank" rel="noopener">developers.cloudflare.com/workers-ai</a> o su panel en <a href="https://dash.cloudflare.com" target="_blank" rel="noopener">dash.cloudflare.com</a>.
-        </div>
+        <div class="main-content">
+            <div class="tool-box text-start">
+                <!-- Encabezado fijo de la guía (no se mueve al hacer scroll) -->
+                <div class="guide-header-fixed d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0">📘 Guía Paso a Paso: Configurar tu Propia IA Rápida Gratuita (Cloudflare Workers AI)</h5>
+                        <p class="text-muted small mb-0">Desplázate hacia abajo dentro de este panel para seguir los 6 pasos detallados o descárgalo en PDF</p>
+                    </div>
+                    <div class="d-flex gap-2 no-print">
+                        <button type="button" onclick="window.print()" class="btn btn-danger btn-sm fw-bold">
+                            🖨️ Guardar / Imprimir PDF
+                        </button>
+                        <a href="generador_imagenes.html" class="btn btn-primary btn-sm fw-bold">
+                            ← Volver al Generador
+                        </a>
+                    </div>
+                </div>
 
-        <div class="step-card">
-            <span class="step-badge">PASO 1 • Crear tu cuenta gratuita en Cloudflare</span>
-            <p class="mb-1 small">Abre <a href="https://dash.cloudflare.com" target="_blank" rel="noopener"><strong>dash.cloudflare.com</strong></a> en una pestaña nueva.</p>
-            <ul class="small mb-0">
-                <li>Haz clic en el botón <span class="ui-btn-ref">Google</span> para entrar directamente con tu correo de Gmail (o usa <span class="ui-btn-ref">Sign up</span>). <strong>No pide tarjeta de crédito.</strong></li>
-            </ul>
-        </div>
+                <!-- Área interna con scroll independiente -->
+                <div class="guide-scroll-area">
+                    <div class="alert alert-info small mb-3">
+                        <strong>ℹ️ Información importante sobre el servicio externo de Inteligencia Artificial:</strong><br>
+                        Nuestra plataforma ofrece de forma gratuita una cuota diaria compartida lista para usar sin configurar nada. Si esa cuota se agota o deseas tener tu propia capacidad privada (~170 imágenes diarias en 2 segundos), puedes enlazar tu cuenta gratuita de <strong>Cloudflare Workers AI</strong>. Ten presente que Cloudflare es un proveedor externo independiente; si su panel cambia o necesitas soporte técnico sobre tu cuenta con ellos, consulta directamente su documentación oficial en <a href="https://developers.cloudflare.com/workers-ai/" target="_blank" rel="noopener">developers.cloudflare.com/workers-ai</a> o su panel en <a href="https://dash.cloudflare.com" target="_blank" rel="noopener">dash.cloudflare.com</a>.
+                    </div>
 
-        <div class="step-card">
-            <span class="step-badge">PASO 2 • Entrar a Workers &amp; Pages y crear la aplicación</span>
-            <ul class="small mb-0">
-                <li>En el menú lateral izquierdo, busca la sección <strong>Build → Compute</strong> y haz clic en <span class="ui-btn-ref">Workers &amp; Pages</span>.</li>
-                <li>Arriba a la derecha, presiona el botón azul <span class="ui-btn-ref">Create application</span>.</li>
-                <li>En la pantalla <em>"Make something new"</em>, selecciona la opción <span class="ui-btn-ref">Start with Hello World!</span>.</li>
-            </ul>
-        </div>
+                    <div class="step-card">
+                        <span class="step-badge">PASO 1 • Iniciar sesión o crear cuenta gratuita en Cloudflare</span>
+                        <ul class="small mb-0">
+                            <li>Abre una pestaña nueva en tu navegador y entra a <a href="https://dash.cloudflare.com" target="_blank" rel="noopener"><strong>dash.cloudflare.com</strong></a>.</li>
+                            <li>En la pantalla <em>Sign in to Cloudflare</em>, haz clic en el botón <span class="ui-btn-ref">Google</span> para entrar directamente con tu cuenta de Gmail (o usa <span class="ui-btn-ref">Sign up</span> si prefieres otro correo). <strong>No solicita tarjeta de crédito.</strong></li>
+                        </ul>
+                    </div>
 
-        <div class="step-card">
-            <span class="step-badge">PASO 3 • Nombrar y desplegar el Worker inicial</span>
-            <ul class="small mb-0">
-                <li>En el campo <strong>Worker name</strong>, borra el nombre aleatorio y escribe <code>generador-ia</code> (verás que queda como <code>generador-ia.tu-usuario.workers.dev</code>).</li>
-                <li>Deja apagada la opción <em>Protect with Cloudflare Access</em> y haz clic en el botón azul <span class="ui-btn-ref">Deploy</span> abajo a la derecha.</li>
-            </ul>
-        </div>
+                    <div class="step-card">
+                        <span class="step-badge">PASO 2 • Entrar a Workers &amp; Pages y crear una aplicación</span>
+                        <ul class="small mb-0">
+                            <li>En el menú lateral izquierdo, busca la categoría <strong>Build → Compute</strong> y haz clic en <span class="ui-btn-ref">Workers &amp; Pages</span>.</li>
+                            <li>Arriba a la derecha, presiona el botón azul <span class="ui-btn-ref">Create application</span>.</li>
+                            <li>En la pantalla <em>Make something new</em>, haz clic en la opción <span class="ui-btn-ref">Start with Hello World!</span>.</li>
+                        </ul>
+                    </div>
 
-        <div class="step-card">
-            <span class="step-badge">PASO 4 • Pegar el código del puente de Inteligencia Artificial</span>
-            <ul class="small mb-2">
-                <li>En la vista general de tu Worker, haz clic arriba a la derecha en el botón <span class="ui-btn-ref">&lt;/&gt; Edit code</span>.</li>
-                <li>En el editor izquierdo (<code>worker.js</code>), selecciona todo el código de ejemplo (<code>Ctrl + A</code>), bórralo y pega exactamente este código:</li>
-            </ul>
-            <div class="position-relative mb-2">
-                <button type="button" id="copyCodeBtn" class="btn btn-warning btn-sm fw-bold position-absolute top-0 end-0 m-2 no-print">📋 Copiar código</button>
-                <pre id="codeBlock" class="bg-dark text-light p-3 rounded small mb-0" style="font-size: 12px; overflow-x: auto;">export default {
+                    <div class="step-card">
+                        <span class="step-badge">PASO 3 • Asignar nombre y desplegar el Worker base</span>
+                        <ul class="small mb-0">
+                            <li>En el campo <strong>Worker name</strong>, borra el nombre aleatorio que aparece y escribe <code>generador-ia</code> (se formará una dirección como <code>generador-ia.tu-usuario.workers.dev</code>).</li>
+                            <li>Deja <strong>apagado</strong> el interruptor <em>Protect with Cloudflare Access</em> y presiona el botón azul <span class="ui-btn-ref">Deploy</span> abajo a la derecha.</li>
+                        </ul>
+                    </div>
+
+                    <div class="step-card">
+                        <span class="step-badge">PASO 4 • Pegar el código puente de generación de imágenes</span>
+                        <ul class="small mb-2">
+                            <li>En el panel del Worker recién creado, haz clic arriba a la derecha en el botón <span class="ui-btn-ref">&lt;/&gt; Edit code</span>.</li>
+                            <li>En el editor izquierdo (<code>worker.js</code>), selecciona todo el texto de ejemplo (<code>Ctrl + A</code>), bórralo y pega exactamente el siguiente código:</li>
+                        </ul>
+                        <div class="position-relative mb-2">
+                            <button type="button" id="copyCodeBtn" class="btn btn-warning btn-sm fw-bold position-absolute top-0 end-0 m-2 no-print">
+                                📋 Copiar código
+                            </button>
+                            <pre id="codeBlock" class="bg-dark text-light p-3 rounded small mb-0" style="font-size: 12px; overflow-x: auto;">export default {
   async fetch(request, env) {
     const cors = {
       "Access-Control-Allow-Origin": "*",
@@ -91,31 +201,38 @@
     }
   }
 };</pre>
+                        </div>
+                        <ul class="small mb-0">
+                            <li>Haz clic en el botón azul <span class="ui-btn-ref">Deploy</span> arriba a la derecha hasta que cambie a gris y muestre <em>(Active) Latest</em>.</li>
+                            <li>Luego haz clic en <span class="ui-btn-ref">&lt; generador-ia</span> arriba a la izquierda para volver a la vista principal del Worker.</li>
+                        </ul>
+                    </div>
+
+                    <div class="step-card">
+                        <span class="step-badge">PASO 5 • Conectar el permiso de Workers AI (Binding)</span>
+                        <ul class="small mb-0">
+                            <li>En la barra superior del Worker, entra a la pestaña <span class="ui-btn-ref">Settings</span>.</li>
+                            <li>Baja hasta la sección <strong>Bindings</strong> y presiona el botón <span class="ui-btn-ref">+ Add binding</span>.</li>
+                            <li>En el menú de la izquierda selecciona <span class="ui-btn-ref">Workers AI</span> y haz clic en el botón azul <span class="ui-btn-ref">Add Binding</span>.</li>
+                            <li>En el recuadro <strong>Variable name</strong> escribe exactamente <code>AI</code> (en mayúsculas) y vuelve a presionar <span class="ui-btn-ref">Add Binding</span>. Verás aparecer la fila <em>Workers AI | AI | Workers AI Catalog</em> confirmando el enlace.</li>
+                        </ul>
+                    </div>
+
+                    <div class="step-card mb-1">
+                        <span class="step-badge">PASO 6 • Guardar tu URL en Multimedia Online</span>
+                        <ul class="small mb-0">
+                            <li>Copia la dirección completa de tu Worker (ejemplo: <code>https://generador-ia.tu-usuario.workers.dev</code>).</li>
+                            <li>Regresa a la pestaña de <strong>Generador de Imágenes con IA</strong>, haz clic en <span class="ui-btn-ref">⚡ IA Rápida Activa</span> (o <span class="ui-btn-ref">⚙️ Mi Cuenta IA</span>), pega tu URL en el campo <strong>URL Worker</strong> y presiona <span class="ui-btn-ref">💾 Guardar y Activar</span>.</li>
+                            <li><em>Nota de privacidad:</em> Tu URL personal se almacena exclusivamente en tu navegador local y no altera la configuración del sitio para otros usuarios.</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-            <ul class="small mb-0">
-                <li>Haz clic en el botón azul <span class="ui-btn-ref">Deploy</span> arriba a la derecha hasta que cambie a gris y muestre <em>(Active) Latest</em>.</li>
-                <li>Haz clic en <span class="ui-btn-ref">&lt; generador-ia</span> arriba a la izquierda para volver al panel del Worker.</li>
-            </ul>
         </div>
 
-        <div class="step-card">
-            <span class="step-badge">PASO 5 • Conectar el permiso de Workers AI (Binding)</span>
-            <ul class="small mb-0">
-                <li>Entra en la pestaña superior <span class="ui-btn-ref">Settings</span>.</li>
-                <li>Baja hasta la sección <strong>Bindings</strong> y haz clic en el botón <span class="ui-btn-ref">+ Add binding</span>.</li>
-                <li>En la lista de la izquierda elige <span class="ui-btn-ref">Workers AI</span> y presiona el botón azul <span class="ui-btn-ref">Add Binding</span>.</li>
-                <li>En el cuadro <strong>Variable name</strong> escribe exactamente <code>AI</code> (en mayúsculas) y presiona nuevamente <span class="ui-btn-ref">Add Binding</span>. Verás aparecer <em>Workers AI | AI | Workers AI Catalog</em> en tu tabla.</li>
-            </ul>
-        </div>
-
-        <div class="step-card mb-0">
-            <span class="step-badge">PASO 6 • Enlazar tu URL en Multimedia Online</span>
-            <ul class="small mb-0">
-                <li>Copia la dirección completa de tu Worker (ejemplo: <code>https://generador-ia.tu-usuario.workers.dev</code>).</li>
-                <li>Regresa al <strong>Generador de Imágenes</strong>, haz clic en <span class="ui-btn-ref">⚙️ Configurar Mi Cuenta IA</span>, pega tu URL en el cuadro <strong>URL Worker</strong> y presiona <span class="ui-btn-ref">💾 Guardar y Activar</span>.</li>
-                <li><em>Nota:</em> Esta configuración se guarda únicamente en tu navegador personal y no modifica ni afecta el servicio de los demás usuarios.</li>
-            </ul>
-        </div>
+        <!-- Footer fijo de la plataforma -->
+        <div id="footer-placeholder"></div>
+        <script src="footer.js"></script>
     </div>
 
     <script>
