@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+        if (localStorage.getItem("grabando") === "true") {
+            alert("⛔ Esta función está deshabilitada temporalmente porque hay una grabación en curso. Detén la grabación o espera a que finalice.");
+            window.history.back();
+        }
+    </script>
+    <title>Multimedia Online - Quitar Fondo a Imágenes Gratis con IA</title>
+    <meta name="description" content="Elimina el fondo de tus fotos, logos e imágenes gratis en segundos con Inteligencia Artificial o Chroma Key directo en tu navegador sin marcas de agua." />
+    <meta name="author" content="Lic. Antonio Ramírez Bogantes" />
+    <link rel="icon" type="image/x-icon" href="img/principal.ico" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        html, body { height: 100%; margin: 0; }
+        .main-wrapper { min-height: 100vh; display: flex; flex-direction: column; }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 20px;
+        }
+        .tool-box {
+            width: 98%;
+            max-width: 1420px;
+            min-height: calc(100vh - 185px);
+            background: #ffffff;
+            border: 3px solid #0d6efd;
+            border-radius: 20px;
+            padding: 12px 24px;
+            box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .content-grid {
+            flex: 1;
+            display: flex;
+        }
+        #dropZone {
+            border: 2px dashed #0d6efd;
+            border-radius: 12px;
+            padding: 12px;
+            background: #f0f7ff;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+        #dropZone:hover, #dropZone.drag-over {
+            background: #dbeafe;
+            border-color: #0a58ca;
+        }
+        /* Fondo ajedrezado clásico de transparencia estilo Photoshop / remove.bg */
+        .checkerboard-stage {
+            width: 100%;
+            flex: 1;
+            min-height: 360px;
+            max-height: 415px;
+            border: 2px solid #cbd5e1;
+            border-radius: 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            background-color: #ffffff;
+            background-image:
+                linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+                linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+            background-size: 22px 22px;
+            background-position: 0 0, 0 11px, 11px -11px, -11px 0;
+        }
+        #previewCanvas {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            cursor: crosshair;
+            display: none;
+        }
+        .color-swatch {
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            border: 1.5px solid #94a3b8;
+            display: inline-block;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+        <div id="navbar-placeholder"></div>
+        <script src="navbar.js"></script>
+
+        <div class="main-content">
+            <div class="tool-box">
+                <div class="mb-2">
+                    <h4 class="mb-0 fw-bold text-dark text-center">🪄 Quitar Fondo a Imágenes Gratis (IA y Chroma Key)</h4>
+                    <p class="text-muted small mb-0 text-center">Elimina el fondo de fotos, personas, productos o logos al instante y descárgalos en PNG transparente sin marcas de agua</p>
+                </div>
+
+                <div class="row g-3 content-grid align-items-stretch">
+                    <!-- Columna izquierda: Carga, Modo IA o Color, Ajustes y Descarga -->
+                    <div class="col-md-5 text-start d-flex flex-column justify-content-between">
+                        <div>
+                            <!-- Zona de carga -->
+                            <div id="dropZone" class="mb-2">
+                                <div class="fw-bold text-primary small">📂 Arrastra tu imagen aquí o haz clic para seleccionarla</div>
+                                <div class="text-muted" style="font-size: 11px;">Soporta PNG, JPG, WEBP · Procesamiento 100% privado en tu navegador</div>
+                                <input type="file" id="imageInput" accept="image/*" style="display:none;">
+                            </div>
+
+                            <!-- Selector de Motor -->
+                            <label class="form-label fw-bold small text-secondary mb-1">⚙️ Método de eliminación de fondo:</label>
+                            <ul class="nav nav-pills nav-fill mb-2 bg-light p-1 rounded border">
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link active py-1 small fw-bold" id="tabAiMode">
+                                        🤖 Automático con IA (Fotos)
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link py-1 small fw-bold" id="tabColorMode">
+                                        🎨 Por Color / Gotero (Logos)
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <!-- PANEL MODO IA -->
+                            <div id="panelAi" class="bg-light p-2 rounded border mb-2">
+                                <p class="small text-muted mb-2">
+                                    Ideal para <b>personas, retratos, productos y objetos</b> con fondos complejos. La IA detecta el sujeto principal automáticamente.
+                                </p>
+                                <button type="button" id="runAiBtn" class="btn btn-primary btn-sm w-100 fw-bold" disabled>
+                                    ✨ Quitar Fondo con IA Ahora
+                                </button>
+                            </div>
+
+                            <!-- PANEL MODO COLOR / GOTERO -->
+                            <div id="panelColor" class="bg-light p-2 rounded border mb-2" style="display: none;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small fw-bold text-dark">🎯 Color a eliminar (haz clic en la imagen):</span>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <span id="targetColorBox" class="color-swatch" style="background:#ffffff;"></span>
+                                        <input type="color" id="targetColorPicker" class="form-control form-control-color form-control-sm" value="#ffffff" title="Elegir color manualmente">
+                                    </div>
+                                </div>
+                                <div class="mb-1">
+                                    <div class="d-flex justify-content-between small">
+                                        <span class="fw-bold text-secondary">Tolerancia de recorte:</span>
+                                        <span id="tolValueLabel" class="fw-bold text-primary">45</span>
+                                    </div>
+                                    <input type="range" id="toleranceRange" class="form-range" min="5" max="140" value="45">
+                                </div>
+                                <div class="mb-1">
+                                    <div class="d-flex justify-content-between small">
+                                        <span class="fw-bold text-secondary">Suavizado de bordes:</span>
+                                        <span id="featherValueLabel" class="fw-bold text-primary">12</span>
+                                    </div>
+                                    <input type="range" id="featherRange" class="form-range" min="0" max="40" value="12">
+                                </div>
+                            </div>
+
+                            <!-- Opcional: Reemplazar con nuevo fondo sólido -->
+                            <div class="bg-light p-2 rounded border">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="chkCustomBg">
+                                        <label class="form-check-label small fw-bold text-secondary" for="chkCustomBg">
+                                            🖌️ Rellenar nuevo fondo de color
+                                        </label>
+                                    </div>
+                                    <input type="color" id="newBgColor" class="form-control form-control-color form-control-sm" value="#0d6efd" disabled>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones inferiores -->
+                        <div class="d-grid gap-2 mt-2">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <button id="toggleCompareBtn" class="btn btn-outline-secondary btn-sm w-100 fw-bold" disabled>
+                                        👁️ Ver Original
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button id="resetBtn" class="btn btn-outline-dark btn-sm w-100 fw-bold" disabled>
+                                        🗑️ Limpiar Todo
+                                    </button>
+                                </div>
+                            </div>
+                            <button id="downloadPngBtn" class="btn btn-success fw-bold" disabled>
+                                ⬇️ Descargar Imagen Sin Fondo (.PNG)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Columna derecha: Visor con cuadrícula de transparencia -->
+                    <div class="col-md-7 text-start d-flex flex-column justify-content-between">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold small text-primary">🖼️ Vista previa (la cuadrícula indica transparencia real):</span>
+                            <span id="statusBadge" class="badge bg-light text-secondary border">Esperando imagen...</span>
+                        </div>
+
+                        <div class="checkerboard-stage" id="stageContainer">
+                            <div id="emptyState" class="text-center bg-white bg-opacity-90 p-4 rounded-4 shadow-sm border mx-3">
+                                <div style="font-size: 2.8rem;">🪄</div>
+                                <div class="fw-bold text-dark">Sube una foto, producto o logo para quitarle el fondo</div>
+                                <div class="text-muted small mt-1">
+                                    Usa <b>Automático con IA</b> para personas/objetos o <b>Por Color / Gotero</b> para logos y fondos lisos.
+                                </div>
+                            </div>
+
+                            <div id="aiLoader" class="text-center bg-white p-4 rounded-4 shadow border" style="display: none;">
+                                <div class="spinner-border text-primary mb-2" style="width: 2.5rem; height: 2.5rem;" role="status"></div>
+                                <div class="fw-bold text-primary">Analizando sujeto y eliminando fondo con IA...</div>
+                                <div class="text-muted small">La primera vez descarga el modelo ligero (~25 MB) y queda guardado en tu navegador</div>
+                            </div>
+
+                            <canvas id="previewCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="footer-placeholder"></div>
+        <script src="footer.js"></script>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/+esm';
+
+        const dropZone = document.getElementById('dropZone');
+        const imageInput = document.getElementById('imageInput');
+        const tabAiMode = document.getElementById('tabAiMode');
+        const tabColorMode = document.getElementById('tabColorMode');
+        const panelAi = document.getElementById('panelAi');
+        const panelColor = document.getElementById('panelColor');
+
+        const runAiBtn = document.getElementById('runAiBtn');
+        const targetColorBox = document.getElementById('targetColorBox');
+        const targetColorPicker = document.getElementById('targetColorPicker');
+        const toleranceRange = document.getElementById('toleranceRange');
+        const tolValueLabel = document.getElementById('tolValueLabel');
+        const featherRange = document.getElementById('featherRange');
+        const featherValueLabel = document.getElementById('featherValueLabel');
+
+        const chkCustomBg = document.getElementById('chkCustomBg');
+        const newBgColor = document.getElementById('newBgColor');
+        const toggleCompareBtn = document.getElementById('toggleCompareBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const downloadPngBtn = document.getElementById('downloadPngBtn');
+
+        const statusBadge = document.getElementById('statusBadge');
+        const emptyState = document.getElementById('emptyState');
+        const aiLoader = document.getElementById('aiLoader');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
+
+        let originalImage = null;
+        let originalFileBlob = null;
+        let originalFileName = 'imagen';
+        let cutoutCanvas = document.createElement('canvas');
+        let cutoutCtx = cutoutCanvas.getContext('2d', { willReadFrequently: true });
+
+        let activeMode = 'ai'; // 'ai' | 'color'
+        let targetRGB = { r: 255, g: 255, b: 255 };
+        let showingOriginal = false;
+        let hasCutout = false;
+
+        const Toast = Swal.mixin({
+            toast: true, position: 'top-end', showConfirmButton: false, timer: 2500, timerProgressBar: true
+        });
+
+        /* ============================================================
+           CAMBIO DE MODO (IA VS COLOR / GOTERO)
+           ============================================================ */
+        tabAiMode.addEventListener('click', () => {
+            activeMode = 'ai';
+            tabAiMode.classList.add('active');
+            tabColorMode.classList.remove('active');
+            panelAi.style.display = 'block';
+            panelColor.style.display = 'none';
+        });
+
+        tabColorMode.addEventListener('click', () => {
+            activeMode = 'color';
+            tabColorMode.classList.add('active');
+            tabAiMode.classList.remove('active');
+            panelColor.style.display = 'block';
+            panelAi.style.display = 'none';
+            if (originalImage) aplicarRecortePorColor();
+        });
+
+        /* ============================================================
+           CARGA DE IMAGEN (CLIC O ARRASTRAR Y SOLTAR)
+           ============================================================ */
+        dropZone.addEventListener('click', () => imageInput.click());
+        imageInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) cargarArchivoImagen(e.target.files[0]);
+        });
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files[0]) cargarArchivoImagen(e.dataTransfer.files[0]);
+        });
+
+        function cargarArchivoImagen(file) {
+            if (!file.type.startsWith('image/')) {
+                Toast.fire({ icon: 'warning', title: 'Selecciona un archivo de imagen válido' });
+                return;
+            }
+            originalFileBlob = file;
+            originalFileName = file.name.replace(/\.[^.]+$/, '');
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                originalImage = img;
+                hasCutout = false;
+                showingOriginal = false;
+
+                previewCanvas.width = img.width;
+                previewCanvas.height = img.height;
+                cutoutCanvas.width = img.width;
+                cutoutCanvas.height = img.height;
+
+                // Detectar color de esquina superior izquierda como referencia inicial para modo color
+                cutoutCtx.drawImage(img, 0, 0);
+                const corner = cutoutCtx.getImageData(0, 0, 1, 1).data;
+                setTargetColor(corner[0], corner[1], corner[2]);
+
+                emptyState.style.display = 'none';
+                previewCanvas.style.display = 'block';
+                renderizarCanvasFinal();
+
+                runAiBtn.disabled = false;
+                resetBtn.disabled = false;
+                toggleCompareBtn.disabled = true;
+                downloadPngBtn.disabled = true;
+
+                if (activeMode === 'color') {
+                    aplicarRecortePorColor();
+                } else {
+                    statusBadge.className = 'badge bg-info text-dark';
+                    statusBadge.textContent = 'Imagen lista · Presiona Quitar Fondo con IA';
+                }
+            };
+            img.src = url;
+        }
+
+        function setTargetColor(r, g, b) {
+            targetRGB = { r, g, b };
+            const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+            targetColorBox.style.backgroundColor = hex;
+            targetColorPicker.value = hex;
+        }
+
+        /* ============================================================
+           1. RECORTE AUTOMÁTICO CON IA (@imgly/background-removal)
+           ============================================================ */
+        runAiBtn.addEventListener('click', async () => {
+            if (!originalFileBlob) return;
+            runAiBtn.disabled = true;
+            previewCanvas.style.display = 'none';
+            aiLoader.style.display = 'block';
+            statusBadge.className = 'badge bg-warning text-dark';
+            statusBadge.textContent = '⏳ Procesando con IA...';
+
+            try {
+                const resultBlob = await removeBackground(originalFileBlob);
+                const resultUrl = URL.createObjectURL(resultBlob);
+                const cleanImg = new Image();
+                cleanImg.onload = () => {
+                    cutoutCanvas.width = cleanImg.width;
+                    cutoutCanvas.height = cleanImg.height;
+                    cutoutCtx.clearRect(0, 0, cutoutCanvas.width, cutoutCanvas.height);
+                    cutoutCtx.drawImage(cleanImg, 0, 0);
+
+                    hasCutout = true;
+                    showingOriginal = false;
+                    aiLoader.style.display = 'none';
+                    previewCanvas.style.display = 'block';
+                    renderizarCanvasFinal();
+
+                    toggleCompareBtn.disabled = false;
+                    downloadPngBtn.disabled = false;
+                    statusBadge.className = 'badge bg-success';
+                    statusBadge.textContent = '✅ Fondo eliminado con IA';
+                    Toast.fire({ icon: 'success', title: '¡Fondo eliminado perfectamente!' });
+                    URL.revokeObjectURL(resultUrl);
+                };
+                cleanImg.src = resultUrl;
+            } catch (err) {
+                console.error(err);
+                aiLoader.style.display = 'none';
+                previewCanvas.style.display = 'block';
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.textContent = '⚠️ Error en motor IA';
+                Swal.fire('Aviso', 'No se pudo cargar el modelo IA en este momento. Puedes usar la pestaña "Por Color / Gotero" que funciona al instante sin descargas.', 'info');
+            } finally {
+                runAiBtn.disabled = false;
+            }
+        });
+
+        /* ============================================================
+           2. RECORTE POR COLOR / GOTERO (CHROMA KEY SUAVIZADO)
+           ============================================================ */
+        function aplicarRecortePorColor() {
+            if (!originalImage) return;
+            cutoutCanvas.width = originalImage.width;
+            cutoutCanvas.height = originalImage.height;
+            cutoutCtx.drawImage(originalImage, 0, 0);
+
+            const imgData = cutoutCtx.getImageData(0, 0, cutoutCanvas.width, cutoutCanvas.height);
+            const d = imgData.data;
+            const tol = parseInt(toleranceRange.value, 10) || 45;
+            const feather = parseInt(featherRange.value, 10) || 12;
+            const { r: tr, g: tg, b: tb } = targetRGB;
+
+            for (let i = 0; i < d.length; i += 4) {
+                const dist = Math.sqrt(
+                    (d[i] - tr) * (d[i] - tr) +
+                    (d[i + 1] - tg) * (d[i + 1] - tg) +
+                    (d[i + 2] - tb) * (d[i + 2] - tb)
+                );
+                if (dist <= tol) {
+                    d[i + 3] = 0;
+                } else if (feather > 0 && dist <= tol + feather) {
+                    const alphaFactor = (dist - tol) / feather;
+                    d[i + 3] = Math.round(d[i + 3] * alphaFactor);
+                }
+            }
+            cutoutCtx.putImageData(imgData, 0, 0);
+            hasCutout = true;
+            showingOriginal = false;
+            renderizarCanvasFinal();
+
+            toggleCompareBtn.disabled = false;
+            downloadPngBtn.disabled = false;
+            statusBadge.className = 'badge bg-success';
+            statusBadge.textContent = '✅ Fondo recortado por color';
+        }
+
+        // Gotero: clic directo sobre el lienzo para elegir el color de fondo a quitar
+        previewCanvas.addEventListener('click', (e) => {
+            if (!originalImage) return;
+            if (activeMode !== 'color') {
+                tabColorMode.click();
+            }
+            const rect = previewCanvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) * (previewCanvas.width / rect.width));
+            const y = Math.floor((e.clientY - rect.top) * (previewCanvas.height / rect.height));
+
+            const tempC = document.createElement('canvas');
+            tempC.width = originalImage.width;
+            tempC.height = originalImage.height;
+            const tCtx = tempC.getContext('2d');
+            tCtx.drawImage(originalImage, 0, 0);
+            const px = tCtx.getImageData(x, y, 1, 1).data;
+
+            setTargetColor(px[0], px[1], px[2]);
+            aplicarRecortePorColor();
+            Toast.fire({ icon: 'info', title: 'Color capturado con gotero y recortado' });
+        });
+
+        targetColorPicker.addEventListener('input', (e) => {
+            const hex = e.target.value;
+            targetColorBox.style.backgroundColor = hex;
+            targetRGB = {
+                r: parseInt(hex.slice(1, 3), 16),
+                g: parseInt(hex.slice(3, 5), 16),
+                b: parseInt(hex.slice(5, 7), 16)
+            };
+            if (originalImage) aplicarRecortePorColor();
+        });
+
+        toleranceRange.addEventListener('input', () => {
+            tolValueLabel.textContent = toleranceRange.value;
+            if (originalImage && activeMode === 'color') aplicarRecortePorColor();
+        });
+
+        featherRange.addEventListener('input', () => {
+            featherValueLabel.textContent = featherRange.value;
+            if (originalImage && activeMode === 'color') aplicarRecortePorColor();
+        });
+
+        /* ============================================================
+           RENDERIZADO VISUAL, COMPARADOR Y DESCARGA PNG
+           ============================================================ */
+        function renderizarCanvasFinal() {
+            if (!originalImage) return;
+            previewCanvas.width = originalImage.width;
+            previewCanvas.height = originalImage.height;
+            ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+            if (showingOriginal || !hasCutout) {
+                ctx.drawImage(originalImage, 0, 0);
+                return;
+            }
+
+            if (chkCustomBg.checked) {
+                ctx.fillStyle = newBgColor.value || '#0d6efd';
+                ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+            }
+            ctx.drawImage(cutoutCanvas, 0, 0);
+        }
+
+        chkCustomBg.addEventListener('change', () => {
+            newBgColor.disabled = !chkCustomBg.checked;
+            renderizarCanvasFinal();
+        });
+        newBgColor.addEventListener('input', renderizarCanvasFinal);
+
+        toggleCompareBtn.addEventListener('click', () => {
+            if (!hasCutout) return;
+            showingOriginal = !showingOriginal;
+            toggleCompareBtn.textContent = showingOriginal ? '🪄 Ver Sin Fondo' : '👁️ Ver Original';
+            renderizarCanvasFinal();
+        });
+
+        downloadPngBtn.addEventListener('click', () => {
+            if (!hasCutout) return;
+            showingOriginal = false;
+            renderizarCanvasFinal();
+            previewCanvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${originalFileName}_sin_fondo.png`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                Toast.fire({ icon: 'success', title: 'Imagen PNG descargada' });
+            }, 'image/png');
+        });
+
+        resetBtn.addEventListener('click', () => {
+            originalImage = null;
+            originalFileBlob = null;
+            hasCutout = false;
+            showingOriginal = false;
+            imageInput.value = '';
+            previewCanvas.style.display = 'none';
+            emptyState.style.display = 'block';
+            runAiBtn.disabled = true;
+            toggleCompareBtn.disabled = true;
+            toggleCompareBtn.textContent = '👁️ Ver Original';
+            resetBtn.disabled = true;
+            downloadPngBtn.disabled = true;
+            statusBadge.className = 'badge bg-light text-secondary border';
+            statusBadge.textContent = 'Esperando imagen...';
+        });
+    </script>
+</body>
+</html>
