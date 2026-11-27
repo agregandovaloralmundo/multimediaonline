@@ -17,23 +17,64 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         html, body { height: 100%; margin: 0; }
-        .main-wrapper { min-height: 100vh; display: flex; flex-direction: column; }
-        .main-content {
-            flex: 1; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; padding: 0.75rem 1.25rem;
-        }
+        /* Todo el contenido cabe EXACTAMENTE entre el header y el footer (sin scroll de página) */
+        .main-wrapper { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        #navbar-placeholder, #footer-placeholder { flex: 0 0 auto; }
+        .main-content { flex: 1 1 auto; min-height: 0; display: flex; justify-content: center; align-items: stretch; padding: 8px 14px; }
         .tool-box {
-            width: 98%; max-width: 1720px; background: #ffffff;
-            border: 3px solid #0d6efd; border-radius: 20px; padding: 14px 22px;
-            box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15); margin: auto;
+            flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+            width: 100%; max-width: 1720px; margin: 0 auto; background: #ffffff;
+            border: 3px solid #0d6efd; border-radius: 18px; padding: 6px 16px 10px;
+            box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
         }
-        #videoPlayer, #youtubeFrame {
-            width: 100%; aspect-ratio: 16 / 9; height: auto; background: #000000; border-radius: 12px; border: none;
-        }
+        .tb-head { display: flex; align-items: baseline; justify-content: center; gap: 4px 12px; flex-wrap: wrap; margin-bottom: 4px; }
+        .tb-head h3 { font-size: 1.15rem; margin: 0; }
+        .tb-head small { font-size: .72rem; }
+        .tb-split { flex: 1 1 0; min-height: 0; }
+        .tb-split > [class*="col-"] { display: flex; flex-direction: column; min-height: 0; }
+        /* Video: ocupa todo el alto que sobre, siempre en proporción 16:9 */
+        .video-area { flex: 1 1 0; min-height: 120px; container-type: size; display: flex; align-items: center; justify-content: center; }
+        .video-wrap { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000000; border-radius: 12px; overflow: hidden; }
+        @supports (width: 1cqw) { .video-wrap { width: min(100cqw, calc(100cqh * 16 / 9)); } }
+        #videoPlayer, #youtubeFrame { position: absolute; inset: 0; width: 100%; height: 100%; background: #000000; border: none; }
+        .ctrl-izq { flex: 0 0 auto; margin-top: 6px; }
+        .ctrl-izq .btn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sw-sm, .sw-sm .form-check-label { font-size: .78rem; }
+        .sw-sm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sw-sm .form-check-label { white-space: nowrap; }
+        /* Vista previa: se estira y absorbe todo el espacio libre de la columna derecha */
         #timelinePreview {
-            height: 400px; max-height: 400px; overflow-y: auto;
-            border: 1.5px solid #0d6efd; border-radius: 12px; padding: 12px;
+            flex: 1 1 0; min-height: 110px; overflow-y: auto; margin-bottom: 6px;
+            border: 1.5px solid #0d6efd; border-radius: 12px; padding: 8px;
             background: #f8f9fa; text-align: left;
+        }
+        /* Resumen y preguntas: se abre como ventana flotante sobre la vista previa (no empuja nada) */
+        .estudio-bar { position: relative; flex: 0 0 auto; display: flex; align-items: center; gap: 4px 14px; flex-wrap: wrap; margin-bottom: 6px; padding: 3px 10px; border: 1px solid #dee2e6; border-radius: 8px; background: #f8f9fa; }
+        .estudio-bar summary { cursor: pointer; }
+        .estudio-bar .estudio-body {
+            position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); z-index: 30;
+            background: #ffffff; border: 2px solid #0d6efd; border-radius: 12px; padding: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.28); max-height: min(62vh, 560px); overflow: auto;
+        }
+        .export-row { flex: 0 0 auto; }
+        .export-row .input-group { width: auto; flex: 1 1 auto; flex-wrap: nowrap; }
+        .export-row .input-group .btn { flex: 1 1 auto; white-space: nowrap; }
+        .export-row > .btn { white-space: nowrap; }
+        .export-row .btn { padding-left: .45rem; padding-right: .45rem; }
+        /* Más protagonismo para la reproducción: columna del video más ancha en pantallas grandes */
+        @media (min-width: 992px) {
+            .tb-split > .col-izq.col-lg-5 { width: 52%; }
+            .tb-split > .col-der.col-lg-7 { width: 48%; }
+        }
+        .export-row .input-group-text { font-size: .8rem; padding: .2rem .5rem; white-space: nowrap; }
+        /* Pantallas bajas o angostas: no cabe sin scroll, se permite desplazar la página */
+        @media (max-height: 700px), (max-width: 991.98px) {
+            .main-wrapper { height: auto; min-height: 100vh; overflow: visible; }
+            .tool-box { flex: 0 0 auto; }
+            .tb-split { flex: 0 0 auto; }
+            .video-area { flex: none; container-type: normal; display: block; }
+            .video-wrap { width: 100%; }
+            #timelinePreview { flex: none; height: 320px; }
         }
         .bloque-item {
             background: #ffffff; border: 1px solid #dee2e6; border-left: 5px solid #0d6efd;
@@ -50,7 +91,7 @@
         }
         .tool-box .btn { font-size: .8rem; padding: .22rem .6rem; }
         .tool-box .form-check-label { font-size: .8rem; }
-        #liveText { max-height: 62px; overflow-y: auto; line-height: 1.4; }
+        #liveText { max-height: 44px; overflow-y: auto; line-height: 1.4; }
         #liveText:empty::before { content: attr(data-ph); color: #6c757d; }
         .mic-active { animation: pulsoMic 1.2s infinite; }
         @keyframes pulsoMic {
@@ -79,71 +120,92 @@
 
         <div class="main-content">
             <div class="tool-box">
-                <h3 class="mb-1 fw-bold text-dark text-center">Transcripción IA y Fotogramas a Word</h3>
-                <p class="text-muted small mb-3 text-center">Escucha el audio interno del video con IA Whisper (en segundo plano, sin perder palabras), captura todas las filminas y genera tu Word o PDF</p>
+                <div class="tb-head">
+                    <h3 class="fw-bold text-dark">Transcripción IA y Fotogramas a Word</h3>
+                    <small class="text-muted">Escucha el audio interno del video con IA Whisper (en segundo plano, sin perder palabras), captura todas las filminas y genera tu Word o PDF</small>
+                </div>
 
-                <div class="row g-2 mb-3 text-start">
+                <div class="row g-2 mb-1 text-start">
                     <div class="col-md-5">
-                        <label for="videoUrlInput" class="form-label fw-bold small text-secondary mb-1">🔗 Pegar link del video (YouTube o enlace .mp4):</label>
+                        <label for="videoUrlInput" class="form-label fw-bold small text-secondary mb-0">🔗 Pegar link del video (YouTube o enlace .mp4):</label>
                         <div class="input-group input-group-sm">
                             <input type="url" id="videoUrlInput" class="form-control" placeholder="https://www.youtube.com/watch?v=... o https://.../clase.mp4">
                             <button type="button" id="loadUrlBtn" class="btn btn-primary fw-bold">Cargar Link</button>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <label for="videoFile" class="form-label fw-bold small text-secondary mb-1">🎬 O subir video / audio (.mp4, .mp3...) desde tu equipo:</label>
+                        <label for="videoFile" class="form-label fw-bold small text-secondary mb-0">🎬 O subir video / audio (.mp4, .mp3...) desde tu equipo:</label>
                         <input type="file" id="videoFile" class="form-control form-control-sm" accept="video/*,audio/*,.mp3,.m4a,.wav,.aac,.ogg,.mp4">
                     </div>
                     <div class="col-md-3">
-                        <label for="srtFile" class="form-label fw-bold small text-secondary mb-1">📝 Subtítulos (.srt / .vtt) <span class="text-muted fw-normal">(opcional)</span>:</label>
+                        <label for="srtFile" class="form-label fw-bold small text-secondary mb-0">📝 Subtítulos (.srt / .vtt) <span class="text-muted fw-normal">(opcional)</span>:</label>
                         <input type="file" id="srtFile" class="form-control form-control-sm" accept=".srt,.vtt">
                     </div>
                 </div>
 
-                <div class="row g-3 mb-3">
-                    <div class="col-lg-5 text-start">
-                        <video id="videoPlayer" controls crossorigin="anonymous"></video>
-                        <iframe id="youtubeFrame" style="display: none;" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                <div class="row g-2 tb-split">
+                    <div class="col-lg-5 col-izq text-start">
+                        <div class="video-area">
+                            <div class="video-wrap">
+                                <video id="videoPlayer" controls crossorigin="anonymous"></video>
+                                <iframe id="youtubeFrame" style="display: none;" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                            </div>
+                        </div>
                         <canvas id="captureCanvas" style="display: none;"></canvas>
 
-                        <div class="d-flex justify-content-between align-items-center bg-light border rounded px-3 py-1 mt-2">
-                            <span class="small fw-bold text-secondary">⏱️ Tiempo de reproducción:</span>
-                            <span id="playbackClock" class="badge bg-dark fs-6 font-monospace">00:00</span>
-                        </div>
+                        <div class="ctrl-izq">
+                            <div class="d-flex justify-content-between align-items-center bg-light border rounded px-2 mb-1">
+                                <span class="small fw-bold text-secondary">⏱️ Tiempo de reproducción:</span>
+                                <span id="playbackClock" class="badge bg-dark font-monospace">00:00</span>
+                            </div>
 
-                        <div class="form-check form-switch mt-2 small">
-                            <input class="form-check-input" type="checkbox" id="chkAnuncio">
-                            <label class="form-check-label text-danger fw-bold" for="chkAnuncio">🚫 Está pasando un anuncio: ignorar audio y filminas <span class="text-muted fw-normal">(atajo: tecla A)</span></label>
-                        </div>
+                            <div class="row g-1 mb-1">
+                                <div class="col-6">
+                                    <div class="form-check form-switch mb-0 sw-sm" title="Está pasando un anuncio: ignorar audio y filminas (atajo: tecla A)">
+                                        <input class="form-check-input" type="checkbox" id="chkAnuncio">
+                                        <label class="form-check-label text-danger fw-bold" for="chkAnuncio">🚫 Anuncio: ignorar (tecla A)</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch mb-0 sw-sm" title="Apagado = silencio total; la IA lo capta igual">
+                                        <input class="form-check-input" type="checkbox" id="chkEscuchar">
+                                        <label class="form-check-label text-secondary" for="chkEscuchar">🔊 Escuchar mientras transcribe</label>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <div class="d-grid gap-2 mt-2">
-                            <button id="liveTranscribeBtn" class="btn btn-danger btn-sm fw-bold" disabled>
+                            <button id="liveTranscribeBtn" class="btn btn-danger btn-sm fw-bold w-100 mb-1" disabled>
                                 ▶️ Reproducir y Transcribir Audio Interno + Filminas
                             </button>
-                            <button id="btnRapido" class="btn btn-outline-danger btn-sm fw-bold" disabled title="Para archivos .mp3 / .mp4 o enlaces directos. No reproduce el video: lee el audio y lo transcribe a toda velocidad.">
-                                ⚡ Transcribir archivo sin reproducir (rápido)
-                            </button>
-                            <div class="form-check small mb-0">
-                                <input class="form-check-input" type="checkbox" id="chkRapidoImg" checked>
-                                <label class="form-check-label text-secondary" for="chkRapidoImg">Incluir filminas en modo rápido (solo videos; tarda más)</label>
+                            <div class="row g-1 mb-1">
+                                <div class="col-6">
+                                    <button id="btnRapido" class="btn btn-outline-danger btn-sm fw-bold w-100" disabled title="Para archivos .mp3 / .mp4 o enlaces directos. No reproduce el video: lee el audio y lo transcribe a toda velocidad.">
+                                        ⚡ Archivo sin reproducir (rápido)
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button id="autoProcessBtn" class="btn btn-outline-primary btn-sm fw-bold w-100" disabled title="Armar Secciones desde Archivo .SRT / .VTT">
+                                        ⚡ Armar desde .SRT / .VTT
+                                    </button>
+                                </div>
                             </div>
-                            <button id="autoProcessBtn" class="btn btn-outline-primary btn-sm fw-bold" disabled>
-                                ⚡ Armar Secciones desde Archivo .SRT / .VTT
-                            </button>
-                            <button id="manualSnapBtn" class="btn btn-outline-secondary btn-sm fw-bold" disabled>
-                                📸 Capturar Diapositiva Ahora + Agregar Nota
-                            </button>
-                        </div>
-
-                        <div class="form-check form-switch mt-2 small">
-                            <input class="form-check-input" type="checkbox" id="chkEscuchar">
-                            <label class="form-check-label text-secondary" for="chkEscuchar">
-                                🔊 Escuchar el audio mientras se transcribe <span class="text-muted">(apagado = silencio total; la IA lo capta igual)</span>
-                            </label>
+                            <div class="row g-1">
+                                <div class="col-6">
+                                    <button id="manualSnapBtn" class="btn btn-outline-secondary btn-sm fw-bold w-100" disabled title="Capturar diapositiva ahora y agregar nota">
+                                        📸 Capturar diapositiva ahora
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check mb-0 sw-sm" title="Solo videos; tarda más">
+                                        <input class="form-check-input" type="checkbox" id="chkRapidoImg" checked>
+                                        <label class="form-check-label text-secondary" for="chkRapidoImg">Filminas en modo rápido</label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="col-lg-7 text-start">
+                    <div class="col-lg-7 col-der text-start">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <span class="fw-bold small text-primary">📑 Vista previa del documento Word (texto + filminas en orden):</span>
                             <div class="d-flex align-items-center gap-1 flex-wrap justify-content-end">
@@ -154,7 +216,7 @@
                                 <span id="blockCount" class="badge bg-primary">0 filminas</span>
                             </div>
                         </div>
-                        <div class="border rounded bg-white mb-2 px-2 py-1" id="livePanel">
+                        <div class="border rounded bg-white mb-1 px-2 py-1" id="livePanel" style="flex: 0 0 auto;">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="small fw-bold text-success text-nowrap">📝 Transcripción en vivo</span>
                                 <div class="progress flex-grow-1" style="height: 6px;"><div id="nivelBar" class="progress-bar bg-success" style="width: 0%;"></div></div>
@@ -164,58 +226,49 @@
                             <div id="liveText" class="small" data-ph="Aquí irá apareciendo, palabra por palabra, el texto que la IA va escuchando..."></div>
                         </div>
                         <div id="timelinePreview"></div>
-                    </div>
-                </div>
 
-                <div id="progressWrapper" class="progress mb-2" style="height: 8px; display: none;">
-                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%;"></div>
-                </div>
-
-                <details id="panelEstudio" class="border rounded mb-2 px-2 py-1 bg-light text-start">
-                    <summary class="small fw-bold text-primary" style="cursor: pointer;">
-                        📚 Resumen y preguntas de estudio
-                        <span class="form-check form-check-inline ms-2 mb-0 align-middle">
-                            <input class="form-check-input" type="checkbox" id="chkEstudio" checked>
-                            <label class="form-check-label fw-normal text-secondary" for="chkEstudio">Agregar al final del Word / PDF completo</label>
-                        </span>
-                    </summary>
-                    <div class="mt-2">
-                        <div class="d-flex flex-wrap gap-1 mb-2">
-                            <button type="button" id="btnGenerarEstudio" class="btn btn-primary btn-sm fw-bold">🧠 Generar resumen y preguntas</button>
-                            <button type="button" id="btnCopiarPrompt" class="btn btn-outline-secondary btn-sm">📋 Copiar clase + instrucciones para una IA externa</button>
-                            <button type="button" id="btnPegarIA" class="btn btn-outline-secondary btn-sm">📥 Pegar respuesta de la IA</button>
-                            <button type="button" id="btnVaciarEstudio" class="btn btn-outline-danger btn-sm">Vaciar</button>
+                        <div id="progressWrapper" class="progress mb-1" style="height: 8px; display: none; flex: 0 0 auto;">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%;"></div>
                         </div>
-                        <div class="row g-2">
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold mb-1" for="resumenTexto">📌 Resumen de puntos clave (editable)</label>
-                                <textarea id="resumenTexto" class="form-control form-control-sm" rows="7" placeholder="Pulsa «Generar resumen y preguntas». También se genera solo al exportar si esta caja está vacía."></textarea>
+
+                        <div class="estudio-bar">
+                            <details id="panelEstudio">
+                                <summary class="small fw-bold text-primary">📚 Resumen y preguntas de estudio</summary>
+                                <div class="estudio-body">
+                                    <div class="d-flex flex-wrap gap-1 mb-2">
+                                        <button type="button" id="btnGenerarEstudio" class="btn btn-primary btn-sm fw-bold">🧠 Generar resumen y preguntas</button>
+                                        <button type="button" id="btnCopiarPrompt" class="btn btn-outline-secondary btn-sm">📋 Copiar clase + instrucciones para una IA externa</button>
+                                        <button type="button" id="btnPegarIA" class="btn btn-outline-secondary btn-sm">📥 Pegar respuesta de la IA</button>
+                                        <button type="button" id="btnVaciarEstudio" class="btn btn-outline-danger btn-sm">Vaciar</button>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold mb-1" for="resumenTexto">📌 Resumen de puntos clave (editable)</label>
+                                            <textarea id="resumenTexto" class="form-control form-control-sm" rows="8" placeholder="Pulsa «Generar resumen y preguntas». También se genera solo al exportar si esta caja está vacía."></textarea>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold mb-1" for="preguntasTexto">❓ Preguntas y respuestas (editable, formato P: / R:)</label>
+                                            <textarea id="preguntasTexto" class="form-control form-control-sm" rows="8" placeholder="P: ¿Qué es ...?&#10;R: ..."></textarea>
+                                        </div>
+                                    </div>
+                                    <p class="small text-muted mb-0 mt-1">El resumen se arma automáticamente con las frases más importantes de la clase; revísalo y edítalo si quieres. Para uno de mayor calidad, usa «Copiar clase…», pídeselo a Claude o ChatGPT y pega su respuesta. Para cerrar esta ventana, vuelve a pulsar el título «Resumen y preguntas de estudio».</p>
+                                </div>
+                            </details>
+                            <div class="form-check form-check-inline mb-0">
+                                <input class="form-check-input" type="checkbox" id="chkEstudio" checked>
+                                <label class="form-check-label fw-normal text-secondary" for="chkEstudio">Agregar al final del Word / PDF completo</label>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold mb-1" for="preguntasTexto">❓ Preguntas y respuestas (editable, formato P: / R:)</label>
-                                <textarea id="preguntasTexto" class="form-control form-control-sm" rows="7" placeholder="P: ¿Qué es ...?&#10;R: ..."></textarea>
-                            </div>
                         </div>
-                        <p class="small text-muted mb-1 mt-1">El resumen se arma automáticamente con las frases más importantes de la clase; revísalo y edítalo si quieres. Para uno de mayor calidad, usa «Copiar clase…», pídeselo a Claude o ChatGPT y pega su respuesta.</p>
-                    </div>
-                </details>
 
-                <div class="row g-2 align-items-start">
-                    <div class="col-6 col-md-3">
-                        <button id="exportWordBtn" class="btn btn-success btn-sm w-100 fw-bold" disabled>📘 Word completo (.doc)</button>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <button id="btnSoloTexto" class="btn btn-outline-success btn-sm w-100 fw-bold" disabled>📄 Solo transcripción (.doc)</button>
-                        <div class="form-check mt-1 mb-0">
-                            <input class="form-check-input" type="checkbox" id="chkSinTiempo">
-                            <label class="form-check-label text-secondary" for="chkSinTiempo">Sin líneas de tiempo</label>
+                        <div class="d-flex flex-wrap gap-1 export-row">
+                            <button id="exportWordBtn" class="btn btn-success btn-sm fw-bold flex-fill" disabled>📘 Word completo (.doc)</button>
+                            <div class="input-group input-group-sm">
+                                <button id="btnSoloTexto" class="btn btn-outline-success fw-bold" disabled>📄 Solo transcripción</button>
+                                <label class="input-group-text" for="chkSinTiempo" title="Quitar las líneas de tiempo de la transcripción (.doc)"><input class="form-check-input mt-0 me-1" type="checkbox" id="chkSinTiempo">Sin tiempos</label>
+                            </div>
+                            <button id="exportPdfBtn" class="btn btn-outline-danger btn-sm fw-bold flex-fill" disabled>📕 Guardar / Imprimir PDF</button>
+                            <button id="clearAllBtn" class="btn btn-outline-dark btn-sm fw-bold flex-fill" disabled>🗑️ Limpiar Todo</button>
                         </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <button id="exportPdfBtn" class="btn btn-outline-danger btn-sm w-100 fw-bold" disabled>📕 Guardar / Imprimir en PDF</button>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <button id="clearAllBtn" class="btn btn-outline-dark btn-sm w-100 fw-bold" disabled>🗑️ Limpiar Todo</button>
                     </div>
                 </div>
             </div>
@@ -1777,7 +1830,7 @@
         const btnRapido = $('btnRapido'), chkRapidoImg = $('chkRapidoImg');
         const videoFile = $('videoFile'), videoPlayer = $('videoPlayer');
         const progressWrapper = $('progressWrapper'), progressBar = $('progressBar'), liveBtn = $('liveTranscribeBtn');
-        const TXT_RAPIDO = '⚡ Transcribir archivo sin reproducir (rápido)';
+        const TXT_RAPIDO = '⚡ Archivo sin reproducir (rápido)';
         let rapidoCorriendo = false, cancelarRapido = false;
 
         function fuenteActual() {
