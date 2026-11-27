@@ -10,7 +10,7 @@
         }
     </script>
     <title>Multimedia Online - Generador de Imágenes IA</title>
-    <meta name="description" content="Crea imágenes originales con Inteligencia Artificial a partir de una descripción en texto y descárgalas gratis en alta calidad." />
+    <meta name="description" content="Crea o transforma imágenes con Inteligencia Artificial dictando con tu voz, escribiendo o subiendo una imagen de referencia." />
     <meta name="author" content="Lic. Antonio Ramírez Bogantes" />
     <link rel="icon" type="image/x-icon" href="img/principal.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -20,20 +20,36 @@
         html, body { height: 100%; margin: 0; }
         .main-wrapper { min-height: 100vh; display: flex; flex-direction: column; }
         .main-content {
-            flex: 1; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; padding: 0.75rem 1.25rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 18px 20px; /* ~1 cm arriba y abajo entre header y footer */
         }
         .tool-box {
-            width: 96%; max-width: 1200px; background: #ffffff;
-            border: 3px solid #0d6efd; border-radius: 20px; padding: 20px 28px;
-            box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15); margin: auto;
+            width: 98%;
+            max-width: 1420px;
+            min-height: calc(100vh - 155px);
+            background: #ffffff;
+            border: 3px solid #0d6efd;
+            border-radius: 20px;
+            padding: 18px 28px;
+            box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .content-grid {
+            flex: 1;
+            display: flex;
         }
         #imageStage {
             width: 100%;
-            min-height: 330px;
-            max-height: 360px;
+            flex: 1;
+            min-height: 430px;
             background: #f8f9fa;
-            border: 1.5px dashed #0d6efd;
+            border: 2px dashed #0d6efd;
             border-radius: 14px;
             display: flex;
             flex-direction: column;
@@ -44,14 +60,33 @@
         }
         #generatedImg {
             max-width: 100%;
-            max-height: 330px;
+            max-height: 460px;
             border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
             display: none;
         }
+        #refDropZone {
+            border: 1.5px dashed #6c757d;
+            border-radius: 10px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        #refDropZone.drag-over, #refDropZone:hover {
+            border-color: #0d6efd;
+            background: #eef5ff;
+        }
+        #refPreviewImg {
+            width: 44px;
+            height: 44px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+        }
         .thumb-item {
-            width: 64px;
-            height: 64px;
+            width: 62px;
+            height: 62px;
             object-fit: cover;
             border-radius: 8px;
             border: 2px solid #dee2e6;
@@ -62,6 +97,14 @@
             transform: scale(1.06);
             border-color: #0d6efd;
         }
+        .dictando-activo {
+            animation: pulsoVoz 1.1s infinite;
+        }
+        @keyframes pulsoVoz {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.65); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
     </style>
 </head>
 <body>
@@ -71,17 +114,41 @@
 
         <div class="main-content">
             <div class="tool-box">
-                <h3 class="mb-1 fw-bold text-dark text-center">🎨 Generador de Imágenes con Inteligencia Artificial</h3>
-                <p class="text-muted small mb-3 text-center">Describe con tus palabras la imagen que deseas crear y descárgala lista para tus proyectos, miniaturas o presentaciones</p>
+                <div class="mb-2">
+                    <h3 class="mb-0 fw-bold text-dark text-center">🎨 Generador de Imágenes con Inteligencia Artificial</h3>
+                    <p class="text-muted small mb-0 text-center">Dicta con tu voz, escribe tu idea o arrastra una imagen de referencia para transformarla al instante</p>
+                </div>
 
-                <div class="row g-3 align-items-stretch">
-                    <!-- Columna izquierda: Controles y Prompt -->
+                <div class="row g-4 content-grid align-items-stretch">
+                    <!-- Columna izquierda: Dictado/Prompt + Imagen de referencia + Botones -->
                     <div class="col-md-5 text-start d-flex flex-column justify-content-between">
                         <div>
-                            <label for="promptInput" class="form-label fw-bold small text-secondary mb-1">
-                                ✍️ Describe la imagen que quieres crear:
-                            </label>
-                            <textarea id="promptInput" class="form-control mb-2" rows="4" placeholder="Ejemplo: Una tapa roja de refresco con manos y pies animados caminando feliz por una calle soleada, estilo 3D colorido..."></textarea>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="promptInput" class="form-label fw-bold small text-secondary mb-0">
+                                    ✍️ Describe o dicta la imagen:
+                                </label>
+                                <button type="button" id="dictateBtn" class="btn btn-danger btn-sm py-1 px-3 fw-bold">
+                                    🎙️ Dictar descripción
+                                </button>
+                            </div>
+                            <textarea id="promptInput" class="form-control mb-2" rows="5" placeholder="Presiona el botón rojo '🎙️ Dictar descripción' para hablar o escribe aquí lo que imaginas..."></textarea>
+
+                            <!-- Zona para arrastrar o subir imagen de referencia (Img2Img) -->
+                            <div class="mb-2">
+                                <label class="form-label fw-bold small text-secondary mb-1">
+                                    🖼️ Imagen base / de referencia <span class="text-muted fw-normal">(opcional · arrastra o haz clic)</span>:
+                                </label>
+                                <div id="refDropZone" class="d-flex align-items-center justify-content-between gap-2">
+                                    <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                        <img id="refPreviewImg" style="display:none;" alt="Referencia" />
+                                        <span id="refFileName" class="small text-muted text-truncate">
+                                            📂 Arrastra una foto aquí o haz clic para elegir archivo...
+                                        </span>
+                                    </div>
+                                    <button type="button" id="clearRefBtn" class="btn btn-sm btn-outline-danger py-0 px-2" style="display:none;">✕</button>
+                                    <input type="file" id="refFileInput" accept="image/*" style="display:none;" />
+                                </div>
+                            </div>
 
                             <div class="row g-2 mb-2">
                                 <div class="col-6">
@@ -105,21 +172,21 @@
                                 </div>
                             </div>
 
-                            <div class="d-flex flex-wrap gap-1 mb-3">
-                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 ejemplo-btn" data-prompt="Una tapa de refresco con manos y pies animados caminando por la acera, estilo 3D divertido">
+                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 ejemplo-btn" data-prompt="Una tapa roja de refresco con manos y pies animados caminando por la acera, estilo 3D divertido">
                                     💡 Ejemplo divertido
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 ejemplo-btn" data-prompt="Ilustración médica educativa del corazón humano con etiquetas limpias y fondo claro">
                                     🩺 Ejemplo estudio
                                 </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 ejemplo-btn" data-prompt="Paisaje futurista de San José Costa Rica con trenes voladores al atardecer">
-                                    🚀 Ejemplo sci-fi
+                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 ejemplo-btn" data-prompt="Un cohete espacial muy colorido viajando hacia la luna llena rodeado de planetas y estrellas">
+                                    🚀 Ejemplo espacial
                                 </button>
                             </div>
                         </div>
 
-                        <div class="d-grid gap-2">
-                            <button id="generateBtn" class="btn btn-primary fw-bold">
+                        <div class="d-grid gap-2 mt-2">
+                            <button id="generateBtn" class="btn btn-primary btn-lg fw-bold">
                                 ✨ Generar Imagen Ahora
                             </button>
                             <div class="row g-2">
@@ -130,38 +197,38 @@
                                 </div>
                                 <div class="col-6">
                                     <button id="clearBtn" class="btn btn-outline-dark btn-sm w-100 fw-bold" disabled>
-                                        🗑️ Limpiar
+                                        🗑️ Limpiar Todo
                                     </button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Columna derecha: Visor de imagen + Historial reciente -->
-                    <div class="col-md-7 text-start">
+                    <!-- Columna derecha: Visor grande + Historial -->
+                    <div class="col-md-7 text-start d-flex flex-column justify-content-between">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <span class="fw-bold small text-primary">🖼️ Resultado generado:</span>
                             <span id="statusBadge" class="badge bg-light text-secondary border">Listo para crear</span>
                         </div>
 
                         <div id="imageStage">
-                            <div id="emptyPlaceholder" class="text-center text-muted small px-3">
-                                <div style="font-size: 2.4rem;">🎨</div>
-                                Escribe lo que imaginas en el cuadro de la izquierda y haz clic en <b>Generar Imagen Ahora</b>.<br>
-                                <span class="text-secondary">Funciona en cualquier computadora o celular sin exigir tarjeta gráfica.</span>
+                            <div id="emptyPlaceholder" class="text-center text-muted small px-4">
+                                <div style="font-size: 3rem;">🎨</div>
+                                Presiona <b>🎙️ Dictar descripción</b> para hablar o escribe tu idea a la izquierda.<br>
+                                También puedes <b>arrastrar una imagen de referencia</b> para crear una versión nueva basada en ella.
                             </div>
                             <div id="loadingSpinner" class="text-center" style="display: none;">
-                                <div class="spinner-border text-primary mb-2" role="status"></div>
-                                <div class="small fw-bold text-primary">Creando tu imagen con Inteligencia Artificial...</div>
+                                <div class="spinner-border text-primary mb-2" style="width: 2.5rem; height: 2.5rem;" role="status"></div>
+                                <div class="fw-bold text-primary">Creando tu imagen con Inteligencia Artificial...</div>
                                 <div class="text-muted small">Esto toma solo unos segundos</div>
                             </div>
                             <img id="generatedImg" alt="Imagen generada por IA" />
                         </div>
 
                         <div class="mt-2">
-                            <div class="small fw-bold text-secondary mb-1">🕒 Creadas en esta sesión:</div>
-                            <div id="historyStrip" class="d-flex gap-2 flex-wrap" style="min-height: 66px;">
-                                <span class="text-muted small align-self-center">Aún no has generado imágenes en esta sesión.</span>
+                            <div class="small fw-bold text-secondary mb-1">🕒 Creadas en esta sesión (clic para volver a ver o usar de referencia):</div>
+                            <div id="historyStrip" class="d-flex gap-2 flex-wrap align-items-center" style="min-height: 64px;">
+                                <span class="text-muted small">Aún no has generado imágenes en esta sesión.</span>
                             </div>
                         </div>
                     </div>
@@ -178,10 +245,15 @@
     (() => {
         'use strict';
 
-        // Opcional: si creas tu Worker gratuito en Cloudflare, pega aquí su URL para usarlo sin registro de usuario
         const CLOUDFLARE_WORKER_URL = "";
 
         const promptInput = document.getElementById('promptInput');
+        const dictateBtn = document.getElementById('dictateBtn');
+        const refDropZone = document.getElementById('refDropZone');
+        const refFileInput = document.getElementById('refFileInput');
+        const refPreviewImg = document.getElementById('refPreviewImg');
+        const refFileName = document.getElementById('refFileName');
+        const clearRefBtn = document.getElementById('clearRefBtn');
         const styleSelect = document.getElementById('styleSelect');
         const motorSelect = document.getElementById('motorSelect');
         const generateBtn = document.getElementById('generateBtn');
@@ -194,15 +266,139 @@
         const historyStrip = document.getElementById('historyStrip');
 
         let currentImageUrl = null;
+        let referenceBase64 = null;
         let sessionImages = [];
+        let recognition = null;
+        let dictando = false;
+        let textoBaseAntesDictado = "";
 
         const Toast = Swal.mixin({
             toast: true, position: 'top-end', showConfirmButton: false, timer: 2500, timerProgressBar: true
         });
 
+        /* ============================================================
+           DICTADO POR VOZ (Web Speech API)
+           ============================================================ */
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRec) {
+            recognition = new SpeechRec();
+            recognition.lang = 'es-CR';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onstart = () => {
+                dictando = true;
+                textoBaseAntesDictado = promptInput.value.trim();
+                dictateBtn.classList.add('dictando-activo');
+                dictateBtn.innerHTML = '⏹️ Detener voz';
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.textContent = '🎙️ Escuchando tu voz...';
+            };
+
+            recognition.onresult = (event) => {
+                let transcrito = '';
+                for (let i = 0; i < event.results.length; i++) {
+                    transcrito += event.results[i][0].transcript;
+                }
+                const sep = textoBaseAntesDictado ? ' ' : '';
+                promptInput.value = (textoBaseAntesDictado + sep + transcrito.trim()).trim();
+                clearBtn.disabled = false;
+            };
+
+            recognition.onerror = (e) => {
+                detenerDictadoUI();
+                if (e.error !== 'aborted') {
+                    Toast.fire({ icon: 'warning', title: 'No se pudo captar el micrófono. Revisa el permiso en Chrome.' });
+                }
+            };
+
+            recognition.onend = () => detenerDictadoUI();
+        }
+
+        function detenerDictadoUI() {
+            dictando = false;
+            dictateBtn.classList.remove('dictando-activo');
+            dictateBtn.innerHTML = '🎙️ Dictar descripción';
+            if (statusBadge.textContent.includes('Escuchando')) {
+                statusBadge.className = 'badge bg-light text-secondary border';
+                statusBadge.textContent = 'Listo para crear';
+            }
+        }
+
+        dictateBtn.addEventListener('click', () => {
+            if (!recognition) {
+                Swal.fire('Navegador no compatible', 'Usa Google Chrome o Microsoft Edge para dictar con tu micrófono.', 'info');
+                return;
+            }
+            if (dictando) recognition.stop();
+            else { try { recognition.start(); } catch {} }
+        });
+
+        /* ============================================================
+           IMAGEN DE REFERENCIA (ARRASTRAR Y SOLTAR / EXAMINAR)
+           ============================================================ */
+        function cargarImagenReferencia(file) {
+            if (!file || !file.type.startsWith('image/')) {
+                Toast.fire({ icon: 'warning', title: 'Selecciona un archivo de imagen válido (.png, .jpg, .webp)' });
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                referenceBase64 = ev.target.result;
+                refPreviewImg.src = referenceBase64;
+                refPreviewImg.style.display = 'block';
+                refFileName.textContent = file.name;
+                refFileName.classList.remove('text-muted');
+                refFileName.classList.add('text-dark', 'fw-bold');
+                clearRefBtn.style.display = 'inline-block';
+                clearBtn.disabled = false;
+                Toast.fire({ icon: 'success', title: 'Imagen de referencia cargada' });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function limpiarReferencia() {
+            referenceBase64 = null;
+            refFileInput.value = '';
+            refPreviewImg.src = '';
+            refPreviewImg.style.display = 'none';
+            refFileName.textContent = '📂 Arrastra una foto aquí o haz clic para elegir archivo...';
+            refFileName.classList.add('text-muted');
+            refFileName.classList.remove('text-dark', 'fw-bold');
+            clearRefBtn.style.display = 'none';
+        }
+
+        refDropZone.addEventListener('click', (e) => {
+            if (e.target === clearRefBtn) return;
+            refFileInput.click();
+        });
+        refFileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) cargarImagenReferencia(e.target.files[0]);
+        });
+        clearRefBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            limpiarReferencia();
+        });
+        refDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            refDropZone.classList.add('drag-over');
+        });
+        refDropZone.addEventListener('dragleave', () => refDropZone.classList.remove('drag-over'));
+        refDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            refDropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files[0]) cargarImagenReferencia(e.dataTransfer.files[0]);
+        });
+
+        promptInput.addEventListener('input', () => {
+            clearBtn.disabled = !promptInput.value.trim() && !currentImageUrl && !referenceBase64;
+        });
+
         document.querySelectorAll('.ejemplo-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                if (dictando && recognition) recognition.stop();
                 promptInput.value = btn.dataset.prompt;
+                clearBtn.disabled = false;
                 promptInput.focus();
             });
         });
@@ -218,14 +414,14 @@
 
             if (!sessionImages.some(x => x.url === srcUrl)) {
                 sessionImages.unshift({ url: srcUrl, prompt: promptUsado });
-                if (sessionImages.length > 8) sessionImages.pop();
+                if (sessionImages.length > 10) sessionImages.pop();
                 renderHistorial();
             }
         }
 
         function renderHistorial() {
             if (!sessionImages.length) {
-                historyStrip.innerHTML = '<span class="text-muted small align-self-center">Aún no has generado imágenes en esta sesión.</span>';
+                historyStrip.innerHTML = '<span class="text-muted small">Aún no has generado imágenes en esta sesión.</span>';
                 return;
             }
             historyStrip.innerHTML = sessionImages.map((item, idx) =>
@@ -244,11 +440,13 @@
         }
 
         async function generarViaCloudflare(promptFinal) {
-            if (!CLOUDFLARE_WORKER_URL) throw new Error('Sin URL de Cloudflare configurada');
+            if (!CLOUDFLARE_WORKER_URL) throw new Error('Sin URL de Cloudflare');
+            const payload = { prompt: promptFinal };
+            if (referenceBase64) payload.image = referenceBase64.split(',')[1];
             const resp = await fetch(CLOUDFLARE_WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: promptFinal })
+                body: JSON.stringify(payload)
             });
             if (!resp.ok) throw new Error('Cuota diaria alcanzada o servidor ocupado');
             const blob = await resp.blob();
@@ -257,16 +455,28 @@
 
         async function generarViaPuter(promptFinal) {
             if (!window.puter || !puter.ai || !puter.ai.txt2img) {
-                throw new Error('El motor Puter IA no cargó en el navegador');
+                throw new Error('El motor Puter IA no cargó');
+            }
+            if (referenceBase64) {
+                const b64Solo = referenceBase64.split(',')[1];
+                const mimeType = referenceBase64.substring(referenceBase64.indexOf(':') + 1, referenceBase64.indexOf(';'));
+                const imgEl = await puter.ai.txt2img(promptFinal, {
+                    model: 'gpt-image-1',
+                    input_image: b64Solo,
+                    input_image_mime_type: mimeType
+                });
+                return imgEl.src;
             }
             const imgEl = await puter.ai.txt2img(promptFinal);
             return imgEl.src;
         }
 
         generateBtn.addEventListener('click', async () => {
+            if (dictando && recognition) recognition.stop();
+
             const basePrompt = promptInput.value.trim();
             if (!basePrompt) {
-                Swal.fire('Descripción vacía', 'Escribe primero qué imagen deseas que cree la Inteligencia Artificial.', 'warning');
+                Swal.fire('Descripción vacía', 'Dicta o escribe primero qué imagen deseas crear o qué cambio quieres hacerle a tu imagen base.', 'warning');
                 return;
             }
 
@@ -278,7 +488,7 @@
             generatedImg.style.display = 'none';
             loadingSpinner.style.display = 'block';
             statusBadge.className = 'badge bg-warning text-dark';
-            statusBadge.textContent = '⏳ Generando...';
+            statusBadge.textContent = referenceBase64 ? '⏳ Transformando imagen...' : '⏳ Generando...';
 
             try {
                 let imgUrl = null;
@@ -287,13 +497,9 @@
                 } else if (modo === 'puter') {
                     imgUrl = await generarViaPuter(promptFinal);
                 } else {
-                    // Automático: intenta Cloudflare si está configurado y cae a Puter sin fallar
                     if (CLOUDFLARE_WORKER_URL) {
-                        try {
-                            imgUrl = await generarViaCloudflare(promptFinal);
-                        } catch {
-                            imgUrl = await generarViaPuter(promptFinal);
-                        }
+                        try { imgUrl = await generarViaCloudflare(promptFinal); }
+                        catch { imgUrl = await generarViaPuter(promptFinal); }
                     } else {
                         imgUrl = await generarViaPuter(promptFinal);
                     }
@@ -339,6 +545,8 @@
         });
 
         clearBtn.addEventListener('click', () => {
+            if (dictando && recognition) recognition.stop();
+            limpiarReferencia();
             promptInput.value = '';
             currentImageUrl = null;
             sessionImages = [];
