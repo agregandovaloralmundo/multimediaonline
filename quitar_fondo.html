@@ -9,8 +9,8 @@
             window.history.back();
         }
     </script>
-    <title>Multimedia Online - Quitar Fondo a Imágenes Gratis con IA</title>
-    <meta name="description" content="Elimina el fondo de tus fotos, logos e imágenes gratis en segundos con Inteligencia Artificial o Chroma Key directo en tu navegador sin marcas de agua." />
+    <title>Multimedia Online - Quitar Fondo y Retoque Manual con IA</title>
+    <meta name="description" content="Elimina el fondo de tus fotos e imágenes con IA automática y perfecciona los bordes con pincel borrador y restaurador estilo Pixlr gratis en tu navegador." />
     <meta name="author" content="Lic. Antonio Ramírez Bogantes" />
     <link rel="icon" type="image/x-icon" href="img/principal.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -28,7 +28,7 @@
         }
         .tool-box {
             width: 98%;
-            max-width: 1420px;
+            max-width: 1440px;
             min-height: calc(100vh - 185px);
             background: #ffffff;
             border: 3px solid #0d6efd;
@@ -46,7 +46,7 @@
         #dropZone {
             border: 2px dashed #0d6efd;
             border-radius: 12px;
-            padding: 12px;
+            padding: 10px;
             background: #f0f7ff;
             cursor: pointer;
             text-align: center;
@@ -56,7 +56,6 @@
             background: #dbeafe;
             border-color: #0a58ca;
         }
-        /* Fondo ajedrezado clásico de transparencia estilo Photoshop / remove.bg */
         .checkerboard-stage {
             width: 100%;
             flex: 1;
@@ -82,12 +81,12 @@
             max-width: 100%;
             max-height: 400px;
             border-radius: 8px;
-            cursor: crosshair;
             display: none;
+            touch-action: none;
         }
         .color-swatch {
-            width: 26px;
-            height: 26px;
+            width: 24px;
+            height: 24px;
             border-radius: 6px;
             border: 1.5px solid #94a3b8;
             display: inline-block;
@@ -103,41 +102,40 @@
         <div class="main-content">
             <div class="tool-box">
                 <div class="mb-2">
-                    <h4 class="mb-0 fw-bold text-dark text-center">🪄 Quitar Fondo a Imágenes Gratis (IA y Chroma Key)</h4>
-                    <p class="text-muted small mb-0 text-center">Elimina el fondo de fotos, personas, productos o logos al instante y descárgalos en PNG transparente sin marcas de agua</p>
+                    <h4 class="mb-0 fw-bold text-dark text-center">🪄 Quitar Fondo con IA y Retoque Manual (Estilo Pixlr)</h4>
+                    <p class="text-muted small mb-0 text-center">Elimina el fondo automáticamente con Inteligencia Artificial y perfecciona detalles pasando el pincel borrador o restaurador</p>
                 </div>
 
                 <div class="row g-3 content-grid align-items-stretch">
-                    <!-- Columna izquierda: Carga, Modo IA o Color, Ajustes y Descarga -->
+                    <!-- Columna izquierda: Carga, IA, Color y Pinceles de retoque -->
                     <div class="col-md-5 text-start d-flex flex-column justify-content-between">
                         <div>
                             <!-- Zona de carga -->
                             <div id="dropZone" class="mb-2">
                                 <div class="fw-bold text-primary small">📂 Arrastra tu imagen aquí o haz clic para seleccionarla</div>
-                                <div class="text-muted" style="font-size: 11px;">Soporta PNG, JPG, WEBP · Procesamiento 100% privado en tu navegador</div>
+                                <div class="text-muted" style="font-size: 11px;">PNG, JPG, WEBP · 100% privado en tu navegador</div>
                                 <input type="file" id="imageInput" accept="image/*" style="display:none;">
                             </div>
 
-                            <!-- Selector de Motor -->
-                            <label class="form-label fw-bold small text-secondary mb-1">⚙️ Método de eliminación de fondo:</label>
+                            <!-- Selector de Método Base -->
                             <ul class="nav nav-pills nav-fill mb-2 bg-light p-1 rounded border">
                                 <li class="nav-item">
                                     <button type="button" class="nav-link active py-1 small fw-bold" id="tabAiMode">
-                                        🤖 Automático con IA (Fotos)
+                                        🤖 IA Automática
                                     </button>
                                 </li>
                                 <li class="nav-item">
                                     <button type="button" class="nav-link py-1 small fw-bold" id="tabColorMode">
-                                        🎨 Por Color / Gotero (Logos)
+                                        🎨 Color / Gotero
                                     </button>
                                 </li>
                             </ul>
 
                             <!-- PANEL MODO IA -->
                             <div id="panelAi" class="bg-light p-2 rounded border mb-2">
-                                <p class="small text-muted mb-2">
-                                    Ideal para <b>personas, retratos, productos y objetos</b> con fondos complejos. La IA detecta el sujeto principal automáticamente.
-                                </p>
+                                <div class="small text-muted mb-1">
+                                    Reconoce personas, productos y objetos automáticamente para separar el fondo de golpe:
+                                </div>
                                 <button type="button" id="runAiBtn" class="btn btn-primary btn-sm w-100 fw-bold" disabled>
                                     ✨ Quitar Fondo con IA Ahora
                                 </button>
@@ -145,36 +143,57 @@
 
                             <!-- PANEL MODO COLOR / GOTERO -->
                             <div id="panelColor" class="bg-light p-2 rounded border mb-2" style="display: none;">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="small fw-bold text-dark">🎯 Color a eliminar (haz clic en la imagen):</span>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="small fw-bold text-dark">🎯 Color a eliminar (clic en imagen):</span>
                                     <div class="d-flex align-items-center gap-1">
                                         <span id="targetColorBox" class="color-swatch" style="background:#ffffff;"></span>
-                                        <input type="color" id="targetColorPicker" class="form-control form-control-color form-control-sm" value="#ffffff" title="Elegir color manualmente">
+                                        <input type="color" id="targetColorPicker" class="form-control form-control-color form-control-sm" value="#ffffff">
                                     </div>
                                 </div>
-                                <div class="mb-1">
-                                    <div class="d-flex justify-content-between small">
-                                        <span class="fw-bold text-secondary">Tolerancia de recorte:</span>
-                                        <span id="tolValueLabel" class="fw-bold text-primary">45</span>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="small text-secondary mb-0">Tolerancia: <b id="tolValueLabel">45</b></label>
+                                        <input type="range" id="toleranceRange" class="form-range" min="5" max="140" value="45">
                                     </div>
-                                    <input type="range" id="toleranceRange" class="form-range" min="5" max="140" value="45">
-                                </div>
-                                <div class="mb-1">
-                                    <div class="d-flex justify-content-between small">
-                                        <span class="fw-bold text-secondary">Suavizado de bordes:</span>
-                                        <span id="featherValueLabel" class="fw-bold text-primary">12</span>
+                                    <div class="col-6">
+                                        <label class="small text-secondary mb-0">Suavizado: <b id="featherValueLabel">12</b></label>
+                                        <input type="range" id="featherRange" class="form-range" min="0" max="40" value="12">
                                     </div>
-                                    <input type="range" id="featherRange" class="form-range" min="0" max="40" value="12">
                                 </div>
                             </div>
 
-                            <!-- Opcional: Reemplazar con nuevo fondo sólido -->
+                            <!-- HERRAMIENTAS DE RETOQUE MANUAL ESTILO PIXLR -->
+                            <div class="bg-light p-2 rounded border mb-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold small text-dark">🖌️ Retoque Manual (pasa el mouse sobre la imagen):</span>
+                                    <button type="button" id="undoBrushBtn" class="btn btn-outline-secondary btn-sm py-0 px-2" disabled title="Deshacer último trazo">
+                                        ↩️ Deshacer
+                                    </button>
+                                </div>
+                                <div class="btn-group btn-group-sm w-100 mb-1" role="group">
+                                    <button type="button" class="btn btn-outline-primary active fw-bold" data-brush="none">
+                                        👆 Mover / Gotero
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger fw-bold" data-brush="erase">
+                                        🧽 Borrar parte
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success fw-bold" data-brush="restore">
+                                        🖌️ Restaurar parte
+                                    </button>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="small text-secondary text-nowrap">Grosor pincel (<b id="brushSizeLabel">28</b>px):</span>
+                                    <input type="range" id="brushSizeRange" class="form-range" min="6" max="120" value="28">
+                                </div>
+                            </div>
+
+                            <!-- Opcional: Nuevo fondo de color -->
                             <div class="bg-light p-2 rounded border">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="form-check form-switch mb-0">
                                         <input class="form-check-input" type="checkbox" id="chkCustomBg">
                                         <label class="form-check-label small fw-bold text-secondary" for="chkCustomBg">
-                                            🖌️ Rellenar nuevo fondo de color
+                                            🎨 Rellenar nuevo fondo sólido
                                         </label>
                                     </div>
                                     <input type="color" id="newBgColor" class="form-control form-control-color form-control-sm" value="#0d6efd" disabled>
@@ -183,7 +202,7 @@
                         </div>
 
                         <!-- Botones inferiores -->
-                        <div class="d-grid gap-2 mt-2">
+                        <div class="d-grid gap-1 mt-2">
                             <div class="row g-2">
                                 <div class="col-6">
                                     <button id="toggleCompareBtn" class="btn btn-outline-secondary btn-sm w-100 fw-bold" disabled>
@@ -205,23 +224,23 @@
                     <!-- Columna derecha: Visor con cuadrícula de transparencia -->
                     <div class="col-md-7 text-start d-flex flex-column justify-content-between">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-bold small text-primary">🖼️ Vista previa (la cuadrícula indica transparencia real):</span>
+                            <span class="fw-bold small text-primary">🖼️ Lienzo de trabajo (cuadrícula = transparente):</span>
                             <span id="statusBadge" class="badge bg-light text-secondary border">Esperando imagen...</span>
                         </div>
 
                         <div class="checkerboard-stage" id="stageContainer">
                             <div id="emptyState" class="text-center bg-white bg-opacity-90 p-4 rounded-4 shadow-sm border mx-3">
                                 <div style="font-size: 2.8rem;">🪄</div>
-                                <div class="fw-bold text-dark">Sube una foto, producto o logo para quitarle el fondo</div>
+                                <div class="fw-bold text-dark">Sube una imagen para quitarle el fondo con IA</div>
                                 <div class="text-muted small mt-1">
-                                    Usa <b>Automático con IA</b> para personas/objetos o <b>Por Color / Gotero</b> para logos y fondos lisos.
+                                    Después podrás pasar el <b>pincel borrador</b> para quitar sobrantes o el <b>pincel restaurador</b> para recuperar detalles, igual que en Pixlr.
                                 </div>
                             </div>
 
                             <div id="aiLoader" class="text-center bg-white p-4 rounded-4 shadow border" style="display: none;">
                                 <div class="spinner-border text-primary mb-2" style="width: 2.5rem; height: 2.5rem;" role="status"></div>
-                                <div class="fw-bold text-primary">Analizando sujeto y eliminando fondo con IA...</div>
-                                <div class="text-muted small">La primera vez descarga el modelo ligero (~25 MB) y queda guardado en tu navegador</div>
+                                <div class="fw-bold text-primary">Analizando imagen con Inteligencia Artificial...</div>
+                                <div class="text-muted small">Procesando localmente en tu navegador sin enviar datos afuera</div>
                             </div>
 
                             <canvas id="previewCanvas"></canvas>
@@ -254,6 +273,10 @@
         const featherRange = document.getElementById('featherRange');
         const featherValueLabel = document.getElementById('featherValueLabel');
 
+        const undoBrushBtn = document.getElementById('undoBrushBtn');
+        const brushSizeRange = document.getElementById('brushSizeRange');
+        const brushSizeLabel = document.getElementById('brushSizeLabel');
+
         const chkCustomBg = document.getElementById('chkCustomBg');
         const newBgColor = document.getElementById('newBgColor');
         const toggleCompareBtn = document.getElementById('toggleCompareBtn');
@@ -272,17 +295,22 @@
         let cutoutCanvas = document.createElement('canvas');
         let cutoutCtx = cutoutCanvas.getContext('2d', { willReadFrequently: true });
 
-        let activeMode = 'ai'; // 'ai' | 'color'
+        let activeMode = 'ai';
+        let brushMode = 'none'; // 'none' | 'erase' | 'restore'
+        let isDrawingBrush = false;
+        let lastBrushPt = null;
+        let undoStack = [];
+
         let targetRGB = { r: 255, g: 255, b: 255 };
         let showingOriginal = false;
         let hasCutout = false;
 
         const Toast = Swal.mixin({
-            toast: true, position: 'top-end', showConfirmButton: false, timer: 2500, timerProgressBar: true
+            toast: true, position: 'top-end', showConfirmButton: false, timer: 2400, timerProgressBar: true
         });
 
         /* ============================================================
-           CAMBIO DE MODO (IA VS COLOR / GOTERO)
+           TABS Y CONTROLES DE PINCEL
            ============================================================ */
         tabAiMode.addEventListener('click', () => {
             activeMode = 'ai';
@@ -301,8 +329,36 @@
             if (originalImage) aplicarRecortePorColor();
         });
 
+        document.querySelectorAll('[data-brush]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-brush]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                brushMode = btn.dataset.brush;
+                previewCanvas.style.cursor = brushMode === 'none' ? 'crosshair' : 'cell';
+            });
+        });
+
+        brushSizeRange.addEventListener('input', () => {
+            brushSizeLabel.textContent = brushSizeRange.value;
+        });
+
+        function guardarEstadoUndo() {
+            if (!cutoutCanvas.width) return;
+            if (undoStack.length >= 12) undoStack.shift();
+            undoStack.push(cutoutCtx.getImageData(0, 0, cutoutCanvas.width, cutoutCanvas.height));
+            undoBrushBtn.disabled = false;
+        }
+
+        undoBrushBtn.addEventListener('click', () => {
+            if (!undoStack.length) return;
+            const prev = undoStack.pop();
+            cutoutCtx.putImageData(prev, 0, 0);
+            undoBrushBtn.disabled = undoStack.length === 0;
+            renderizarCanvasFinal();
+        });
+
         /* ============================================================
-           CARGA DE IMAGEN (CLIC O ARRASTRAR Y SOLTAR)
+           CARGA DE IMAGEN
            ============================================================ */
         dropZone.addEventListener('click', () => imageInput.click());
         imageInput.addEventListener('change', (e) => {
@@ -320,10 +376,7 @@
         });
 
         function cargarArchivoImagen(file) {
-            if (!file.type.startsWith('image/')) {
-                Toast.fire({ icon: 'warning', title: 'Selecciona un archivo de imagen válido' });
-                return;
-            }
+            if (!file.type.startsWith('image/')) return;
             originalFileBlob = file;
             originalFileName = file.name.replace(/\.[^.]+$/, '');
             const url = URL.createObjectURL(file);
@@ -332,14 +385,15 @@
                 originalImage = img;
                 hasCutout = false;
                 showingOriginal = false;
+                undoStack = [];
+                undoBrushBtn.disabled = true;
 
                 previewCanvas.width = img.width;
                 previewCanvas.height = img.height;
                 cutoutCanvas.width = img.width;
                 cutoutCanvas.height = img.height;
-
-                // Detectar color de esquina superior izquierda como referencia inicial para modo color
                 cutoutCtx.drawImage(img, 0, 0);
+
                 const corner = cutoutCtx.getImageData(0, 0, 1, 1).data;
                 setTargetColor(corner[0], corner[1], corner[2]);
 
@@ -349,14 +403,13 @@
 
                 runAiBtn.disabled = false;
                 resetBtn.disabled = false;
+                downloadPngBtn.disabled = false;
                 toggleCompareBtn.disabled = true;
-                downloadPngBtn.disabled = true;
 
-                if (activeMode === 'color') {
-                    aplicarRecortePorColor();
-                } else {
+                if (activeMode === 'color') aplicarRecortePorColor();
+                else {
                     statusBadge.className = 'badge bg-info text-dark';
-                    statusBadge.textContent = 'Imagen lista · Presiona Quitar Fondo con IA';
+                    statusBadge.textContent = 'Lista · Usa IA Automática o Pincel Borrador';
                 }
             };
             img.src = url;
@@ -370,7 +423,7 @@
         }
 
         /* ============================================================
-           1. RECORTE AUTOMÁTICO CON IA (@imgly/background-removal)
+           1. IA AUTOMÁTICA
            ============================================================ */
         runAiBtn.addEventListener('click', async () => {
             if (!originalFileBlob) return;
@@ -378,13 +431,14 @@
             previewCanvas.style.display = 'none';
             aiLoader.style.display = 'block';
             statusBadge.className = 'badge bg-warning text-dark';
-            statusBadge.textContent = '⏳ Procesando con IA...';
+            statusBadge.textContent = '⏳ Analizando con IA...';
 
             try {
                 const resultBlob = await removeBackground(originalFileBlob);
                 const resultUrl = URL.createObjectURL(resultBlob);
                 const cleanImg = new Image();
                 cleanImg.onload = () => {
+                    guardarEstadoUndo();
                     cutoutCanvas.width = cleanImg.width;
                     cutoutCanvas.height = cleanImg.height;
                     cutoutCtx.clearRect(0, 0, cutoutCanvas.width, cutoutCanvas.height);
@@ -399,25 +453,24 @@
                     toggleCompareBtn.disabled = false;
                     downloadPngBtn.disabled = false;
                     statusBadge.className = 'badge bg-success';
-                    statusBadge.textContent = '✅ Fondo eliminado con IA';
-                    Toast.fire({ icon: 'success', title: '¡Fondo eliminado perfectamente!' });
+                    statusBadge.textContent = '✅ Fondo eliminado (puedes afinar con pincel)';
+                    Toast.fire({ icon: 'success', title: '¡Fondo eliminado con IA!' });
                     URL.revokeObjectURL(resultUrl);
                 };
                 cleanImg.src = resultUrl;
-            } catch (err) {
-                console.error(err);
+            } catch {
                 aiLoader.style.display = 'none';
                 previewCanvas.style.display = 'block';
                 statusBadge.className = 'badge bg-danger';
-                statusBadge.textContent = '⚠️ Error en motor IA';
-                Swal.fire('Aviso', 'No se pudo cargar el modelo IA en este momento. Puedes usar la pestaña "Por Color / Gotero" que funciona al instante sin descargas.', 'info');
+                statusBadge.textContent = '⚠️ Usa Color/Gotero o Pincel';
+                Swal.fire('Aviso', 'No se pudo cargar el modelo IA. Puedes usar "Color / Gotero" o los pinceles manuales.', 'info');
             } finally {
                 runAiBtn.disabled = false;
             }
         });
 
         /* ============================================================
-           2. RECORTE POR COLOR / GOTERO (CHROMA KEY SUAVIZADO)
+           2. RECORTE POR COLOR / GOTERO
            ============================================================ */
         function aplicarRecortePorColor() {
             if (!originalImage) return;
@@ -437,45 +490,20 @@
                     (d[i + 1] - tg) * (d[i + 1] - tg) +
                     (d[i + 2] - tb) * (d[i + 2] - tb)
                 );
-                if (dist <= tol) {
-                    d[i + 3] = 0;
-                } else if (feather > 0 && dist <= tol + feather) {
-                    const alphaFactor = (dist - tol) / feather;
-                    d[i + 3] = Math.round(d[i + 3] * alphaFactor);
+                if (dist <= tol) d[i + 3] = 0;
+                else if (feather > 0 && dist <= tol + feather) {
+                    d[i + 3] = Math.round(d[i + 3] * ((dist - tol) / feather));
                 }
             }
             cutoutCtx.putImageData(imgData, 0, 0);
             hasCutout = true;
             showingOriginal = false;
             renderizarCanvasFinal();
-
             toggleCompareBtn.disabled = false;
             downloadPngBtn.disabled = false;
             statusBadge.className = 'badge bg-success';
-            statusBadge.textContent = '✅ Fondo recortado por color';
+            statusBadge.textContent = '✅ Recortado por color';
         }
-
-        // Gotero: clic directo sobre el lienzo para elegir el color de fondo a quitar
-        previewCanvas.addEventListener('click', (e) => {
-            if (!originalImage) return;
-            if (activeMode !== 'color') {
-                tabColorMode.click();
-            }
-            const rect = previewCanvas.getBoundingClientRect();
-            const x = Math.floor((e.clientX - rect.left) * (previewCanvas.width / rect.width));
-            const y = Math.floor((e.clientY - rect.top) * (previewCanvas.height / rect.height));
-
-            const tempC = document.createElement('canvas');
-            tempC.width = originalImage.width;
-            tempC.height = originalImage.height;
-            const tCtx = tempC.getContext('2d');
-            tCtx.drawImage(originalImage, 0, 0);
-            const px = tCtx.getImageData(x, y, 1, 1).data;
-
-            setTargetColor(px[0], px[1], px[2]);
-            aplicarRecortePorColor();
-            Toast.fire({ icon: 'info', title: 'Color capturado con gotero y recortado' });
-        });
 
         targetColorPicker.addEventListener('input', (e) => {
             const hex = e.target.value;
@@ -487,19 +515,113 @@
             };
             if (originalImage) aplicarRecortePorColor();
         });
-
         toleranceRange.addEventListener('input', () => {
             tolValueLabel.textContent = toleranceRange.value;
             if (originalImage && activeMode === 'color') aplicarRecortePorColor();
         });
-
         featherRange.addEventListener('input', () => {
             featherValueLabel.textContent = featherRange.value;
             if (originalImage && activeMode === 'color') aplicarRecortePorColor();
         });
 
         /* ============================================================
-           RENDERIZADO VISUAL, COMPARADOR Y DESCARGA PNG
+           3. PINCELES MANUALES (BORRAR / RESTAURAR ESTILO PIXLR)
+           ============================================================ */
+        function obtenerPuntoCanvas(e) {
+            const rect = previewCanvas.getBoundingClientRect();
+            return {
+                x: (e.clientX - rect.left) * (previewCanvas.width / rect.width),
+                y: (e.clientY - rect.top) * (previewCanvas.height / rect.height)
+            };
+        }
+
+        function aplicarTrazoPincel(p1, p2) {
+            const scaleRatio = previewCanvas.width / previewCanvas.getBoundingClientRect().width;
+            const radius = Math.max(4, (parseInt(brushSizeRange.value, 10) || 28) * scaleRatio * 0.5);
+
+            cutoutCtx.save();
+            if (brushMode === 'erase') {
+                cutoutCtx.globalCompositeOperation = 'destination-out';
+                cutoutCtx.strokeStyle = 'rgba(0,0,0,1)';
+                cutoutCtx.fillStyle = 'rgba(0,0,0,1)';
+                cutoutCtx.lineWidth = radius * 2;
+                cutoutCtx.lineCap = 'round';
+                cutoutCtx.lineJoin = 'round';
+                cutoutCtx.beginPath();
+                cutoutCtx.moveTo(p1.x, p1.y);
+                cutoutCtx.lineTo(p2.x, p2.y);
+                cutoutCtx.stroke();
+            } else if (brushMode === 'restore' && originalImage) {
+                cutoutCtx.beginPath();
+                cutoutCtx.moveTo(p1.x, p1.y);
+                cutoutCtx.lineTo(p2.x, p2.y);
+                cutoutCtx.lineWidth = radius * 2;
+                cutoutCtx.lineCap = 'round';
+                // Dibujar círculos a lo largo del segmento para clonar la imagen original
+                const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                const steps = Math.max(1, Math.ceil(dist / (radius * 0.3)));
+                for (let s = 0; s <= steps; s++) {
+                    const cx = p1.x + ((p2.x - p1.x) * s) / steps;
+                    const cy = p1.y + ((p2.y - p1.y) * s) / steps;
+                    cutoutCtx.save();
+                    cutoutCtx.beginPath();
+                    cutoutCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+                    cutoutCtx.clip();
+                    cutoutCtx.drawImage(originalImage, 0, 0);
+                    cutoutCtx.restore();
+                }
+            }
+            cutoutCtx.restore();
+
+            hasCutout = true;
+            showingOriginal = false;
+            toggleCompareBtn.disabled = false;
+            downloadPngBtn.disabled = false;
+            renderizarCanvasFinal();
+        }
+
+        previewCanvas.addEventListener('pointerdown', (e) => {
+            if (!originalImage) return;
+            const pt = obtenerPuntoCanvas(e);
+
+            if (brushMode === 'none') {
+                // Gotero rápido si está en modo color
+                if (activeMode !== 'color') tabColorMode.click();
+                const tempC = document.createElement('canvas');
+                tempC.width = originalImage.width;
+                tempC.height = originalImage.height;
+                const tCtx = tempC.getContext('2d');
+                tCtx.drawImage(originalImage, 0, 0);
+                const px = tCtx.getImageData(Math.floor(pt.x), Math.floor(pt.y), 1, 1).data;
+                setTargetColor(px[0], px[1], px[2]);
+                aplicarRecortePorColor();
+                return;
+            }
+
+            guardarEstadoUndo();
+            isDrawingBrush = true;
+            lastBrushPt = pt;
+            previewCanvas.setPointerCapture(e.pointerId);
+            aplicarTrazoPincel(pt, pt);
+        });
+
+        previewCanvas.addEventListener('pointermove', (e) => {
+            if (!isDrawingBrush || brushMode === 'none') return;
+            const pt = obtenerPuntoCanvas(e);
+            aplicarTrazoPincel(lastBrushPt, pt);
+            lastBrushPt = pt;
+        });
+
+        previewCanvas.addEventListener('pointerup', (e) => {
+            if (isDrawingBrush) {
+                isDrawingBrush = false;
+                lastBrushPt = null;
+                try { previewCanvas.releasePointerCapture(e.pointerId); } catch {}
+            }
+        });
+
+        /* ============================================================
+           RENDERIZADO Y DESCARGA
            ============================================================ */
         function renderizarCanvasFinal() {
             if (!originalImage) return;
@@ -507,12 +629,11 @@
             previewCanvas.height = originalImage.height;
             ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
 
-            if (showingOriginal || !hasCutout) {
+            if (showingOriginal) {
                 ctx.drawImage(originalImage, 0, 0);
                 return;
             }
-
-            if (chkCustomBg.checked) {
+            if (chkCustomBg.checked && hasCutout) {
                 ctx.fillStyle = newBgColor.value || '#0d6efd';
                 ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
             }
@@ -533,7 +654,7 @@
         });
 
         downloadPngBtn.addEventListener('click', () => {
-            if (!hasCutout) return;
+            if (!originalImage) return;
             showingOriginal = false;
             renderizarCanvasFinal();
             previewCanvas.toBlob((blob) => {
@@ -554,10 +675,12 @@
             originalFileBlob = null;
             hasCutout = false;
             showingOriginal = false;
+            undoStack = [];
             imageInput.value = '';
             previewCanvas.style.display = 'none';
             emptyState.style.display = 'block';
             runAiBtn.disabled = true;
+            undoBrushBtn.disabled = true;
             toggleCompareBtn.disabled = true;
             toggleCompareBtn.textContent = '👁️ Ver Original';
             resetBtn.disabled = true;
