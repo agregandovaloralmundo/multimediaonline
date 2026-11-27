@@ -25,16 +25,16 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 18px 20px; /* ~1 cm arriba y abajo entre header y footer */
+            padding: 10px 20px;
         }
         .tool-box {
             width: 98%;
             max-width: 1420px;
-            min-height: calc(100vh - 155px);
+            min-height: calc(100vh - 185px);
             background: #ffffff;
             border: 3px solid #0d6efd;
             border-radius: 20px;
-            padding: 18px 28px;
+            padding: 12px 24px;
             box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
             display: flex;
             flex-direction: column;
@@ -47,7 +47,8 @@
         #imageStage {
             width: 100%;
             flex: 1;
-            min-height: 430px;
+            min-height: 335px;
+            max-height: 365px;
             background: #f8f9fa;
             border: 2px dashed #0d6efd;
             border-radius: 14px;
@@ -55,12 +56,12 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 12px;
+            padding: 8px;
             overflow: hidden;
         }
         #generatedImg {
             max-width: 100%;
-            max-height: 460px;
+            max-height: 345px;
             border-radius: 10px;
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
             display: none;
@@ -68,7 +69,7 @@
         #refDropZone {
             border: 1.5px dashed #6c757d;
             border-radius: 10px;
-            padding: 8px 12px;
+            padding: 6px 12px;
             background: #f8f9fa;
             cursor: pointer;
             transition: all 0.15s ease;
@@ -78,15 +79,15 @@
             background: #eef5ff;
         }
         #refPreviewImg {
-            width: 44px;
-            height: 44px;
+            width: 38px;
+            height: 38px;
             object-fit: cover;
             border-radius: 6px;
             border: 1px solid #ced4da;
         }
         .thumb-item {
-            width: 62px;
-            height: 62px;
+            width: 50px;
+            height: 50px;
             object-fit: cover;
             border-radius: 8px;
             border: 2px solid #dee2e6;
@@ -115,11 +116,11 @@
         <div class="main-content">
             <div class="tool-box">
                 <div class="mb-2">
-                    <h3 class="mb-0 fw-bold text-dark text-center">🎨 Generador de Imágenes con Inteligencia Artificial</h3>
+                    <h4 class="mb-0 fw-bold text-dark text-center">🎨 Generador de Imágenes con Inteligencia Artificial</h4>
                     <p class="text-muted small mb-0 text-center">Dicta con tu voz, escribe tu idea o arrastra una imagen de referencia para transformarla al instante</p>
                 </div>
 
-                <div class="row g-4 content-grid align-items-stretch">
+                <div class="row g-3 content-grid align-items-stretch">
                     <!-- Columna izquierda: Dictado/Prompt + Imagen de referencia + Botones -->
                     <div class="col-md-5 text-start d-flex flex-column justify-content-between">
                         <div>
@@ -127,11 +128,11 @@
                                 <label for="promptInput" class="form-label fw-bold small text-secondary mb-0">
                                     ✍️ Describe o dicta la imagen:
                                 </label>
-                                <button type="button" id="dictateBtn" class="btn btn-danger btn-sm py-1 px-3 fw-bold">
+                                <button type="button" id="dictateBtn" class="btn btn-danger btn-sm py-0 px-3 fw-bold">
                                     🎙️ Dictar descripción
                                 </button>
                             </div>
-                            <textarea id="promptInput" class="form-control mb-2" rows="5" placeholder="Presiona el botón rojo '🎙️ Dictar descripción' para hablar o escribe aquí lo que imaginas..."></textarea>
+                            <textarea id="promptInput" class="form-control form-control-sm mb-2" rows="4" placeholder="Presiona el botón rojo '🎙️ Dictar descripción' para hablar o escribe aquí lo que imaginas..."></textarea>
 
                             <!-- Zona para arrastrar o subir imagen de referencia (Img2Img) -->
                             <div class="mb-2">
@@ -172,7 +173,7 @@
                                 </div>
                             </div>
 
-                            <div class="d-flex flex-wrap gap-1 mb-2">
+                            <div class="d-flex flex-wrap gap-1 mb-1">
                                 <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 ejemplo-btn" data-prompt="Una tapa roja de refresco con manos y pies animados caminando por la acera, estilo 3D divertido">
                                     💡 Ejemplo divertido
                                 </button>
@@ -186,7 +187,7 @@
                         </div>
 
                         <div class="d-grid gap-2 mt-2">
-                            <button id="generateBtn" class="btn btn-primary btn-lg fw-bold">
+                            <button id="generateBtn" class="btn btn-primary fw-bold">
                                 ✨ Generar Imagen Ahora
                             </button>
                             <div class="row g-2">
@@ -206,28 +207,30 @@
 
                     <!-- Columna derecha: Visor grande + Historial -->
                     <div class="col-md-7 text-start d-flex flex-column justify-content-between">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-bold small text-primary">🖼️ Resultado generado:</span>
-                            <span id="statusBadge" class="badge bg-light text-secondary border">Listo para crear</span>
-                        </div>
+                        <div class="d-flex flex-column flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold small text-primary">🖼️ Resultado generado:</span>
+                                <span id="statusBadge" class="badge bg-light text-secondary border">Listo para crear</span>
+                            </div>
 
-                        <div id="imageStage">
-                            <div id="emptyPlaceholder" class="text-center text-muted small px-4">
-                                <div style="font-size: 3rem;">🎨</div>
-                                Presiona <b>🎙️ Dictar descripción</b> para hablar o escribe tu idea a la izquierda.<br>
-                                También puedes <b>arrastrar una imagen de referencia</b> para crear una versión nueva basada en ella.
+                            <div id="imageStage">
+                                <div id="emptyPlaceholder" class="text-center text-muted small px-4">
+                                    <div style="font-size: 2.5rem;">🎨</div>
+                                    Presiona <b>🎙️ Dictar descripción</b> para hablar o escribe tu idea a la izquierda.<br>
+                                    También puedes <b>arrastrar una imagen de referencia</b> para crear una versión nueva basada en ella.
+                                </div>
+                                <div id="loadingSpinner" class="text-center" style="display: none;">
+                                    <div class="spinner-border text-primary mb-2" style="width: 2.3rem; height: 2.3rem;" role="status"></div>
+                                    <div class="fw-bold text-primary">Creando tu imagen con Inteligencia Artificial...</div>
+                                    <div class="text-muted small">Esto toma solo unos segundos</div>
+                                </div>
+                                <img id="generatedImg" alt="Imagen generada por IA" />
                             </div>
-                            <div id="loadingSpinner" class="text-center" style="display: none;">
-                                <div class="spinner-border text-primary mb-2" style="width: 2.5rem; height: 2.5rem;" role="status"></div>
-                                <div class="fw-bold text-primary">Creando tu imagen con Inteligencia Artificial...</div>
-                                <div class="text-muted small">Esto toma solo unos segundos</div>
-                            </div>
-                            <img id="generatedImg" alt="Imagen generada por IA" />
                         </div>
 
                         <div class="mt-2">
                             <div class="small fw-bold text-secondary mb-1">🕒 Creadas en esta sesión (clic para volver a ver o usar de referencia):</div>
-                            <div id="historyStrip" class="d-flex gap-2 flex-wrap align-items-center" style="min-height: 64px;">
+                            <div id="historyStrip" class="d-flex gap-2 flex-wrap align-items-center" style="min-height: 52px;">
                                 <span class="text-muted small">Aún no has generado imágenes en esta sesión.</span>
                             </div>
                         </div>
@@ -302,7 +305,7 @@
                 }
                 const sep = textoBaseAntesDictado ? ' ' : '';
                 promptInput.value = (textoBaseAntesDictado + sep + transcrito.trim()).trim();
-                clearBtn.disabled = false;
+                clearBtn.disabled = !promptInput.value.trim();
             };
 
             recognition.onerror = (e) => {
