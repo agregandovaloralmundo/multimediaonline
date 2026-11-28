@@ -408,7 +408,7 @@
                                     <button type="button" class="nav-link active py-1 px-1 fw-bold" data-bin-tab="media" title="Tus archivos locales importados: videos, GIFs animados, fotos y audios">📁 Medios</button>
                                 </li>
                                 <li class="nav-item">
-                                    <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="online" title="Banco de videos HD gratis en línea sin marca de agua (Pexels)">🌐 Banco</button>
+                                    <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="online" title="Banco de videos HD gratis en línea sin marca de agua (Pixabay)">🌐 Banco</button>
                                 </li>
                                 <li class="nav-item">
                                     <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="text" title="Plantillas de títulos y rótulos personalizables en texto, letra y color">🏷️ Textos</button>
@@ -437,18 +437,16 @@
                                 </div>
                             </div>
 
-                            <!-- TAB 2: BANCO DE VIDEOS EN LÍNEA SIN MARCA DE AGUA -->
+                            <!-- TAB 2: BANCO DE VIDEOS HD EN LÍNEA SIN MARCA DE AGUA (PIXABAY PROXY) -->
                             <div id="binTabOnline" class="d-none flex-column flex-grow-1" style="min-height:0;">
                                 <div class="bg-white p-2 rounded border mb-2">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <span class="fw-bold text-primary" style="font-size:11px;">🌐 Banco Videos HD (Sin Marca de Agua)</span>
-                                        <button type="button" id="btnPexelsKey" class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:10px;" title="Configurar clave API gratuita de Pexels para búsquedas globales ilimitadas">
-                                            🔑 API Key
-                                        </button>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:9.5px;" title="Conectado de forma segura mediante Cloudflare Worker">HD Libre</span>
                                     </div>
                                     <div class="input-group input-group-sm">
-                                        <input type="text" id="onlineSearchInput" class="form-control" placeholder="Buscar video: naturaleza, ciudad, oficina..." title="Escribe una palabra clave para buscar videos HD libres de derechos">
-                                        <button type="button" id="btnSearchOnlineVideos" class="btn btn-primary fw-bold" title="Ejecutar búsqueda en el banco de videos en línea">🔍</button>
+                                        <input type="text" id="onlineSearchInput" class="form-control" placeholder="Buscar video: doctor, naturaleza, ciudad..." title="Escribe una palabra clave en español o inglés para buscar videos HD libres de derechos">
+                                        <button type="button" id="btnSearchOnlineVideos" class="btn btn-primary fw-bold" title="Buscar videos gratis sin marca de agua">🔍</button>
                                     </div>
                                     <div class="text-muted mt-1" style="font-size:10px;">
                                         💡 Pulsa <b>+ Usar</b> para insertar el clip en la posición actual de tu línea roja.
@@ -729,8 +727,8 @@
     (() => {
         'use strict';
 
-        // Pega aquí tu API Key gratuita de Pexels Videos (pexels.com/api) para habilitar búsquedas globales sin marca de agua para todos los usuarios:
-        const DEFAULT_PEXELS_KEY = "";
+        // Backend Proxy seguro en Cloudflare (mantiene oculta la API Key de Pixabay)
+        const PIXABAY_PROXY_URL = "https://generador-ia.agregandovaloralmundo-arb.workers.dev/pixabay";
 
         // Pestañas del Explorador Izquierdo
         document.querySelectorAll('[data-bin-tab]').forEach(btn => {
@@ -751,7 +749,6 @@
         const binFileInput = document.getElementById('binFileInput');
         const mediaBinList = document.getElementById('mediaBinList');
 
-        const btnPexelsKey = document.getElementById('btnPexelsKey');
         const onlineSearchInput = document.getElementById('onlineSearchInput');
         const btnSearchOnlineVideos = document.getElementById('btnSearchOnlineVideos');
         const onlineVideosList = document.getElementById('onlineVideosList');
@@ -873,11 +870,6 @@
 
         function obtenerDuracionTotal() {
             return timelineClips.reduce((mx, c) => Math.max(mx, finClip(c)), 0);
-        }
-
-        function obtenerPexelsApiKey() {
-            const local = (localStorage.getItem('multimedia_pexels_key') || '').trim();
-            return local || DEFAULT_PEXELS_KEY;
         }
 
         function aplicarAspectoCanvas() {
@@ -1130,7 +1122,7 @@
         }
 
         /* ============================================================
-           1B. BANCO DE VIDEOS EN LÍNEA SIN MARCA DE AGUA (PEXELS + CURADOS)
+           1B. BANCO DE VIDEOS HD SIN MARCA DE AGUA (PIXABAY VIA CLOUDFLARE)
            ============================================================ */
         const CURATED_FREE_CLIPS = [
             {
@@ -1181,7 +1173,12 @@
                 const card = document.createElement('div');
                 card.className = 'media-row-card';
                 card.title = `${item.title} — Pulsa "+ Usar" para insertarlo en el segundo actual de la línea roja`;
-                card.innerHTML = `<div class="media-row-icon bg-dark text-info">🌐</div>
+
+                const thumbHtml = item.thumb
+                    ? `<img src="${item.thumb}" class="media-row-thumb" alt="${item.title}">`
+                    : `<div class="media-row-icon bg-dark text-info">🌐</div>`;
+
+                card.innerHTML = `${thumbHtml}
                                   <div class="media-row-info">
                                       <div class="small fw-bold text-dark text-truncate">${item.title}</div>
                                       <div class="text-muted" style="font-size:10px;">Sin marca de agua · ${fmtTime(item.duration)}</div>
@@ -1230,55 +1227,52 @@
         }
         renderizarListaBancoOnline(CURATED_FREE_CLIPS);
 
-        btnPexelsKey.addEventListener('click', async () => {
-            const actual = localStorage.getItem('multimedia_pexels_key') || '';
-            const { value } = await Swal.fire({
-                title: '🔑 API Key Gratuita de Pexels Videos',
-                html: '<p class="small text-start mb-2">Obtén tu clave gratis sin tarjeta en <a href="https://www.pexels.com/api/" target="_blank">pexels.com/api</a> y pégala aquí para habilitar búsquedas globales ilimitadas:</p>',
-                input: 'text',
-                inputValue: actual,
-                inputPlaceholder: 'Pega aquí tu API Key de Pexels...',
-                showCancelButton: true,
-                confirmButtonText: 'Guardar Key'
-            });
-            if (value !== undefined) {
-                localStorage.setItem('multimedia_pexels_key', value.trim());
-                Toast.fire({ icon: 'success', title: 'Clave de Pexels guardada en tu navegador' });
-            }
-        });
-
         async function buscarVideosEnLinea() {
             const q = onlineSearchInput.value.trim();
             if (!q) {
                 renderizarListaBancoOnline(CURATED_FREE_CLIPS);
                 return;
             }
-            const apiKey = obtenerPexelsApiKey();
-            if (!apiKey) {
+            onlineVideosList.innerHTML = '<div class="text-center small text-primary p-3">🔍 Buscando videos HD sin marca de agua...</div>';
+            try {
+                const res = await fetch(`${PIXABAY_PROXY_URL}?q=${encodeURIComponent(q)}`);
+                if (!res.ok) throw new Error('Error en servidor proxy');
+                const data = await res.json();
+                const hits = Array.isArray(data.hits) ? data.hits : [];
+
+                const list = hits.map(hit => {
+                    const vids = hit.videos || {};
+                    const chosen = vids.medium || vids.small || vids.large || {};
+                    const cleanTitle = (hit.tags || q)
+                        .split(',')
+                        .slice(0, 3)
+                        .map(s => s.trim())
+                        .filter(Boolean)
+                        .join(' · ');
+                    return {
+                        title: cleanTitle ? `${cleanTitle} (HD)` : `Video HD #${hit.id}`,
+                        duration: hit.duration || 10,
+                        url: chosen.url || '',
+                        thumb: chosen.thumbnail || ''
+                    };
+                }).filter(x => x.url);
+
+                if (list.length) {
+                    renderizarListaBancoOnline(list);
+                } else {
+                    const filtrados = CURATED_FREE_CLIPS.filter(c =>
+                        c.title.toLowerCase().includes(q.toLowerCase()) ||
+                        (c.tags && c.tags.includes(q.toLowerCase()))
+                    );
+                    renderizarListaBancoOnline(filtrados.length ? filtrados : CURATED_FREE_CLIPS);
+                    Toast.fire({ icon: 'info', title: 'Mostrando clips libres sugeridos' });
+                }
+            } catch {
                 const filtrados = CURATED_FREE_CLIPS.filter(c =>
                     c.title.toLowerCase().includes(q.toLowerCase()) ||
                     (c.tags && c.tags.includes(q.toLowerCase()))
                 );
                 renderizarListaBancoOnline(filtrados.length ? filtrados : CURATED_FREE_CLIPS);
-                return;
-            }
-            onlineVideosList.innerHTML = '<div class="text-center small text-primary p-3">🔍 Buscando videos HD en Pexels...</div>';
-            try {
-                const res = await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&per_page=12`, {
-                    headers: { Authorization: apiKey }
-                });
-                const data = await res.json();
-                const list = (data.videos || []).map(v => {
-                    const hd = v.video_files.find(f => f.quality === 'hd' && f.file_type === 'video/mp4') || v.video_files[0];
-                    return {
-                        title: `Video HD #${v.id} (${q})`,
-                        duration: v.duration || 10,
-                        url: hd ? hd.link : ''
-                    };
-                }).filter(x => x.url);
-                renderizarListaBancoOnline(list.length ? list : CURATED_FREE_CLIPS);
-            } catch {
-                renderizarListaBancoOnline(CURATED_FREE_CLIPS);
             }
         }
         btnSearchOnlineVideos.addEventListener('click', buscarVideosEnLinea);
