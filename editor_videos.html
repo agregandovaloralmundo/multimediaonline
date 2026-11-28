@@ -319,7 +319,7 @@
             font-size: 10px;
             font-weight: 600;
             line-height: 22px;
-            padding: 0 8px;
+            padding: 0 11px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -333,15 +333,18 @@
             position: absolute;
             top: 0;
             bottom: 0;
-            width: 7px;
+            width: 10px;
             cursor: ew-resize;
-            z-index: 10;
-            background: rgba(255, 255, 255, 0.22);
-            transition: background-color 0.15s;
+            z-index: 12;
+            background: rgba(250, 204, 21, 0.35);
+            transition: background-color 0.12s;
+            touch-action: none;
         }
-        .tl-trim-handle:hover { background: #facc15; }
-        .tl-trim-left { left: 0; border-right: 1px solid rgba(0,0,0,0.35); }
-        .tl-trim-right { right: 0; border-left: 1px solid rgba(0,0,0,0.35); }
+        .tl-trim-handle:hover, .tl-trim-handle:active {
+            background: #facc15;
+        }
+        .tl-trim-left { left: 0; border-right: 1px solid rgba(0,0,0,0.45); border-radius: 4px 0 0 4px; }
+        .tl-trim-right { right: 0; border-left: 1px solid rgba(0,0,0,0.45); border-radius: 0 4px 4px 0; }
         .tl-clip-video { background: #2563eb; color: #fff; border: 1px solid #93c5fd; }
         .tl-clip-image { background: #7c3aed; color: #fff; border: 1px solid #c4b5fd; }
         .tl-clip-gif   { background: #db2777; color: #fff; border: 1px solid #f9a8d4; }
@@ -358,7 +361,7 @@
             border-radius: 8px;
             box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
             padding: 4px;
-            min-width: 175px;
+            min-width: 185px;
             display: none;
         }
         .ctx-menu-item {
@@ -560,7 +563,7 @@
                                         </div>
                                         <div class="col-6">
                                             <label class="text-muted mb-0">Duración (s):</label>
-                                            <input type="number" id="inspDur" class="form-control form-control-sm py-0" value="0" min="0.2" step="0.2" disabled title="Duración total en segundos de este clip">
+                                            <input type="number" id="inspDur" class="form-control form-control-sm py-0" value="0" min="0.2" step="0.2" disabled title="Duración total en segundos de este clip (puedes escribir aquí el número exacto)">
                                         </div>
                                     </div>
 
@@ -603,6 +606,11 @@
                                         <button type="button" id="btnDeleteSelected" class="btn btn-outline-danger btn-sm flex-fill py-0" disabled title="Eliminar de la línea de tiempo el clip seleccionado">🗑️</button>
                                     </div>
 
+                                    <!-- BOTÓN DE AJUSTE RÁPIDO AL VIDEO -->
+                                    <button type="button" id="btnMatchVideoDur" class="btn btn-outline-info btn-sm w-100 py-0 mb-1 fw-bold d-none" title="Recorta o ajusta automáticamente la duración de este audio, imagen, GIF o texto para que termine exactamente junto con el video">
+                                        🧲 Ajustar Duración al Video
+                                    </button>
+
                                     <!-- SELECTOR DE FORMATO DE SALIDA / REDES SOCIALES -->
                                     <div class="mb-1">
                                         <label for="aspectSelect" class="fw-bold text-dark mb-0" style="font-size:11px;">📐 Formato de Salida:</label>
@@ -638,7 +646,7 @@
                         </div>
 
                         <!-- LÍNEA DE TIEMPO CON RELOJ EN VIVO + REGLA GRADUADA + SCROLL EN PISTAS -->
-                        <div id="timelineContainer" title="Línea de tiempo multipista: arrastra clips para moverlos · arrastra orillas (↔) para recortar · clic derecho sobre un clip para dividir · doble clic en texto para editar">
+                        <div id="timelineContainer" title="Línea de tiempo multipista: arrastra clips para moverlos · arrastra orillas amarillas (↔) para recortar · clic derecho sobre un clip para dividir · doble clic en texto para editar">
                             <div class="ruler-bar-row">
                                 <div id="liveTimeDisplay" title="Tiempo transcurrido actual / Duración total del proyecto">00:00 / 00:00</div>
                                 <div id="timelineRuler" title="Regla de tiempo: haz clic o arrastra sobre los números para saltar a un minuto/segundo exacto"></div>
@@ -660,6 +668,7 @@
     <!-- Menú Contextual al hacer Clic Derecho en la Línea de Tiempo -->
     <div id="tlContextMenu">
         <button type="button" class="ctx-menu-item" id="ctxSplitHere" title="Partir este clip en dos exactamente donde hiciste clic">✂️ Dividir clip aquí</button>
+        <button type="button" class="ctx-menu-item" id="ctxTrimToCursor" title="Recortar el final de este clip exactamente hasta la línea roja">✂️ Cortar final hasta línea roja</button>
         <button type="button" class="ctx-menu-item" id="ctxMoveTrackUp" title="Mover este clip una capa hacia arriba">▲ Subir a pista superior</button>
         <button type="button" class="ctx-menu-item" id="ctxMoveTrackDown" title="Mover este clip una capa hacia abajo">▼ Bajar a pista inferior</button>
         <hr class="my-1">
@@ -777,6 +786,7 @@
         const btnTrackDown = document.getElementById('btnTrackDown');
         const btnSplitClip = document.getElementById('btnSplitClip');
         const btnDeleteSelected = document.getElementById('btnDeleteSelected');
+        const btnMatchVideoDur = document.getElementById('btnMatchVideoDur');
         const btnEditTextStyle = document.getElementById('btnEditTextStyle');
         const btnAddTrack = document.getElementById('btnAddTrack');
 
@@ -794,6 +804,7 @@
 
         const tlContextMenu = document.getElementById('tlContextMenu');
         const ctxSplitHere = document.getElementById('ctxSplitHere');
+        const ctxTrimToCursor = document.getElementById('ctxTrimToCursor');
         const ctxMoveTrackUp = document.getElementById('ctxMoveTrackUp');
         const ctxMoveTrackDown = document.getElementById('ctxMoveTrackDown');
         const ctxDeleteClip = document.getElementById('ctxDeleteClip');
@@ -869,7 +880,17 @@
         }
 
         function obtenerDuracionTotal() {
+            // Mientras el usuario está recortando con el ratón, mantenemos la escala congelada para que vea encogerse la barra
+            if (tlDragState && tlDragState.totalSnapshot) {
+                return tlDragState.totalSnapshot;
+            }
             return timelineClips.reduce((mx, c) => Math.max(mx, finClip(c)), 0);
+        }
+
+        function obtenerFinMaximoVideos() {
+            return timelineClips
+                .filter(c => c.type === 'video')
+                .reduce((mx, c) => Math.max(mx, finClip(c)), 0);
         }
 
         function aplicarAspectoCanvas() {
@@ -970,6 +991,10 @@
         ctxSplitHere.addEventListener('click', () => {
             tlContextMenu.style.display = 'none';
             dividirClipEnCabezal();
+        });
+        ctxTrimToCursor.addEventListener('click', () => {
+            tlContextMenu.style.display = 'none';
+            recortarFinalHastaCabezal();
         });
         ctxMoveTrackUp.addEventListener('click', () => {
             tlContextMenu.style.display = 'none';
@@ -1454,7 +1479,7 @@
                 bgMode: 'dark',
                 transition: null,
                 start: startSec,
-                rawDuration: 60,
+                rawDuration: 600,
                 trimStart: 0,
                 trimEnd: 5,
                 xNorm: 0.25,
@@ -1534,7 +1559,7 @@
                     imgEl: mediaItem.imgEl,
                     gifData: mediaItem.gifData || null,
                     start: startSec,
-                    rawDuration: 60,
+                    rawDuration: 600,
                     trimStart: 0,
                     trimEnd: 5,
                     zoom: 100,
@@ -1593,11 +1618,12 @@
         });
 
         /* ============================================================
-           4. DIVIDIR / CORTAR CLIP EN EL CABEZAL ROJO (✂️)
+           4. DIVIDIR / CORTAR CLIP EN EL CABEZAL ROJO (✂️) + AJUSTAR AL VIDEO
            ============================================================ */
         async function dividirClipEnCabezal() {
             const total = obtenerDuracionTotal();
             if (total <= 0) return;
+            if (isPlayingPreview) detenerTodoProceso();
             const t = currentTimelineSec;
 
             let objetivo = timelineClips.find(c => c.id === selectedClipId && t > c.start + 0.25 && t < finClip(c) - 0.25);
@@ -1663,6 +1689,37 @@
             Toast.fire({ icon: 'success', title: '✂️ Clip dividido en dos partes' });
         }
 
+        function recortarFinalHastaCabezal() {
+            const c = timelineClips.find(x => x.id === selectedClipId);
+            if (!c) return;
+            if (isPlayingPreview) detenerTodoProceso();
+            const t = currentTimelineSec;
+            if (t <= c.start + 0.2) {
+                Toast.fire({ icon: 'info', title: 'Coloca la línea roja después del inicio del clip para cortar ahí' });
+                return;
+            }
+            const nuevaDur = t - c.start;
+            const maxE = (c.type === 'video' || c.type === 'audio') ? c.rawDuration : 600;
+            c.trimEnd = Math.min(maxE, c.trimStart + nuevaDur);
+            actualizarTodoUI();
+            saltarATiempo(Math.min(t, obtenerDuracionTotal()));
+            Toast.fire({ icon: 'success', title: `✂️ Final recortado en ${fmtTime(finClip(c))}` });
+        }
+
+        btnMatchVideoDur.addEventListener('click', () => {
+            const c = timelineClips.find(x => x.id === selectedClipId);
+            const finVideos = obtenerFinMaximoVideos();
+            if (!c || finVideos <= 0) return;
+            if (isPlayingPreview) detenerTodoProceso();
+
+            const nuevaDur = Math.max(0.2, finVideos - c.start);
+            const maxE = (c.type === 'video' || c.type === 'audio') ? c.rawDuration : 600;
+            c.trimEnd = Math.min(maxE, c.trimStart + nuevaDur);
+            actualizarTodoUI();
+            saltarATiempo(0);
+            Toast.fire({ icon: 'success', title: `🧲 Ajustado exactamente a ${fmtTime(finClip(c))}` });
+        });
+
         btnSplitClip.addEventListener('click', dividirClipEnCabezal);
 
         /* ============================================================
@@ -1682,6 +1739,7 @@
             const iniciarDrag = (mode, e) => {
                 if (e.button !== 0) return;
                 e.stopPropagation();
+                e.preventDefault();
                 tlContextMenu.style.display = 'none';
                 if (isRendering) return;
                 if (isPlayingPreview) detenerTodoProceso();
@@ -1690,7 +1748,7 @@
                 actualizarInspector();
 
                 const rect = tracksScrollArea.getBoundingClientRect();
-                const total = Math.max(1, obtenerDuracionTotal());
+                const total = Math.max(1, timelineClips.reduce((mx, c) => Math.max(mx, finClip(c)), 0));
 
                 tlDragState = {
                     mode,
@@ -1729,8 +1787,8 @@
                 }
                 actualizarTodoUI();
 
-                tlContextMenu.style.left = `${Math.min(window.innerWidth - 190, e.clientX)}px`;
-                tlContextMenu.style.top = `${Math.max(10, e.clientY - 115)}px`;
+                tlContextMenu.style.left = `${Math.min(window.innerWidth - 200, e.clientX)}px`;
+                tlContextMenu.style.top = `${Math.max(10, e.clientY - 140)}px`;
                 tlContextMenu.style.display = 'block';
             });
 
@@ -1748,8 +1806,9 @@
             if (!tlDragState.moved) return;
 
             const deltaSec = (dx / Math.max(50, tlDragState.wrapperWidth)) * tlDragState.totalSnapshot;
-            const snapUmbral = Math.max(0.25, tlDragState.totalSnapshot * 0.012);
+            const snapUmbral = Math.max(0.25, tlDragState.totalSnapshot * 0.015);
             const { mode, item } = tlDragState;
+            const finVideos = obtenerFinMaximoVideos();
 
             if (mode === 'move') {
                 let candidatoStart = Math.max(0, Number((tlDragState.origStart + deltaSec).toFixed(2)));
@@ -1771,11 +1830,15 @@
                 item.trimStart = nuevoTrimS;
                 item.start = Math.max(0, Number((tlDragState.origStart + diff).toFixed(2)));
             } else if (mode === 'trim-right') {
-                const maxTrimE = (item.type === 'video' || item.type === 'audio') ? item.rawDuration : 180;
+                const maxTrimE = (item.type === 'video' || item.type === 'audio') ? item.rawDuration : 600;
                 let nuevoTrimE = Math.max(item.trimStart + 0.2, Math.min(maxTrimE, Number((tlDragState.origTrimEnd + deltaSec).toFixed(2))));
                 const finCandidato = item.start + (nuevoTrimE - item.trimStart);
+
+                // Imán automático hacia la línea roja O hacia el final del video
                 if (Math.abs(finCandidato - currentTimelineSec) <= snapUmbral && currentTimelineSec > item.start + 0.2) {
                     nuevoTrimE = Math.min(maxTrimE, Number((item.trimStart + (currentTimelineSec - item.start)).toFixed(2)));
+                } else if (item.type !== 'video' && finVideos > item.start + 0.2 && Math.abs(finCandidato - finVideos) <= snapUmbral) {
+                    nuevoTrimE = Math.min(maxTrimE, Number((item.trimStart + (finVideos - item.start)).toFixed(2)));
                 }
                 item.trimEnd = nuevoTrimE;
             }
@@ -1789,6 +1852,7 @@
             if (!tlDragState) return;
             const fueClicSimple = !tlDragState.moved;
             const { item } = tlDragState;
+            // Liberamos la escala congelada para que ahora sí se reajuste la regla al nuevo largo
             tlDragState = null;
 
             if (fueClicSimple) {
@@ -1925,6 +1989,7 @@
 
         function actualizarInspector() {
             btnEditTextStyle.classList.add('d-none');
+            btnMatchVideoDur.classList.add('d-none');
             const c = timelineClips.find(x => x.id === selectedClipId);
 
             if (!c) {
@@ -1948,6 +2013,12 @@
             btnSplitClip.disabled = false;
             btnTrackUp.disabled = false;
             btnTrackDown.disabled = c.trackIndex <= 0;
+
+            const finVideos = obtenerFinMaximoVideos();
+            if (c.type !== 'video' && finVideos > 0) {
+                btnMatchVideoDur.classList.remove('d-none');
+                btnMatchVideoDur.textContent = `🧲 Ajustar al Video (${fmtTime(finVideos)})`;
+            }
 
             if (c.type === 'audio') {
                 inspZoom.disabled = true;
@@ -2002,7 +2073,7 @@
             const c = timelineClips.find(x => x.id === selectedClipId);
             if (!c) return;
             const nuevaDur = Math.max(0.2, parseFloat(inspDur.value) || 1);
-            const maxE = (c.type === 'video' || c.type === 'audio') ? c.rawDuration : 180;
+            const maxE = (c.type === 'video' || c.type === 'audio') ? c.rawDuration : 600;
             c.trimEnd = Math.min(maxE, c.trimStart + nuevaDur);
             actualizarTodoUI();
             saltarATiempo(currentTimelineSec);
