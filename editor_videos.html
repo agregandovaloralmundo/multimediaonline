@@ -9,8 +9,8 @@
             window.history.back();
         }
     </script>
-    <title>Multimedia Online - Estudio Editor de Videos</title>
-    <meta name="description" content="Estudio editor de video multipista en el navegador: regla de tiempo con minutos y segundos, pistas dinámicas, banco de videos sin marca de agua, GIFs animados, cámara flotante y renderizado gratis." />
+    <title>Multimedia Online - Editor de Videos</title>
+    <meta name="description" content="Editor de video multipista en el navegador: formatos para YouTube, TikTok, Reels e Instagram, regla de tiempo con minutos y segundos, pistas dinámicas, banco de videos sin marca de agua, GIFs animados y cámara flotante." />
     <meta name="author" content="Lic. Antonio Ramírez Bogantes" />
     <link rel="icon" type="image/x-icon" href="img/principal.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -24,17 +24,17 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 4px 6px;
+            padding: 1px 4px;
         }
         .tool-box {
-            width: 99.4%;
-            max-width: 1860px;
-            height: calc(100vh - 174px);
-            min-height: 540px;
+            width: 99.6%;
+            max-width: 1920px;
+            height: calc(100vh - 146px);
+            min-height: 560px;
             background: #ffffff;
             border: 3px solid #0d6efd;
-            border-radius: 16px;
-            padding: 6px 12px 8px 12px;
+            border-radius: 14px;
+            padding: 4px 10px 6px 10px;
             box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
             display: flex;
             flex-direction: column;
@@ -44,19 +44,19 @@
         .studio-body {
             flex: 1;
             display: flex;
-            gap: 10px;
+            gap: 8px;
             min-height: 0;
         }
         /* PANEL IZQUIERDO: EXPLORADOR VERTICAL CON SCROLL HACIA ABAJO */
         .media-bin-panel {
-            width: 335px;
-            min-width: 305px;
+            width: 325px;
+            min-width: 295px;
             background: #f8f9fa;
             border: 1.5px solid #cbd5e1;
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             flex-direction: column;
-            padding: 7px;
+            padding: 6px;
             overflow: hidden;
         }
         .bin-list-vertical {
@@ -66,7 +66,7 @@
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
             padding-right: 4px;
         }
         .bin-list-vertical::-webkit-scrollbar { width: 6px; }
@@ -75,7 +75,7 @@
             background: #ffffff;
             border: 1.5px solid #cbd5e1;
             border-radius: 8px;
-            padding: 6px;
+            padding: 5px 6px;
             cursor: grab;
             transition: border-color 0.12s, box-shadow 0.12s, background-color 0.12s;
             user-select: none;
@@ -92,16 +92,16 @@
         }
         .media-row-card:active { cursor: grabbing; }
         .media-row-thumb {
-            width: 66px;
-            height: 42px;
+            width: 64px;
+            height: 40px;
             object-fit: cover;
             border-radius: 5px;
             background: #0f172a;
             flex-shrink: 0;
         }
         .media-row-icon {
-            width: 66px;
-            height: 42px;
+            width: 64px;
+            height: 40px;
             border-radius: 5px;
             display: flex;
             align-items: center;
@@ -124,14 +124,14 @@
         .top-stage-row {
             flex: 1;
             display: flex;
-            gap: 10px;
+            gap: 8px;
             min-height: 0;
         }
         #previewStage {
             flex: 1;
             background: #111827;
             border: 2px solid #0d6efd;
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -144,33 +144,54 @@
             background: #000000;
             border-radius: 6px;
             touch-action: none;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.14);
         }
         .inspector-col {
-            width: 245px;
+            width: 246px;
             background: #f8f9fa;
             border: 1.5px solid #cbd5e1;
-            border-radius: 12px;
-            padding: 8px;
+            border-radius: 10px;
+            padding: 6px 8px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            font-size: 12px;
+            font-size: 11.5px;
         }
-        /* LÍNEA DE TIEMPO MULTIPISTA CON REGLA DIRECTA EN LA PARTE SUPERIOR */
+        /* LÍNEA DE TIEMPO MULTIPISTA CON REGLA GRADUADA Y RELOJ EN VIVO */
         #timelineContainer {
             background: #1e293b;
             border-radius: 10px;
-            padding: 5px 8px;
+            padding: 4px 6px;
             color: #f8fafc;
-            margin-top: 6px;
+            margin-top: 5px;
         }
-        #timelineRuler {
-            position: relative;
-            height: 22px;
+        .ruler-bar-row {
+            display: flex;
+            align-items: stretch;
             background: #0b1120;
             border: 1px solid #334155;
             border-bottom: none;
             border-radius: 6px 6px 0 0;
+            height: 23px;
+            overflow: hidden;
+        }
+        #liveTimeDisplay {
+            flex-shrink: 0;
+            background: #0d6efd;
+            color: #ffffff;
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 0 8px;
+            display: flex;
+            align-items: center;
+            border-right: 1px solid #334155;
+            user-select: none;
+        }
+        #timelineRuler {
+            flex: 1;
+            position: relative;
+            height: 100%;
             cursor: pointer;
             user-select: none;
             overflow: hidden;
@@ -183,8 +204,8 @@
             pointer-events: none;
         }
         .ruler-tick.major {
-            height: 12px;
-            background: #cbd5e1;
+            height: 11px;
+            background: #e2e8f0;
         }
         .ruler-tick.minor {
             height: 5px;
@@ -195,12 +216,21 @@
             transform: translateX(3px);
             font-size: 10px;
             font-family: monospace;
-            color: #e2e8f0;
+            font-weight: 600;
+            color: #f8fafc;
             pointer-events: none;
             white-space: nowrap;
         }
+        .ruler-label.end-label {
+            transform: translateX(-100%);
+            padding-right: 4px;
+            color: #93c5fd;
+        }
+        #tracksAreaContainer {
+            position: relative;
+        }
         #tracksScrollArea {
-            max-height: 112px;
+            max-height: 118px;
             overflow-y: auto;
             overflow-x: hidden;
             position: relative;
@@ -230,7 +260,7 @@
         }
         .track-row {
             position: relative;
-            height: 27px;
+            height: 28px;
             background: #131c31;
             border: 1px dashed #475569;
             border-radius: 4px;
@@ -279,7 +309,7 @@
             border-radius: 4px;
             font-size: 10px;
             font-weight: 600;
-            line-height: 21px;
+            line-height: 22px;
             padding: 0 8px;
             white-space: nowrap;
             overflow: hidden;
@@ -352,24 +382,18 @@
 
         <div class="main-content">
             <div class="tool-box">
-                <!-- Barra superior limpia y compacta -->
+                <!-- Barra superior ultra-compacta -->
                 <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
                     <div class="d-flex align-items-center gap-2">
-                        <h5 class="mb-0 fw-bold text-dark">✂️ Estudio Editor de Videos</h5>
+                        <h5 class="mb-0 fw-bold text-dark">✂️ Editor de Videos</h5>
                         <button type="button" id="btnAddTrack" class="btn btn-outline-primary btn-sm py-0 px-2 fw-bold" style="font-size: 11px;" title="Agregar una nueva pista superior">
                             ➕ Nueva Pista
                         </button>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <div class="progress" style="width: 90px; height: 8px;" title="Progreso de renderizado">
+                        <div class="progress" style="width: 100px; height: 8px;" title="Progreso de renderizado">
                             <div id="renderProgress" class="progress-bar bg-danger" style="width: 0%;"></div>
                         </div>
-                        <span class="badge bg-primary font-monospace" id="timeBadge">00:00 / 00:00</span>
-                        <select id="aspectSelect" class="form-select form-select-sm py-0" style="width: 130px;">
-                            <option value="16:9" selected>16:9 YouTube</option>
-                            <option value="9:16">9:16 Short/Reel</option>
-                            <option value="1:1">1:1 Cuadrado</option>
-                        </select>
                         <span id="statusBadge" class="badge bg-light text-secondary border">Listo</span>
                     </div>
                 </div>
@@ -380,19 +404,19 @@
                     <div class="media-bin-panel text-start">
                         <ul class="nav nav-pills nav-fill mb-2 bg-white p-1 rounded border" style="font-size: 10.5px;">
                             <li class="nav-item">
-                                <button type="button" class="nav-link active py-1 px-1 fw-bold" data-bin-tab="media">📁 Medios</button>
+                                <button type="button" class="nav-link active py-1 px-1 fw-bold" data-bin-tab="media" title="Tus archivos locales importados: videos, GIFs animados, fotos y audios">📁 Medios</button>
                             </li>
                             <li class="nav-item">
-                                <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="online">🌐 Banco</button>
+                                <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="online" title="Banco de videos HD gratis en línea sin marca de agua">🌐 Banco</button>
                             </li>
                             <li class="nav-item">
-                                <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="text">🏷️ Textos</button>
+                                <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="text" title="Plantillas de títulos y rótulos personalizables">🏷️ Textos</button>
                             </li>
                             <li class="nav-item">
-                                <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="trans">✨ Transic.</button>
+                                <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="trans" title="Transiciones y efectos de entrada suave para tus clips">✨ Transic.</button>
                             </li>
                             <li class="nav-item">
-                                <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="tools">🪄 Herram.</button>
+                                <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="tools" title="Cámara flotante en vivo y quitar fondo a imágenes">🪄 Herram.</button>
                             </li>
                         </ul>
 
@@ -417,16 +441,16 @@
                             <div class="bg-white p-2 rounded border mb-2">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="fw-bold text-primary" style="font-size:11px;">🌐 Banco Videos HD (Sin Marca de Agua)</span>
-                                    <button type="button" id="btnPexelsKey" class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:10px;" title="Configurar clave gratuita de Pexels para búsquedas ilimitadas">
+                                    <button type="button" id="btnPexelsKey" class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:10px;" title="Configurar clave gratuita de Pexels para búsquedas globales">
                                         🔑 API Key
                                     </button>
                                 </div>
                                 <div class="input-group input-group-sm">
-                                    <input type="text" id="onlineSearchInput" class="form-control" placeholder="Ej: medicina, naturaleza, ciudad...">
-                                    <button type="button" id="btnSearchOnlineVideos" class="btn btn-primary fw-bold">🔍</button>
+                                    <input type="text" id="onlineSearchInput" class="form-control" placeholder="Buscar video: naturaleza, ciudad, oficina...">
+                                    <button type="button" id="btnSearchOnlineVideos" class="btn btn-primary fw-bold" title="Buscar videos gratis en línea">🔍</button>
                                 </div>
                                 <div class="text-muted mt-1" style="font-size:10px;">
-                                    💡 Al pulsar <b>+ Usar</b>, se inserta en una pista superior justo en el segundo donde esté tu línea roja.
+                                    💡 Pulsa <b>+ Usar</b> para insertar el clip en la posición actual de tu línea roja.
                                 </div>
                             </div>
                             <div id="onlineVideosList" class="bin-list-vertical"></div>
@@ -517,7 +541,7 @@
                                 <canvas id="renderCanvas" width="854" height="480"></canvas>
                             </div>
 
-                            <!-- Inspector de Propiedades, Volumen y Exportación -->
+                            <!-- Inspector de Propiedades, Formato de Salida, Volumen y Exportación -->
                             <div class="inspector-col text-start">
                                 <div>
                                     <div class="fw-bold text-primary border-bottom pb-1 mb-1">🎛️ Propiedades del Clip</div>
@@ -554,7 +578,7 @@
                                         <input type="range" id="inspVolume" class="form-range my-0" min="0" max="100" step="1" value="100" disabled>
                                     </div>
 
-                                    <div class="mb-2">
+                                    <div class="mb-1">
                                         <label class="text-muted mb-0">Filtro visual (Pista 1):</label>
                                         <select id="filterSelect" class="form-select form-select-sm py-0">
                                             <option value="none" selected>Normal</option>
@@ -571,6 +595,18 @@
                                         <button type="button" id="btnTrackDown" class="btn btn-outline-secondary btn-sm flex-fill py-0" disabled title="Bajar clip a la pista inferior">▼</button>
                                         <button type="button" id="btnSplitClip" class="btn btn-warning btn-sm flex-fill py-0 fw-bold" disabled title="Dividir clip en la posición de la línea roja">✂️ Dividir</button>
                                         <button type="button" id="btnDeleteSelected" class="btn btn-outline-danger btn-sm flex-fill py-0" disabled title="Eliminar clip seleccionado">🗑️</button>
+                                    </div>
+
+                                    <!-- SELECTOR DE FORMATO DE SALIDA / REDES SOCIALES -->
+                                    <div class="mb-1">
+                                        <label for="aspectSelect" class="fw-bold text-dark mb-0" style="font-size:11px;">📐 Formato de Salida:</label>
+                                        <select id="aspectSelect" class="form-select form-select-sm py-0">
+                                            <option value="16:9" selected>16:9 YouTube / Horizontal</option>
+                                            <option value="9:16">9:16 TikTok / Shorts / Reels</option>
+                                            <option value="1:1">1:1 Instagram / Facebook (1:1)</option>
+                                            <option value="4:5">4:5 Instagram Vertical (4:5)</option>
+                                            <option value="21:9">21:9 Cine / Panorámico</option>
+                                        </select>
                                     </div>
 
                                     <button type="button" id="btnEditTextStyle" class="btn btn-outline-success btn-sm w-100 py-0 mb-1 fw-bold d-none">
@@ -595,10 +631,13 @@
                             </div>
                         </div>
 
-                        <!-- LÍNEA DE TIEMPO DIRECTA CON REGLA DE MINUTOS ARRIBA Y SCROLL EN PISTAS -->
+                        <!-- LÍNEA DE TIEMPO CON RELOJ EN VIVO + REGLA GRADUADA + SCROLL EN PISTAS -->
                         <div id="timelineContainer" title="Ayuda: Arrastra clips para moverlos · Arrastra orillas (↔) para recortar · Clic derecho sobre un clip para Dividir · Doble clic en texto para editar">
-                            <div id="timelineWrapper" style="position: relative;">
-                                <div id="timelineRuler" title="Haz clic o arrastra sobre la regla para moverte a un minuto/segundo exacto"></div>
+                            <div class="ruler-bar-row">
+                                <div id="liveTimeDisplay" title="Tiempo actual / Duración total">00:00 / 00:00</div>
+                                <div id="timelineRuler" title="Haz clic o arrastra sobre la regla para moverte a un segundo exacto"></div>
+                            </div>
+                            <div id="tracksAreaContainer">
                                 <div id="tracksScrollArea"></div>
                                 <div id="timelinePlayhead" style="left: 0%;"></div>
                             </div>
@@ -682,6 +721,9 @@
     (() => {
         'use strict';
 
+        // Puedes pegar aquí tu API Key gratuita de Pexels Videos (pexels.com/api) para que todos los visitantes busquen videos HD sin marca de agua:
+        const DEFAULT_PEXELS_KEY = "";
+
         // Pestañas del Explorador Izquierdo
         document.querySelectorAll('[data-bin-tab]').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -739,8 +781,8 @@
         const clearAllBtn = document.getElementById('clearAllBtn');
 
         const statusBadge = document.getElementById('statusBadge');
-        const timeBadge = document.getElementById('timeBadge');
         const renderProgress = document.getElementById('renderProgress');
+        const liveTimeDisplay = document.getElementById('liveTimeDisplay');
         const timelineRuler = document.getElementById('timelineRuler');
         const tracksScrollArea = document.getElementById('tracksScrollArea');
         const timelinePlayhead = document.getElementById('timelinePlayhead');
@@ -769,13 +811,13 @@
         let nextMediaId = 1;
 
         let textLibrary = [
-            { id: 't1', text: 'Dr. Medicina', color: '#ffffff' },
-            { id: 't2', text: 'Causas y Síntomas', color: '#facc15' },
+            { id: 't1', text: 'Título Principal', color: '#ffffff' },
+            { id: 't2', text: 'Subtítulo Destacado', color: '#facc15' },
             { id: 't3', text: 'Suscríbete al Canal', color: '#38bdf8' },
-            { id: 't4', text: 'Tratamiento y Prevención', color: '#4ade80' }
+            { id: 't4', text: '¡Dale Me Gusta y Comparte!', color: '#4ade80' },
+            { id: 't5', text: 'Más Información Aquí', color: '#f472b6' }
         ];
 
-        // Arquitectura multipista: trackIndex 0 = Pista 1 (fondo), 1 = Pista 2, 2 = Pista 3...
         let trackCount = 3;
         let timelineClips = [];
         let selectedClipId = null;
@@ -825,10 +867,17 @@
             return timelineClips.reduce((mx, c) => Math.max(mx, finClip(c)), 0);
         }
 
+        function obtenerPexelsApiKey() {
+            const local = (localStorage.getItem('multimedia_pexels_key') || '').trim();
+            return local || DEFAULT_PEXELS_KEY;
+        }
+
         function aplicarAspectoCanvas() {
             const asp = aspectSelect.value;
             if (asp === '9:16') { renderCanvas.width = 540; renderCanvas.height = 960; }
             else if (asp === '1:1') { renderCanvas.width = 720; renderCanvas.height = 720; }
+            else if (asp === '4:5') { renderCanvas.width = 720; renderCanvas.height = 900; }
+            else if (asp === '21:9') { renderCanvas.width = 960; renderCanvas.height = 410; }
             else { renderCanvas.width = 854; renderCanvas.height = 480; }
             dibujarEscena(currentTimelineSec);
         }
@@ -838,40 +887,42 @@
             ctx.fillStyle = '#111827';
             ctx.fillRect(0, 0, renderCanvas.width, renderCanvas.height);
             ctx.fillStyle = '#9ca3af';
-            ctx.font = 'bold 21px Calibri, sans-serif';
+            ctx.font = 'bold 20px Calibri, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText('🎬 Arrastra videos, GIFs, imágenes o sonidos a las Pistas', renderCanvas.width / 2, renderCanvas.height / 2 - 10);
-            ctx.font = '15px Calibri, sans-serif';
+            ctx.font = '14px Calibri, sans-serif';
             ctx.fillText('Usa la regla superior de minutos para ubicarte en el segundo exacto', renderCanvas.width / 2, renderCanvas.height / 2 + 18);
         }
 
         /* ============================================================
-           0. REGLA GRADUADA DE MINUTOS Y SEGUNDOS + MENÚ CLIC DERECHO
+           0. REGLA GRADUADA CON NÚMEROS INTERCALADOS SIEMPRE VISIBLES
            ============================================================ */
         function renderizarReglaTiempo() {
             const total = obtenerDuracionTotal();
             timelineRuler.innerHTML = '';
             const spanSec = total > 0 ? total : 60;
 
-            let majorStep = 5;
+            let majorStep = 1;
             if (spanSec > 600) majorStep = 60;
             else if (spanSec > 300) majorStep = 30;
             else if (spanSec > 120) majorStep = 15;
-            else if (spanSec > 45) majorStep = 10;
+            else if (spanSec > 60) majorStep = 10;
+            else if (spanSec > 25) majorStep = 5;
+            else if (spanSec > 10) majorStep = 2;
+            else majorStep = 1;
 
-            const minorStep = majorStep / 5;
+            const minorStep = majorStep >= 5 ? majorStep / 5 : majorStep / 2;
 
-            for (let t = 0; t <= spanSec; t += minorStep) {
-                const pct = (t / spanSec) * 100;
-                if (pct > 99.6) break;
-                const isMajor = Math.abs(Math.round(t / majorStep) * majorStep - t) < 0.05;
+            for (let t = 0; t <= spanSec + 0.001; t += minorStep) {
+                const pct = Math.min(100, (t / spanSec) * 100);
+                const isMajor = Math.abs(Math.round(t / majorStep) * majorStep - t) < 0.04;
 
                 const tick = document.createElement('div');
                 tick.className = `ruler-tick ${isMajor ? 'major' : 'minor'}`;
                 tick.style.left = `${pct}%`;
                 timelineRuler.appendChild(tick);
 
-                if (isMajor) {
+                if (isMajor && pct < 93) {
                     const lbl = document.createElement('span');
                     lbl.className = 'ruler-label';
                     lbl.style.left = `${pct}%`;
@@ -879,6 +930,13 @@
                     timelineRuler.appendChild(lbl);
                 }
             }
+
+            // Etiqueta fija en el extremo derecho con la duración máxima
+            const endLbl = document.createElement('span');
+            endLbl.className = 'ruler-label end-label';
+            endLbl.style.left = '100%';
+            endLbl.textContent = fmtTime(Math.round(spanSec));
+            timelineRuler.appendChild(endLbl);
         }
 
         timelineRuler.addEventListener('pointerdown', (e) => {
@@ -908,7 +966,6 @@
             }
         });
 
-        // Ocultar menú contextual al hacer clic fuera
         window.addEventListener('click', () => { tlContextMenu.style.display = 'none'; });
 
         ctxSplitHere.addEventListener('click', () => {
@@ -1071,28 +1128,39 @@
         const CURATED_FREE_CLIPS = [
             {
                 title: 'Océano y Olas Azules (HD Libre)',
+                tags: 'oceano mar agua playa naturaleza',
                 duration: 12,
                 url: 'https://assets.mixkit.co/videos/preview/mixkit-waves-in-the-water-1164-large.mp4'
             },
             {
                 title: 'Nubes en Movimiento Cielo Azul',
+                tags: 'nubes cielo aire clima naturaleza',
                 duration: 15,
                 url: 'https://assets.mixkit.co/videos/preview/mixkit-white-clouds-in-the-blue-sky-2408-large.mp4'
             },
             {
                 title: 'Bosque Soleado y Naturaleza',
+                tags: 'bosque arboles rio sol naturaleza verde',
                 duration: 10,
                 url: 'https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-529-large.mp4'
             },
             {
                 title: 'Ciudad Nocturna y Tráfico Urbano',
+                tags: 'ciudad noche carros trafico calle urbano',
                 duration: 14,
                 url: 'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-city-traffic-at-night-11-large.mp4'
             },
             {
                 title: 'Tecnología y Código en Pantalla',
+                tags: 'tecnologia computadora codigo programacion oficina',
                 duration: 12,
                 url: 'https://assets.mixkit.co/videos/preview/mixkit-software-developer-working-on-code-screen-close-up-1728-large.mp4'
+            },
+            {
+                title: 'Equipo Médico y Laboratorio Clínico',
+                tags: 'doctor medicina hospital laboratorio salud ciencia',
+                duration: 12,
+                url: 'https://assets.mixkit.co/videos/preview/mixkit-scientist-working-with-samples-in-a-laboratory-4736-large.mp4'
             }
         ];
 
@@ -1146,7 +1214,7 @@
                     } catch {
                         statusBadge.className = 'badge bg-warning text-dark';
                         statusBadge.textContent = 'Listo';
-                        Swal.fire('Aviso de conexión', 'No se pudo descargar ese clip externo. Prueba con otro o configura tu API Key gratuita de Pexels.', 'info');
+                        Swal.fire('Aviso de conexión', 'No se pudo descargar ese clip externo. Prueba con otro video.', 'info');
                     }
                 });
                 onlineVideosList.appendChild(card);
@@ -1158,7 +1226,7 @@
             const actual = localStorage.getItem('multimedia_pexels_key') || '';
             const { value } = await Swal.fire({
                 title: '🔑 API Key Gratuita de Pexels Videos',
-                html: '<p class="small text-start mb-2">Obtén tu clave gratis sin tarjeta en <a href="https://www.pexels.com/api/" target="_blank">pexels.com/api</a> y pégala aquí para buscar miles de videos HD sin marca de agua:</p>',
+                html: '<p class="small text-start mb-2">Obtén tu clave gratis sin tarjeta en <a href="https://www.pexels.com/api/" target="_blank">pexels.com/api</a> y pégala aquí para habilitar búsquedas globales ilimitadas:</p>',
                 input: 'text',
                 inputValue: actual,
                 inputPlaceholder: 'Pega aquí tu API Key de Pexels...',
@@ -1177,28 +1245,30 @@
                 renderizarListaBancoOnline(CURATED_FREE_CLIPS);
                 return;
             }
-            const apiKey = (localStorage.getItem('multimedia_pexels_key') || '').trim();
+            const apiKey = obtenerPexelsApiKey();
             if (!apiKey) {
-                const filtrados = CURATED_FREE_CLIPS.filter(c => c.title.toLowerCase().includes(q.toLowerCase()));
+                const filtrados = CURATED_FREE_CLIPS.filter(c =>
+                    c.title.toLowerCase().includes(q.toLowerCase()) ||
+                    (c.tags && c.tags.includes(q.toLowerCase()))
+                );
                 renderizarListaBancoOnline(filtrados.length ? filtrados : CURATED_FREE_CLIPS);
-                Toast.fire({ icon: 'info', title: 'Tip: Configura tu 🔑 API Key gratis de Pexels para búsquedas globales' });
                 return;
             }
             onlineVideosList.innerHTML = '<div class="text-center small text-primary p-3">🔍 Buscando videos HD en Pexels...</div>';
             try {
-                const res = await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&per_page=10`, {
+                const res = await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&per_page=12`, {
                     headers: { Authorization: apiKey }
                 });
                 const data = await res.json();
                 const list = (data.videos || []).map(v => {
                     const hd = v.video_files.find(f => f.quality === 'hd' && f.file_type === 'video/mp4') || v.video_files[0];
                     return {
-                        title: `Pexels #${v.id} (${q})`,
+                        title: `Video HD #${v.id} (${q})`,
                         duration: v.duration || 10,
                         url: hd ? hd.link : ''
                     };
                 }).filter(x => x.url);
-                renderizarListaBancoOnline(list);
+                renderizarListaBancoOnline(list.length ? list : CURATED_FREE_CLIPS);
             } catch {
                 renderizarListaBancoOnline(CURATED_FREE_CLIPS);
             }
@@ -1215,17 +1285,19 @@
                 const card = document.createElement('div');
                 card.className = 'media-row-card';
                 card.draggable = true;
+                card.title = 'Arrastra a una pista o haz doble clic para insertar y personalizar texto, letra y color';
                 card.innerHTML = `<div class="media-row-icon bg-dark" style="color:${t.color}; font-size:12px; font-weight:bold;">Aa</div>
                                   <div class="media-row-info">
                                       <div class="small fw-bold text-dark text-truncate">${t.text}</div>
-                                      <div class="text-muted" style="font-size:10px;">Arrastra o doble clic para añadir en el cabezal</div>
+                                      <div class="text-muted" style="font-size:10px;">Arrastra o doble clic para personalizar</div>
                                   </div>`;
                 card.addEventListener('dragstart', (e) => {
                     draggedLibraryPayload = { dragKind: 'text', text: t.text, color: t.color };
                     e.dataTransfer.setData('text/plain', JSON.stringify(draggedLibraryPayload));
                 });
                 card.addEventListener('dblclick', () => {
-                    agregarTextoAPista(t.text, t.color, encontrarPistaLibreSuperior('text'), currentTimelineSec);
+                    const clipCreado = agregarTextoAPista(t.text, t.color, encontrarPistaLibreSuperior('text'), currentTimelineSec);
+                    abrirModalEditarTexto(clipCreado);
                 });
                 textBinList.appendChild(card);
             });
@@ -1238,7 +1310,7 @@
             textLibrary.unshift({ id: 't' + Date.now(), text: txt, color: customTextColor.value || '#ffffff' });
             customTextDraft.value = '';
             renderizarTextBin();
-            Toast.fire({ icon: 'success', title: 'Texto creado: arrástralo a cualquier pista' });
+            Toast.fire({ icon: 'success', title: 'Texto creado: arrástralo o haz doble clic para editarlo' });
         });
 
         document.querySelectorAll('[data-drag-kind="transition"]').forEach(el => {
@@ -1390,6 +1462,7 @@
             selectedClipId = nuevoClip.id;
             actualizarTodoUI();
             saltarATiempo(startSec + 0.05);
+            return nuevoClip;
         }
 
         async function agregarMedioEnPista(mediaItem, trackIndex, startSec) {
@@ -1487,7 +1560,10 @@
             modalTextColor.value = c.color || '#ffffff';
             modalTextBgMode.value = c.bgMode || 'dark';
             textEditorModal.show();
-            setTimeout(() => modalTextValue.focus(), 200);
+            setTimeout(() => {
+                modalTextValue.focus();
+                modalTextValue.select();
+            }, 200);
         }
 
         btnEditTextStyle.addEventListener('click', () => {
@@ -1636,7 +1712,6 @@
                 iniciarDrag('move', e);
             });
 
-            // Clic derecho sobre cualquier clip: mueve la línea roja al punto exacto del clic y abre menú con "Dividir"
             el.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1837,7 +1912,7 @@
             }
 
             if (total <= 0) {
-                timeBadge.textContent = '00:00 / 00:00';
+                liveTimeDisplay.textContent = '00:00 / 00:00';
                 timelinePlayhead.style.left = '0%';
             } else {
                 actualizarPlayhead(currentTimelineSec);
@@ -1978,7 +2053,7 @@
         function actualizarPlayhead(sec) {
             const total = obtenerDuracionTotal();
             currentTimelineSec = Math.max(0, Math.min(total || 0, sec));
-            timeBadge.textContent = `${fmtTime(currentTimelineSec)} / ${fmtTime(total)}`;
+            liveTimeDisplay.textContent = `${fmtTime(currentTimelineSec)} / ${fmtTime(total)}`;
             const pct = total > 0 ? Math.min(100, (currentTimelineSec / total) * 100) : 0;
             timelinePlayhead.style.left = `${pct}%`;
         }
@@ -2446,7 +2521,7 @@
                 const stepCam = (now) => {
                     if (!isRendering) return;
                     const elapsed = (now - tWallStart) / 1000;
-                    timeBadge.textContent = `${fmtTime(elapsed)} / EN VIVO`;
+                    liveTimeDisplay.textContent = `${fmtTime(elapsed)} / EN VIVO`;
                     dibujarFondoBase();
                     dibujarCamaraFlotante();
                     renderProgress.style.width = '100%';
