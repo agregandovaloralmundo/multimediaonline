@@ -34,7 +34,7 @@
             background: #ffffff;
             border: 3px solid #0d6efd;
             border-radius: 14px;
-            padding: 4px 10px 6px 10px;
+            padding: 5px 10px 6px 10px;
             box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
             display: flex;
             flex-direction: column;
@@ -47,10 +47,18 @@
             gap: 8px;
             min-height: 0;
         }
-        /* PANEL IZQUIERDO: EXPLORADOR VERTICAL CON SCROLL HACIA ABAJO */
-        .media-bin-panel {
+        /* COLUMNA IZQUIERDA: TÍTULO COMPACTO + EXPLORADOR VERTICAL */
+        .left-col-stack {
             width: 325px;
             min-width: 295px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-height: 0;
+        }
+        .media-bin-panel {
+            flex: 1;
+            width: 100%;
             background: #f8f9fa;
             border: 1.5px solid #cbd5e1;
             border-radius: 10px;
@@ -58,6 +66,7 @@
             flex-direction: column;
             padding: 6px;
             overflow: hidden;
+            min-height: 0;
         }
         .bin-list-vertical {
             flex: 1;
@@ -113,7 +122,7 @@
             flex: 1;
             min-width: 0;
         }
-        /* ZONA DERECHA: VISOR + INSPECTOR + LÍNEA DE TIEMPO */
+        /* ZONA DERECHA: VISOR ALINEADO AL TOPE + INSPECTOR + LÍNEA DE TIEMPO */
         .workspace-right {
             flex: 1;
             display: flex;
@@ -147,7 +156,7 @@
             box-shadow: 0 0 0 1px rgba(255,255,255,0.14);
         }
         .inspector-col {
-            width: 246px;
+            width: 248px;
             background: #f8f9fa;
             border: 1.5px solid #cbd5e1;
             border-radius: 10px;
@@ -230,7 +239,7 @@
             position: relative;
         }
         #tracksScrollArea {
-            max-height: 118px;
+            max-height: 122px;
             overflow-y: auto;
             overflow-x: hidden;
             position: relative;
@@ -382,205 +391,204 @@
 
         <div class="main-content">
             <div class="tool-box">
-                <!-- Barra superior ultra-compacta -->
-                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
-                    <div class="d-flex align-items-center gap-2">
-                        <h5 class="mb-0 fw-bold text-dark">✂️ Editor de Videos</h5>
-                        <button type="button" id="btnAddTrack" class="btn btn-outline-primary btn-sm py-0 px-2 fw-bold" style="font-size: 11px;" title="Agregar una nueva pista superior">
-                            ➕ Nueva Pista
-                        </button>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="progress" style="width: 100px; height: 8px;" title="Progreso de renderizado">
-                            <div id="renderProgress" class="progress-bar bg-danger" style="width: 0%;"></div>
-                        </div>
-                        <span id="statusBadge" class="badge bg-light text-secondary border">Listo</span>
-                    </div>
-                </div>
-
-                <!-- CUERPO PRINCIPAL -->
+                <!-- CUERPO PRINCIPAL ALINEADO AL FILO SUPERIOR -->
                 <div class="studio-body">
-                    <!-- PANEL IZQUIERDO: EXPLORADOR VERTICAL -->
-                    <div class="media-bin-panel text-start">
-                        <ul class="nav nav-pills nav-fill mb-2 bg-white p-1 rounded border" style="font-size: 10.5px;">
-                            <li class="nav-item">
-                                <button type="button" class="nav-link active py-1 px-1 fw-bold" data-bin-tab="media" title="Tus archivos locales importados: videos, GIFs animados, fotos y audios">📁 Medios</button>
-                            </li>
-                            <li class="nav-item">
-                                <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="online" title="Banco de videos HD gratis en línea sin marca de agua">🌐 Banco</button>
-                            </li>
-                            <li class="nav-item">
-                                <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="text" title="Plantillas de títulos y rótulos personalizables">🏷️ Textos</button>
-                            </li>
-                            <li class="nav-item">
-                                <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="trans" title="Transiciones y efectos de entrada suave para tus clips">✨ Transic.</button>
-                            </li>
-                            <li class="nav-item">
-                                <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="tools" title="Cámara flotante en vivo y quitar fondo a imágenes">🪄 Herram.</button>
-                            </li>
-                        </ul>
-
-                        <!-- TAB 1: LISTA VERTICAL DE MEDIOS (VIDEOS, IMÁGENES, GIFS, AUDIOS) -->
-                        <div id="binTabMedia" class="d-flex flex-column flex-grow-1" style="min-height:0;">
-                            <div class="d-flex gap-1 mb-2">
-                                <button type="button" id="btnImportFiles" class="btn btn-primary btn-sm w-100 fw-bold py-1">
-                                    ➕ Importar Videos / GIF / Fotos / Audio
-                                </button>
-                                <input type="file" id="binFileInput" accept="video/*,image/*,image/gif,audio/*" multiple style="display:none;">
-                            </div>
-                            <div id="mediaBinList" class="bin-list-vertical">
-                                <div class="text-muted small text-center p-3">
-                                    📂 Sube aquí tus videos (.mp4), <b>GIFs animados (.gif)</b>, imágenes (.png/.jpg) o sonidos (.mp3/.wav).<br><br>
-                                    Sitúa la línea roja en el minuto exacto de la regla y arrastra el clip encima para cubrir marcas de agua o añadir efectos.
-                                </div>
-                            </div>
+                    <!-- COLUMNA IZQUIERDA: TÍTULO COMPACTO + EXPLORADOR VERTICAL -->
+                    <div class="left-col-stack">
+                        <div class="d-flex justify-content-between align-items-center px-1">
+                            <h5 class="mb-0 fw-bold text-dark" style="font-size: 1.05rem;" title="Estudio de edición multipista en el navegador">✂️ Editor de Videos</h5>
+                            <button type="button" id="btnAddTrack" class="btn btn-outline-primary btn-sm py-0 px-2 fw-bold" style="font-size: 11px;" title="Agregar una nueva pista superior en la línea de tiempo">
+                                ➕ Nueva Pista
+                            </button>
                         </div>
 
-                        <!-- TAB 2: BANCO DE VIDEOS EN LÍNEA SIN MARCA DE AGUA -->
-                        <div id="binTabOnline" class="d-none flex-column flex-grow-1" style="min-height:0;">
-                            <div class="bg-white p-2 rounded border mb-2">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="fw-bold text-primary" style="font-size:11px;">🌐 Banco Videos HD (Sin Marca de Agua)</span>
-                                    <button type="button" id="btnPexelsKey" class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:10px;" title="Configurar clave gratuita de Pexels para búsquedas globales">
-                                        🔑 API Key
+                        <div class="media-bin-panel text-start">
+                            <ul class="nav nav-pills nav-fill mb-2 bg-white p-1 rounded border" style="font-size: 10.5px;">
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link active py-1 px-1 fw-bold" data-bin-tab="media" title="Tus archivos locales importados: videos, GIFs animados, fotos y audios">📁 Medios</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="online" title="Banco de videos HD gratis en línea sin marca de agua (Pexels)">🌐 Banco</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="text" title="Plantillas de títulos y rótulos personalizables en texto, letra y color">🏷️ Textos</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="trans" title="Transiciones y efectos de entrada suave para tus clips">✨ Transic.</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link py-1 px-1 fw-bold" data-bin-tab="tools" title="Cámara flotante en vivo y herramienta para quitar fondo a imágenes">🪄 Herram.</button>
+                                </li>
+                            </ul>
+
+                            <!-- TAB 1: LISTA VERTICAL DE MEDIOS (VIDEOS, IMÁGENES, GIFS, AUDIOS) -->
+                            <div id="binTabMedia" class="d-flex flex-column flex-grow-1" style="min-height:0;">
+                                <div class="d-flex gap-1 mb-2">
+                                    <button type="button" id="btnImportFiles" class="btn btn-primary btn-sm w-100 fw-bold py-1" title="Selecciona desde tu equipo videos (.mp4), GIFs animados (.gif), imágenes (.png/.jpg) o sonidos (.mp3/.wav)">
+                                        ➕ Importar Videos / GIF / Fotos / Audio
                                     </button>
+                                    <input type="file" id="binFileInput" accept="video/*,image/*,image/gif,audio/*" multiple style="display:none;">
                                 </div>
-                                <div class="input-group input-group-sm">
-                                    <input type="text" id="onlineSearchInput" class="form-control" placeholder="Buscar video: naturaleza, ciudad, oficina...">
-                                    <button type="button" id="btnSearchOnlineVideos" class="btn btn-primary fw-bold" title="Buscar videos gratis en línea">🔍</button>
-                                </div>
-                                <div class="text-muted mt-1" style="font-size:10px;">
-                                    💡 Pulsa <b>+ Usar</b> para insertar el clip en la posición actual de tu línea roja.
-                                </div>
-                            </div>
-                            <div id="onlineVideosList" class="bin-list-vertical"></div>
-                        </div>
-
-                        <!-- TAB 3: TEXTOS Y RÓTULOS ARRASTRABLES -->
-                        <div id="binTabText" class="d-none flex-column flex-grow-1" style="min-height:0;">
-                            <div class="input-group input-group-sm mb-2">
-                                <input type="text" id="customTextDraft" class="form-control" placeholder="Escribe tu texto...">
-                                <input type="color" id="customTextColor" class="form-control form-control-color" value="#ffffff" title="Color de texto">
-                                <button type="button" id="btnCreateTextCard" class="btn btn-success fw-bold">+</button>
-                            </div>
-                            <div id="textBinList" class="bin-list-vertical"></div>
-                        </div>
-
-                        <!-- TAB 4: TRANSICIONES ARRASTRABLES -->
-                        <div id="binTabTrans" class="d-none flex-column flex-grow-1" style="min-height:0;">
-                            <p class="small text-muted mb-2">Arrastra una transición sobre cualquier clip de la línea de tiempo:</p>
-                            <div id="transBinList" class="bin-list-vertical">
-                                <div class="media-row-card" draggable="true" data-drag-kind="transition" data-trans-type="fade" data-trans-name="Fundido suave">
-                                    <div class="media-row-icon bg-dark text-white">🌗</div>
-                                    <div class="media-row-info">
-                                        <div class="small fw-bold">Fundido suave</div>
-                                        <div class="text-muted" style="font-size:10px;">Entrada gradual</div>
-                                    </div>
-                                </div>
-                                <div class="media-row-card" draggable="true" data-drag-kind="transition" data-trans-type="slide" data-trans-name="Deslizar">
-                                    <div class="media-row-icon bg-success text-white">➡️</div>
-                                    <div class="media-row-info">
-                                        <div class="small fw-bold">Deslizar</div>
-                                        <div class="text-muted" style="font-size:10px;">Barrido lateral</div>
-                                    </div>
-                                </div>
-                                <div class="media-row-card" draggable="true" data-drag-kind="transition" data-trans-type="zoom" data-trans-name="Zoom entrada">
-                                    <div class="media-row-icon bg-primary text-white">🔍</div>
-                                    <div class="media-row-info">
-                                        <div class="small fw-bold">Zoom entrada</div>
-                                        <div class="text-muted" style="font-size:10px;">Acercamiento dinámico</div>
+                                <div id="mediaBinList" class="bin-list-vertical" title="Lista de archivos importados: arrástralos hacia cualquier pista o haz doble clic para insertarlos">
+                                    <div class="text-muted small text-center p-3">
+                                        📂 Sube aquí tus videos (.mp4), <b>GIFs animados (.gif)</b>, imágenes (.png/.jpg) o sonidos (.mp3/.wav).<br><br>
+                                        Sitúa la línea roja en el minuto exacto de la regla y arrastra el clip encima para cubrir marcas de agua o añadir efectos.
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- TAB 5: HERRAMIENTAS (CÁMARA FLOTANTE + QUITAR FONDO A IMAGEN) -->
-                        <div id="binTabTools" class="d-none flex-column flex-grow-1 gap-2" style="min-height:0;">
-                            <div class="bg-white p-2 rounded border">
-                                <div class="fw-bold small text-danger mb-1">📹 Cámara Flotante en Vivo</div>
-                                <p class="text-muted mb-2" style="font-size: 11px;">Graba tu rostro sobre el video y arrastra el recuadro por la pantalla:</p>
-                                <button type="button" id="toggleCamBtn" class="btn btn-danger btn-sm w-100 fw-bold mb-2">
-                                    📹 Activar Cámara
-                                </button>
-                                <div class="row g-1 align-items-center">
-                                    <div class="col-7">
-                                        <select id="camShapeSelect" class="form-select form-select-sm py-0">
-                                            <option value="rect" selected>Forma Rectangular</option>
-                                            <option value="circle">Forma Circular</option>
-                                        </select>
+                            <!-- TAB 2: BANCO DE VIDEOS EN LÍNEA SIN MARCA DE AGUA -->
+                            <div id="binTabOnline" class="d-none flex-column flex-grow-1" style="min-height:0;">
+                                <div class="bg-white p-2 rounded border mb-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-primary" style="font-size:11px;">🌐 Banco Videos HD (Sin Marca de Agua)</span>
+                                        <button type="button" id="btnPexelsKey" class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:10px;" title="Configurar clave API gratuita de Pexels para búsquedas globales ilimitadas">
+                                            🔑 API Key
+                                        </button>
                                     </div>
-                                    <div class="col-5">
-                                        <div class="form-check form-switch mb-0">
-                                            <input class="form-check-input" type="checkbox" id="chkMicLive" checked>
-                                            <label class="form-check-label fw-bold" for="chkMicLive" style="font-size:11px;">🎙️Mic</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" id="onlineSearchInput" class="form-control" placeholder="Buscar video: naturaleza, ciudad, oficina..." title="Escribe una palabra clave para buscar videos HD libres de derechos">
+                                        <button type="button" id="btnSearchOnlineVideos" class="btn btn-primary fw-bold" title="Ejecutar búsqueda en el banco de videos en línea">🔍</button>
+                                    </div>
+                                    <div class="text-muted mt-1" style="font-size:10px;">
+                                        💡 Pulsa <b>+ Usar</b> para insertar el clip en la posición actual de tu línea roja.
+                                    </div>
+                                </div>
+                                <div id="onlineVideosList" class="bin-list-vertical" title="Resultados del banco de videos sin marca de agua"></div>
+                            </div>
+
+                            <!-- TAB 3: TEXTOS Y RÓTULOS ARRASTRABLES -->
+                            <div id="binTabText" class="d-none flex-column flex-grow-1" style="min-height:0;">
+                                <div class="input-group input-group-sm mb-2">
+                                    <input type="text" id="customTextDraft" class="form-control" placeholder="Escribe tu texto..." title="Escribe el texto personalizado que deseas agregar al video">
+                                    <input type="color" id="customTextColor" class="form-control form-control-color" value="#ffffff" title="Elige el color de letra para el nuevo rótulo">
+                                    <button type="button" id="btnCreateTextCard" class="btn btn-success fw-bold" title="Crear tarjeta de texto para arrastrar a la línea de tiempo">+</button>
+                                </div>
+                                <div id="textBinList" class="bin-list-vertical" title="Plantillas de texto: arrastra a una pista o haz doble clic para editar texto, letra y color"></div>
+                            </div>
+
+                            <!-- TAB 4: TRANSICIONES ARRASTRABLES -->
+                            <div id="binTabTrans" class="d-none flex-column flex-grow-1" style="min-height:0;">
+                                <p class="small text-muted mb-2">Arrastra una transición sobre cualquier clip de la línea de tiempo:</p>
+                                <div id="transBinList" class="bin-list-vertical">
+                                    <div class="media-row-card" draggable="true" data-drag-kind="transition" data-trans-type="fade" data-trans-name="Fundido suave" title="Arrastra sobre un clip para aplicar aparición gradual (Fade In)">
+                                        <div class="media-row-icon bg-dark text-white">🌗</div>
+                                        <div class="media-row-info">
+                                            <div class="small fw-bold">Fundido suave</div>
+                                            <div class="text-muted" style="font-size:10px;">Entrada gradual</div>
+                                        </div>
+                                    </div>
+                                    <div class="media-row-card" draggable="true" data-drag-kind="transition" data-trans-type="slide" data-trans-name="Deslizar" title="Arrastra sobre un clip para aplicar entrada deslizada desde la derecha">
+                                        <div class="media-row-icon bg-success text-white">➡️</div>
+                                        <div class="media-row-info">
+                                            <div class="small fw-bold">Deslizar</div>
+                                            <div class="text-muted" style="font-size:10px;">Barrido lateral</div>
+                                        </div>
+                                    </div>
+                                    <div class="media-row-card" draggable="true" data-drag-kind="transition" data-trans-type="zoom" data-trans-name="Zoom entrada" title="Arrastra sobre un clip para aplicar acercamiento progresivo">
+                                        <div class="media-row-icon bg-primary text-white">🔍</div>
+                                        <div class="media-row-info">
+                                            <div class="small fw-bold">Zoom entrada</div>
+                                            <div class="text-muted" style="font-size:10px;">Acercamiento dinámico</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="bg-white p-2 rounded border">
-                                <div class="fw-bold small text-dark mb-1">🪄 Quitar Fondo a Imagen (Chroma / Liso)</div>
-                                <p class="text-muted mb-1" style="font-size: 11px;">Sube una imagen con fondo blanco, verde o sólido y la agregará sin fondo a tus Medios:</p>
-                                <div class="d-flex gap-1 align-items-center mb-1">
-                                    <span class="small">Tolerancia:</span>
-                                    <input type="range" id="bgTolerance" class="form-range" min="15" max="110" value="45">
+                            <!-- TAB 5: HERRAMIENTAS (CÁMARA FLOTANTE + QUITAR FONDO A IMAGEN) -->
+                            <div id="binTabTools" class="d-none flex-column flex-grow-1 gap-2" style="min-height:0;">
+                                <div class="bg-white p-2 rounded border">
+                                    <div class="fw-bold small text-danger mb-1">📹 Cámara Flotante en Vivo</div>
+                                    <p class="text-muted mb-2" style="font-size: 11px;">Graba tu rostro sobre el video y arrastra el recuadro por la pantalla:</p>
+                                    <button type="button" id="toggleCamBtn" class="btn btn-danger btn-sm w-100 fw-bold mb-2" title="Encender o apagar tu cámara web flotante sobre el video">
+                                        📹 Activar Cámara
+                                    </button>
+                                    <div class="row g-1 align-items-center">
+                                        <div class="col-7">
+                                            <select id="camShapeSelect" class="form-select form-select-sm py-0" title="Cambiar el marco de la cámara flotante entre rectangular o circular">
+                                                <option value="rect" selected>Forma Rectangular</option>
+                                                <option value="circle">Forma Circular</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-5">
+                                            <div class="form-check form-switch mb-0" title="Incluir o silenciar el audio de tu micrófono al grabar">
+                                                <input class="form-check-input" type="checkbox" id="chkMicLive" checked>
+                                                <label class="form-check-label fw-bold" for="chkMicLive" style="font-size:11px;">🎙️Mic</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button type="button" id="btnRemoveImgBg" class="btn btn-warning btn-sm w-100 fw-bold">
-                                    🖼️ Elegir Imagen y Quitar Fondo
-                                </button>
-                                <input type="file" id="bgRemoveInput" accept="image/*" style="display:none;">
+
+                                <div class="bg-white p-2 rounded border">
+                                    <div class="fw-bold small text-dark mb-1">🪄 Quitar Fondo a Imagen (Chroma / Liso)</div>
+                                    <p class="text-muted mb-1" style="font-size: 11px;">Sube una imagen con fondo blanco, verde o sólido y la agregará sin fondo a tus Medios:</p>
+                                    <div class="d-flex gap-1 align-items-center mb-1" title="Ajusta la sensibilidad para eliminar el color de fondo de la imagen">
+                                        <span class="small">Tolerancia:</span>
+                                        <input type="range" id="bgTolerance" class="form-range" min="15" max="110" value="45">
+                                    </div>
+                                    <button type="button" id="btnRemoveImgBg" class="btn btn-warning btn-sm w-100 fw-bold" title="Seleccionar una imagen de tu PC y convertir su fondo sólido en transparente (PNG)">
+                                        🖼️ Elegir Imagen y Quitar Fondo
+                                    </button>
+                                    <input type="file" id="bgRemoveInput" accept="image/*" style="display:none;">
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- ZONA DERECHA: VISOR + INSPECTOR + LÍNEA DE TIEMPO MULTIPISTA -->
+                    <!-- ZONA DERECHA: VISOR ALINEADO ARRIBA + INSPECTOR + LÍNEA DE TIEMPO -->
                     <div class="workspace-right">
                         <div class="top-stage-row">
                             <!-- Visor Canvas -->
-                            <div id="previewStage">
+                            <div id="previewStage" title="Visor de vista previa: arrastra textos, capas o la cámara flotante directamente aquí; haz doble clic en un texto para editarlo">
                                 <canvas id="renderCanvas" width="854" height="480"></canvas>
                             </div>
 
                             <!-- Inspector de Propiedades, Formato de Salida, Volumen y Exportación -->
                             <div class="inspector-col text-start">
                                 <div>
-                                    <div class="fw-bold text-primary border-bottom pb-1 mb-1">🎛️ Propiedades del Clip</div>
-                                    <div class="text-truncate fw-bold text-dark mb-1" id="inspTitle">Ningún clip seleccionado</div>
+                                    <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
+                                        <span class="fw-bold text-primary" title="Ajustes del elemento seleccionado en la línea de tiempo">🎛️ Propiedades del Clip</span>
+                                        <span id="statusBadge" class="badge bg-light text-secondary border" style="font-size: 10px;" title="Estado actual del editor">Listo</span>
+                                    </div>
+                                    <div class="progress mb-1" style="height: 5px;" title="Barra de progreso del renderizado de video">
+                                        <div id="renderProgress" class="progress-bar bg-danger" style="width: 0%;"></div>
+                                    </div>
+                                    <div class="text-truncate fw-bold text-dark mb-1" id="inspTitle" title="Nombre y pista del clip seleccionado actualmente">Ningún clip seleccionado</div>
 
                                     <div class="row g-1 mb-1">
                                         <div class="col-6">
                                             <label class="text-muted mb-0">Inicio en Pista (s):</label>
-                                            <input type="number" id="inspStart" class="form-control form-control-sm py-0" value="0" min="0" step="0.2" disabled>
+                                            <input type="number" id="inspStart" class="form-control form-control-sm py-0" value="0" min="0" step="0.2" disabled title="Segundo exacto de la línea de tiempo donde comienza este clip">
                                         </div>
                                         <div class="col-6">
                                             <label class="text-muted mb-0">Duración (s):</label>
-                                            <input type="number" id="inspDur" class="form-control form-control-sm py-0" value="0" min="0.2" step="0.2" disabled>
+                                            <input type="number" id="inspDur" class="form-control form-control-sm py-0" value="0" min="0.2" step="0.2" disabled title="Duración total en segundos de este clip">
                                         </div>
                                     </div>
 
                                     <div class="row g-1 mb-1">
                                         <div class="col-6">
                                             <label class="text-muted mb-0">Escala / Tam (%):</label>
-                                            <input type="number" id="inspZoom" class="form-control form-control-sm py-0" value="100" min="10" max="250" step="5" disabled>
+                                            <input type="number" id="inspZoom" class="form-control form-control-sm py-0" value="100" min="10" max="250" step="5" disabled title="Ajusta el tamaño o zoom visual (100% cubre todo el cuadro)">
                                         </div>
                                         <div class="col-6">
                                             <label class="text-muted mb-0">Transición:</label>
-                                            <input type="text" id="inspTrans" class="form-control form-control-sm py-0" value="Ninguna" readonly>
+                                            <input type="text" id="inspTrans" class="form-control form-control-sm py-0" value="Ninguna" readonly title="Transición aplicada a este clip">
                                         </div>
                                     </div>
 
                                     <!-- CONTROL DE VOLUMEN DE LA PISTA SELECCIONADA -->
-                                    <div class="bg-white p-1 rounded border mb-1">
+                                    <div class="bg-white p-1 rounded border mb-1" title="Sube o baja el volumen de audio de este clip de video o sonido (0% silencia la pista)">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <label for="inspVolume" class="fw-bold text-dark mb-0" style="font-size:11px;">🔊 Volumen de Pista:</label>
                                             <span id="inspVolumeBadge" class="badge bg-primary-subtle text-primary border" style="font-size:10px;">100%</span>
                                         </div>
-                                        <input type="range" id="inspVolume" class="form-range my-0" min="0" max="100" step="1" value="100" disabled>
+                                        <input type="range" id="inspVolume" class="form-range my-0" min="0" max="100" step="1" value="100" disabled title="Desliza de 0% a 100% para controlar el volumen de esta pista">
                                     </div>
 
                                     <div class="mb-1">
                                         <label class="text-muted mb-0">Filtro visual (Pista 1):</label>
-                                        <select id="filterSelect" class="form-select form-select-sm py-0">
+                                        <select id="filterSelect" class="form-select form-select-sm py-0" title="Aplica un filtro de color o blanco y negro a la pista base del video">
                                             <option value="none" selected>Normal</option>
                                             <option value="contrast(1.18) saturate(1.25)">Vívido / HD</option>
                                             <option value="grayscale(100%)">Blanco y Negro</option>
@@ -591,16 +599,16 @@
 
                                     <!-- Botones de edición rápida -->
                                     <div class="d-flex gap-1 mb-1">
-                                        <button type="button" id="btnTrackUp" class="btn btn-outline-secondary btn-sm flex-fill py-0" disabled title="Subir clip a la pista superior">▲</button>
-                                        <button type="button" id="btnTrackDown" class="btn btn-outline-secondary btn-sm flex-fill py-0" disabled title="Bajar clip a la pista inferior">▼</button>
-                                        <button type="button" id="btnSplitClip" class="btn btn-warning btn-sm flex-fill py-0 fw-bold" disabled title="Dividir clip en la posición de la línea roja">✂️ Dividir</button>
-                                        <button type="button" id="btnDeleteSelected" class="btn btn-outline-danger btn-sm flex-fill py-0" disabled title="Eliminar clip seleccionado">🗑️</button>
+                                        <button type="button" id="btnTrackUp" class="btn btn-outline-secondary btn-sm flex-fill py-0" disabled title="Subir el clip seleccionado a una pista superior">▲</button>
+                                        <button type="button" id="btnTrackDown" class="btn btn-outline-secondary btn-sm flex-fill py-0" disabled title="Bajar el clip seleccionado a una pista inferior">▼</button>
+                                        <button type="button" id="btnSplitClip" class="btn btn-warning btn-sm flex-fill py-0 fw-bold" disabled title="Dividir o cortar el clip exactamente donde está la línea roja">✂️ Dividir</button>
+                                        <button type="button" id="btnDeleteSelected" class="btn btn-outline-danger btn-sm flex-fill py-0" disabled title="Eliminar de la línea de tiempo el clip seleccionado">🗑️</button>
                                     </div>
 
                                     <!-- SELECTOR DE FORMATO DE SALIDA / REDES SOCIALES -->
                                     <div class="mb-1">
                                         <label for="aspectSelect" class="fw-bold text-dark mb-0" style="font-size:11px;">📐 Formato de Salida:</label>
-                                        <select id="aspectSelect" class="form-select form-select-sm py-0">
+                                        <select id="aspectSelect" class="form-select form-select-sm py-0" title="Elige la proporción de pantalla del video final (YouTube, TikTok/Reels, Instagram o Cine)">
                                             <option value="16:9" selected>16:9 YouTube / Horizontal</option>
                                             <option value="9:16">9:16 TikTok / Shorts / Reels</option>
                                             <option value="1:1">1:1 Instagram / Facebook (1:1)</option>
@@ -609,22 +617,22 @@
                                         </select>
                                     </div>
 
-                                    <button type="button" id="btnEditTextStyle" class="btn btn-outline-success btn-sm w-100 py-0 mb-1 fw-bold d-none">
+                                    <button type="button" id="btnEditTextStyle" class="btn btn-outline-success btn-sm w-100 py-0 mb-1 fw-bold d-none" title="Cambiar el contenido, tipo de letra, tamaño y color del rótulo seleccionado">
                                         ✏️ Editar Texto, Color y Letra
                                     </button>
                                 </div>
 
                                 <div class="d-grid gap-1">
-                                    <button id="previewBtn" class="btn btn-outline-primary btn-sm fw-bold py-1" disabled>
+                                    <button id="previewBtn" class="btn btn-outline-primary btn-sm fw-bold py-1" disabled title="Reproducir o pausar la vista previa completa con audio y capas">
                                         ▶️ Reproducir Todo
                                     </button>
-                                    <button id="renderBtn" class="btn btn-danger btn-sm fw-bold py-1" disabled>
+                                    <button id="renderBtn" class="btn btn-danger btn-sm fw-bold py-1" disabled title="Grabar y combinar todas las pistas de video, imágenes, textos y audio en un archivo descargable">
                                         🎬 Renderizar Video
                                     </button>
-                                    <button id="downloadVideoBtn" class="btn btn-success btn-sm fw-bold py-1" disabled>
+                                    <button id="downloadVideoBtn" class="btn btn-success btn-sm fw-bold py-1" disabled title="Descargar a tu carpeta de Descargas el video ya renderizado">
                                         ⬇️ Descargar Video
                                     </button>
-                                    <button id="clearAllBtn" class="btn btn-outline-dark btn-sm fw-bold py-0" disabled>
+                                    <button id="clearAllBtn" class="btn btn-outline-dark btn-sm fw-bold py-0" disabled title="Vaciar todas las pistas de la línea de tiempo para iniciar un proyecto nuevo">
                                         🧹 Limpiar Todo
                                     </button>
                                 </div>
@@ -632,13 +640,13 @@
                         </div>
 
                         <!-- LÍNEA DE TIEMPO CON RELOJ EN VIVO + REGLA GRADUADA + SCROLL EN PISTAS -->
-                        <div id="timelineContainer" title="Ayuda: Arrastra clips para moverlos · Arrastra orillas (↔) para recortar · Clic derecho sobre un clip para Dividir · Doble clic en texto para editar">
+                        <div id="timelineContainer" title="Línea de tiempo multipista: arrastra clips para moverlos · arrastra orillas (↔) para recortar · clic derecho sobre un clip para dividir · doble clic en texto para editar">
                             <div class="ruler-bar-row">
-                                <div id="liveTimeDisplay" title="Tiempo actual / Duración total">00:00 / 00:00</div>
-                                <div id="timelineRuler" title="Haz clic o arrastra sobre la regla para moverte a un segundo exacto"></div>
+                                <div id="liveTimeDisplay" title="Tiempo transcurrido actual / Duración total del proyecto">00:00 / 00:00</div>
+                                <div id="timelineRuler" title="Regla de tiempo: haz clic o arrastra sobre los números para saltar a un minuto/segundo exacto"></div>
                             </div>
                             <div id="tracksAreaContainer">
-                                <div id="tracksScrollArea"></div>
+                                <div id="tracksScrollArea" title="Pistas de edición: las pistas superiores cubren a las inferiores"></div>
                                 <div id="timelinePlayhead" style="left: 0%;"></div>
                             </div>
                         </div>
@@ -653,11 +661,11 @@
 
     <!-- Menú Contextual al hacer Clic Derecho en la Línea de Tiempo -->
     <div id="tlContextMenu">
-        <button type="button" class="ctx-menu-item" id="ctxSplitHere">✂️ Dividir clip aquí</button>
-        <button type="button" class="ctx-menu-item" id="ctxMoveTrackUp">▲ Subir a pista superior</button>
-        <button type="button" class="ctx-menu-item" id="ctxMoveTrackDown">▼ Bajar a pista inferior</button>
+        <button type="button" class="ctx-menu-item" id="ctxSplitHere" title="Partir este clip en dos exactamente donde hiciste clic">✂️ Dividir clip aquí</button>
+        <button type="button" class="ctx-menu-item" id="ctxMoveTrackUp" title="Mover este clip una capa hacia arriba">▲ Subir a pista superior</button>
+        <button type="button" class="ctx-menu-item" id="ctxMoveTrackDown" title="Mover este clip una capa hacia abajo">▼ Bajar a pista inferior</button>
         <hr class="my-1">
-        <button type="button" class="ctx-menu-item danger" id="ctxDeleteClip">🗑️ Eliminar clip</button>
+        <button type="button" class="ctx-menu-item danger" id="ctxDeleteClip" title="Quitar este clip de la línea de tiempo">🗑️ Eliminar clip</button>
     </div>
 
     <!-- Modal para editar Texto, Color, Fuente y Tamaño -->
@@ -671,12 +679,12 @@
                 <div class="modal-body text-start small">
                     <div class="mb-2">
                         <label class="form-label fw-bold mb-1">Texto que aparecerá en el video:</label>
-                        <input type="text" id="modalTextValue" class="form-control form-control-sm" placeholder="Escribe el título o subtítulo...">
+                        <input type="text" id="modalTextValue" class="form-control form-control-sm" placeholder="Escribe el título o subtítulo..." title="Contenido textual que se mostrará sobre el video">
                     </div>
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="form-label fw-bold mb-1">Tipo de letra:</label>
-                            <select id="modalTextFont" class="form-select form-select-sm">
+                            <select id="modalTextFont" class="form-select form-select-sm" title="Selecciona la tipografía del texto">
                                 <option value="Calibri, Arial, sans-serif">Moderna (Calibri / Arial)</option>
                                 <option value="Impact, 'Arial Black', sans-serif">Impacto / Titular YouTube</option>
                                 <option value="Georgia, 'Times New Roman', serif">Elegante (Georgia Serif)</option>
@@ -686,17 +694,17 @@
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-bold mb-1">Tamaño de letra (%):</label>
-                            <input type="number" id="modalTextScale" class="form-control form-control-sm" min="50" max="220" step="10" value="100">
+                            <input type="number" id="modalTextScale" class="form-control form-control-sm" min="50" max="220" step="10" value="100" title="Porcentaje de tamaño del texto (50% a 220%)">
                         </div>
                     </div>
                     <div class="row g-2">
                         <div class="col-6">
                             <label class="form-label fw-bold mb-1">Color de letra:</label>
-                            <input type="color" id="modalTextColor" class="form-control form-control-color w-100" value="#ffffff">
+                            <input type="color" id="modalTextColor" class="form-control form-control-color w-100" value="#ffffff" title="Selecciona el color del texto">
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-bold mb-1">Fondo del rótulo:</label>
-                            <select id="modalTextBgMode" class="form-select form-select-sm">
+                            <select id="modalTextBgMode" class="form-select form-select-sm" title="Elige el recuadro de fondo detrás del texto">
                                 <option value="dark">Caja oscura translúcida</option>
                                 <option value="blue">Caja azul</option>
                                 <option value="red">Caja roja</option>
@@ -706,8 +714,8 @@
                     </div>
                 </div>
                 <div class="modal-footer py-1">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" id="btnSaveTextModal" class="btn btn-success btn-sm fw-bold">💾 Aplicar Cambios</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" title="Cerrar sin guardar cambios">Cancelar</button>
+                    <button type="button" id="btnSaveTextModal" class="btn btn-success btn-sm fw-bold" title="Guardar y aplicar los cambios de texto al video">💾 Aplicar Cambios</button>
                 </div>
             </div>
         </div>
@@ -721,7 +729,7 @@
     (() => {
         'use strict';
 
-        // Puedes pegar aquí tu API Key gratuita de Pexels Videos (pexels.com/api) para que todos los visitantes busquen videos HD sin marca de agua:
+        // Pega aquí tu API Key gratuita de Pexels Videos (pexels.com/api) para habilitar búsquedas globales sin marca de agua para todos los usuarios:
         const DEFAULT_PEXELS_KEY = "";
 
         // Pestañas del Explorador Izquierdo
@@ -931,7 +939,6 @@
                 }
             }
 
-            // Etiqueta fija en el extremo derecho con la duración máxima
             const endLbl = document.createElement('span');
             endLbl.className = 'ruler-label end-label';
             endLbl.style.left = '100%';
@@ -1088,7 +1095,7 @@
                 const card = document.createElement('div');
                 card.className = 'media-row-card';
                 card.draggable = true;
-                card.title = `${item.name} — Arrastra a cualquier Pista o doble clic para insertar en el cabezal`;
+                card.title = `${item.name} — Arrastra a cualquier Pista o haz doble clic para insertar en el cabezal`;
 
                 if (item.kind === 'image' || item.kind === 'gif') {
                     const tag = item.kind === 'gif' ? '🎞️ GIF Animado' : '🖼️ Imagen';
@@ -1173,16 +1180,17 @@
             lista.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'media-row-card';
+                card.title = `${item.title} — Pulsa "+ Usar" para insertarlo en el segundo actual de la línea roja`;
                 card.innerHTML = `<div class="media-row-icon bg-dark text-info">🌐</div>
                                   <div class="media-row-info">
                                       <div class="small fw-bold text-dark text-truncate">${item.title}</div>
                                       <div class="text-muted" style="font-size:10px;">Sin marca de agua · ${fmtTime(item.duration)}</div>
                                   </div>
-                                  <button type="button" class="btn btn-primary btn-sm py-0 px-2 fw-bold" style="font-size:11px;">+ Usar</button>`;
+                                  <button type="button" class="btn btn-primary btn-sm py-0 px-2 fw-bold" style="font-size:11px;" title="Descargar e insertar este video libre en una pista superior en el segundo actual">+ Usar</button>`;
 
                 card.querySelector('button').addEventListener('click', async () => {
                     statusBadge.className = 'badge bg-info text-dark';
-                    statusBadge.textContent = '⬇️ Descargando clip libre...';
+                    statusBadge.textContent = '⬇️ Descargando...';
                     try {
                         const resp = await fetch(item.url);
                         const blob = await resp.blob();
@@ -1209,7 +1217,7 @@
                         await agregarMedioEnPista(nuevoMedia, pistaDestino, posExacta);
 
                         statusBadge.className = 'badge bg-success';
-                        statusBadge.textContent = `✅ Insertado en ${fmtTime(posExacta)}`;
+                        statusBadge.textContent = `✅ En ${fmtTime(posExacta)}`;
                         Toast.fire({ icon: 'success', title: `Clip colocado en Pista ${pistaDestino + 1} (${fmtTime(posExacta)})` });
                     } catch {
                         statusBadge.className = 'badge bg-warning text-dark';
@@ -1669,12 +1677,12 @@
         function instalarInteraccionBloque(el, clipObj) {
             const handleLeft = document.createElement('div');
             handleLeft.className = 'tl-trim-handle tl-trim-left';
-            handleLeft.title = 'Arrastra ↔ para recortar el inicio';
+            handleLeft.title = 'Arrastra ↔ hacia la izquierda o derecha para recortar el inicio';
             el.appendChild(handleLeft);
 
             const handleRight = document.createElement('div');
             handleRight.className = 'tl-trim-handle tl-trim-right';
-            handleRight.title = 'Arrastra ↔ para recortar o estirar el final';
+            handleRight.title = 'Arrastra ↔ hacia la izquierda o derecha para recortar o estirar el final';
             el.appendChild(handleRight);
 
             const iniciarDrag = (mode, e) => {
@@ -1808,6 +1816,7 @@
 
             const dropNewZone = document.createElement('div');
             dropNewZone.className = 'new-track-dropzone';
+            dropNewZone.title = 'Suelta aquí un video, GIF, imagen, texto o audio para crear automáticamente una nueva pista superior';
             dropNewZone.textContent = '➕ Suelta aquí cualquier video, GIF, imagen, texto o sonido para crear automáticamente una Pista Superior';
             dropNewZone.addEventListener('dragover', (e) => {
                 e.preventDefault();
@@ -1902,6 +1911,7 @@
                         el.className = `tl-block ${typeClass} ${isSel ? 'tl-main-selected' : ''}`;
                         el.style.left = `${leftPct}%`;
                         el.style.width = `${widthPct}%`;
+                        el.title = `${c.name} [${fmtTime(c.start)} - ${fmtTime(finClip(c))}] — Arrastra para mover · Orillas ↔ para recortar · Clic derecho para dividir`;
                         el.textContent = `${icon} ${c.name} [${fmtTime(c.start)} - ${fmtTime(finClip(c))}]${volTxt}${c.transition ? ' ✨' : ''}`;
                         instalarInteraccionBloque(el, c);
                         row.appendChild(el);
@@ -2457,7 +2467,7 @@
                 downloadVideoBtn.disabled = true;
                 renderProgress.style.width = '0%';
                 statusBadge.className = 'badge bg-danger';
-                statusBadge.textContent = soloCam ? '🔴 Grabando cámara...' : '🔴 Renderizando video...';
+                statusBadge.textContent = soloCam ? '🔴 Grabando...' : '🔴 Renderizando...';
 
                 if (soloCam) {
                     renderBtn.disabled = false;
@@ -2503,7 +2513,7 @@
                     downloadVideoBtn.disabled = false;
                     renderProgress.style.width = '100%';
                     statusBadge.className = 'badge bg-success';
-                    statusBadge.textContent = '✅ ¡Video renderizado listo!';
+                    statusBadge.textContent = '✅ ¡Video listo!';
                     isRendering = false;
                     actualizarBotones();
                     Toast.fire({ icon: 'success', title: '¡Video listo para descargar!' });
