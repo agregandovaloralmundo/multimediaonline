@@ -9,8 +9,8 @@
             window.history.back();
         }
     </script>
-    <title>Multimedia Online - Estudio Editor de Videos Estilo Camtasia</title>
-    <meta name="description" content="Estudio editor de video multipista estilo Camtasia: pistas dinámicas ilimitadas, banco de videos sin marca de agua, GIFs animados, cámara flotante, quitar fondo y renderizado gratis." />
+    <title>Multimedia Online - Estudio Editor de Videos</title>
+    <meta name="description" content="Estudio editor de video multipista en el navegador: regla de tiempo con minutos y segundos, pistas dinámicas, banco de videos sin marca de agua, GIFs animados, cámara flotante y renderizado gratis." />
     <meta name="author" content="Lic. Antonio Ramírez Bogantes" />
     <link rel="icon" type="image/x-icon" href="img/principal.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -24,17 +24,17 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 6px 14px;
+            padding: 4px 6px;
         }
         .tool-box {
-            width: 99%;
-            max-width: 1560px;
-            height: calc(100vh - 178px);
+            width: 99.4%;
+            max-width: 1860px;
+            height: calc(100vh - 174px);
             min-height: 540px;
             background: #ffffff;
             border: 3px solid #0d6efd;
-            border-radius: 18px;
-            padding: 8px 16px;
+            border-radius: 16px;
+            padding: 6px 12px 8px 12px;
             box-shadow: 0 6px 18px rgba(13, 110, 253, 0.15);
             display: flex;
             flex-direction: column;
@@ -44,19 +44,19 @@
         .studio-body {
             flex: 1;
             display: flex;
-            gap: 12px;
+            gap: 10px;
             min-height: 0;
         }
         /* PANEL IZQUIERDO: EXPLORADOR VERTICAL CON SCROLL HACIA ABAJO */
         .media-bin-panel {
-            width: 345px;
-            min-width: 315px;
+            width: 335px;
+            min-width: 305px;
             background: #f8f9fa;
             border: 1.5px solid #cbd5e1;
             border-radius: 12px;
             display: flex;
             flex-direction: column;
-            padding: 8px;
+            padding: 7px;
             overflow: hidden;
         }
         .bin-list-vertical {
@@ -92,21 +92,21 @@
         }
         .media-row-card:active { cursor: grabbing; }
         .media-row-thumb {
-            width: 68px;
-            height: 44px;
+            width: 66px;
+            height: 42px;
             object-fit: cover;
             border-radius: 5px;
             background: #0f172a;
             flex-shrink: 0;
         }
         .media-row-icon {
-            width: 68px;
-            height: 44px;
+            width: 66px;
+            height: 42px;
             border-radius: 5px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.35rem;
+            font-size: 1.3rem;
             flex-shrink: 0;
         }
         .media-row-info {
@@ -146,7 +146,7 @@
             touch-action: none;
         }
         .inspector-col {
-            width: 255px;
+            width: 245px;
             background: #f8f9fa;
             border: 1.5px solid #cbd5e1;
             border-radius: 12px;
@@ -156,29 +156,67 @@
             justify-content: space-between;
             font-size: 12px;
         }
-        /* LÍNEA DE TIEMPO MULTIPISTA DINÁMICA ESTILO CAMTASIA */
+        /* LÍNEA DE TIEMPO MULTIPISTA CON REGLA DIRECTA EN LA PARTE SUPERIOR */
         #timelineContainer {
             background: #1e293b;
             border-radius: 10px;
-            padding: 6px 10px;
+            padding: 5px 8px;
             color: #f8fafc;
-            margin-top: 8px;
+            margin-top: 6px;
+        }
+        #timelineRuler {
+            position: relative;
+            height: 22px;
+            background: #0b1120;
+            border: 1px solid #334155;
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            user-select: none;
+            overflow: hidden;
+        }
+        .ruler-tick {
+            position: absolute;
+            bottom: 0;
+            width: 1px;
+            background: #64748b;
+            pointer-events: none;
+        }
+        .ruler-tick.major {
+            height: 12px;
+            background: #cbd5e1;
+        }
+        .ruler-tick.minor {
+            height: 5px;
+        }
+        .ruler-label {
+            position: absolute;
+            top: 2px;
+            transform: translateX(3px);
+            font-size: 10px;
+            font-family: monospace;
+            color: #e2e8f0;
+            pointer-events: none;
+            white-space: nowrap;
         }
         #tracksScrollArea {
             max-height: 112px;
             overflow-y: auto;
             overflow-x: hidden;
             position: relative;
-            padding-right: 2px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0 0 6px 6px;
+            padding: 3px;
         }
         #tracksScrollArea::-webkit-scrollbar { width: 6px; }
-        #tracksScrollArea::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        #tracksScrollArea::-webkit-scrollbar-thumb { background: #64748b; border-radius: 4px; }
         .new-track-dropzone {
-            height: 20px;
+            height: 17px;
             border: 1px dashed #64748b;
             border-radius: 4px;
-            margin-bottom: 4px;
-            font-size: 10px;
+            margin-bottom: 3px;
+            font-size: 9.5px;
             color: #94a3b8;
             display: flex;
             align-items: center;
@@ -192,14 +230,15 @@
         }
         .track-row {
             position: relative;
-            height: 28px;
-            background: #0f172a;
+            height: 27px;
+            background: #131c31;
             border: 1px dashed #475569;
-            border-radius: 5px;
-            margin-bottom: 4px;
+            border-radius: 4px;
+            margin-bottom: 3px;
             overflow: hidden;
             transition: border-color 0.15s, background-color 0.15s;
         }
+        .track-row:last-child { margin-bottom: 0; }
         .track-row.drop-hover {
             border: 1.5px dashed #38bdf8;
             background: #172554;
@@ -218,11 +257,20 @@
             position: absolute;
             top: 0;
             bottom: 0;
-            width: 2.5px;
+            width: 2px;
             background: #ef4444;
             box-shadow: 0 0 6px #ef4444;
             pointer-events: none;
             z-index: 25;
+        }
+        #timelinePlayhead::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -5px;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #ef4444;
         }
         .tl-block {
             position: absolute;
@@ -231,7 +279,7 @@
             border-radius: 4px;
             font-size: 10px;
             font-weight: 600;
-            line-height: 22px;
+            line-height: 21px;
             padding: 0 8px;
             white-space: nowrap;
             overflow: hidden;
@@ -261,6 +309,40 @@
         .tl-clip-text  { background: #10b981; color: #fff; border: 1px solid #6ee7b7; }
         .tl-clip-audio { background: #0891b2; color: #fff; border: 1px solid #67e8f9; }
         .tl-main-selected { outline: 2px solid #facc15; z-index: 9; }
+
+        /* MENÚ CONTEXTUAL CLIC DERECHO EN LÍNEA DE TIEMPO */
+        #tlContextMenu {
+            position: fixed;
+            z-index: 9999;
+            background: #ffffff;
+            border: 1.5px solid #0d6efd;
+            border-radius: 8px;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+            padding: 4px;
+            min-width: 175px;
+            display: none;
+        }
+        .ctx-menu-item {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #1e293b;
+            cursor: pointer;
+        }
+        .ctx-menu-item:hover {
+            background: #eff6ff;
+            color: #0d6efd;
+        }
+        .ctx-menu-item.danger:hover {
+            background: #fef2f2;
+            color: #dc2626;
+        }
     </style>
 </head>
 <body>
@@ -270,16 +352,19 @@
 
         <div class="main-content">
             <div class="tool-box">
-                <!-- Barra superior -->
+                <!-- Barra superior limpia y compacta -->
                 <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
                     <div class="d-flex align-items-center gap-2">
-                        <h5 class="mb-0 fw-bold text-dark">✂️ Estudio Editor de Videos (Estilo Camtasia)</h5>
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">Pistas dinámicas · Banco de videos · GIFs animados · Recorte ↔ y tijera ✂️</span>
+                        <h5 class="mb-0 fw-bold text-dark">✂️ Estudio Editor de Videos</h5>
+                        <button type="button" id="btnAddTrack" class="btn btn-outline-primary btn-sm py-0 px-2 fw-bold" style="font-size: 11px;" title="Agregar una nueva pista superior">
+                            ➕ Nueva Pista
+                        </button>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <button type="button" id="toggleCamBtn" class="btn btn-danger btn-sm py-0 px-3 fw-bold">
-                            📹 Activar Cámara
-                        </button>
+                        <div class="progress" style="width: 90px; height: 8px;" title="Progreso de renderizado">
+                            <div id="renderProgress" class="progress-bar bg-danger" style="width: 0%;"></div>
+                        </div>
+                        <span class="badge bg-primary font-monospace" id="timeBadge">00:00 / 00:00</span>
                         <select id="aspectSelect" class="form-select form-select-sm py-0" style="width: 130px;">
                             <option value="16:9" selected>16:9 YouTube</option>
                             <option value="9:16">9:16 Short/Reel</option>
@@ -321,8 +406,8 @@
                             </div>
                             <div id="mediaBinList" class="bin-list-vertical">
                                 <div class="text-muted small text-center p-3">
-                                    📂 Sube aquí tus videos (.mp4), <b>GIFs animados (.gif)</b>, imágenes (.png/.jpg) o sonidos (.mp3).<br><br>
-                                    Arrástralos a cualquier pista o suéltalos arriba para crear una pista nueva automáticamente.
+                                    📂 Sube aquí tus videos (.mp4), <b>GIFs animados (.gif)</b>, imágenes (.png/.jpg) o sonidos (.mp3/.wav).<br><br>
+                                    Sitúa la línea roja en el minuto exacto de la regla y arrastra el clip encima para cubrir marcas de agua o añadir efectos.
                                 </div>
                             </div>
                         </div>
@@ -339,6 +424,9 @@
                                 <div class="input-group input-group-sm">
                                     <input type="text" id="onlineSearchInput" class="form-control" placeholder="Ej: medicina, naturaleza, ciudad...">
                                     <button type="button" id="btnSearchOnlineVideos" class="btn btn-primary fw-bold">🔍</button>
+                                </div>
+                                <div class="text-muted mt-1" style="font-size:10px;">
+                                    💡 Al pulsar <b>+ Usar</b>, se inserta en una pista superior justo en el segundo donde esté tu línea roja.
                                 </div>
                             </div>
                             <div id="onlineVideosList" class="bin-list-vertical"></div>
@@ -382,8 +470,30 @@
                             </div>
                         </div>
 
-                        <!-- TAB 5: HERRAMIENTAS (QUITAR FONDO A IMAGEN) -->
+                        <!-- TAB 5: HERRAMIENTAS (CÁMARA FLOTANTE + QUITAR FONDO A IMAGEN) -->
                         <div id="binTabTools" class="d-none flex-column flex-grow-1 gap-2" style="min-height:0;">
+                            <div class="bg-white p-2 rounded border">
+                                <div class="fw-bold small text-danger mb-1">📹 Cámara Flotante en Vivo</div>
+                                <p class="text-muted mb-2" style="font-size: 11px;">Graba tu rostro sobre el video y arrastra el recuadro por la pantalla:</p>
+                                <button type="button" id="toggleCamBtn" class="btn btn-danger btn-sm w-100 fw-bold mb-2">
+                                    📹 Activar Cámara
+                                </button>
+                                <div class="row g-1 align-items-center">
+                                    <div class="col-7">
+                                        <select id="camShapeSelect" class="form-select form-select-sm py-0">
+                                            <option value="rect" selected>Forma Rectangular</option>
+                                            <option value="circle">Forma Circular</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-5">
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" id="chkMicLive" checked>
+                                            <label class="form-check-label fw-bold" for="chkMicLive" style="font-size:11px;">🎙️Mic</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="bg-white p-2 rounded border">
                                 <div class="fw-bold small text-dark mb-1">🪄 Quitar Fondo a Imagen (Chroma / Liso)</div>
                                 <p class="text-muted mb-1" style="font-size: 11px;">Sube una imagen con fondo blanco, verde o sólido y la agregará sin fondo a tus Medios:</p>
@@ -399,7 +509,7 @@
                         </div>
                     </div>
 
-                    <!-- ZONA DERECHA: VISOR + INSPECTOR + LÍNEA DE TIEMPO MULTIPISTA DINÁMICA -->
+                    <!-- ZONA DERECHA: VISOR + INSPECTOR + LÍNEA DE TIEMPO MULTIPISTA -->
                     <div class="workspace-right">
                         <div class="top-stage-row">
                             <!-- Visor Canvas -->
@@ -407,7 +517,7 @@
                                 <canvas id="renderCanvas" width="854" height="480"></canvas>
                             </div>
 
-                            <!-- Inspector de Propiedades, Volumen, Cámara y Exportación -->
+                            <!-- Inspector de Propiedades, Volumen y Exportación -->
                             <div class="inspector-col text-start">
                                 <div>
                                     <div class="fw-bold text-primary border-bottom pb-1 mb-1">🎛️ Propiedades del Clip</div>
@@ -420,14 +530,14 @@
                                         </div>
                                         <div class="col-6">
                                             <label class="text-muted mb-0">Duración (s):</label>
-                                            <input type="number" id="inspDur" class="form-control form-control-sm py-0" value="0" min="0.5" step="0.2" disabled>
+                                            <input type="number" id="inspDur" class="form-control form-control-sm py-0" value="0" min="0.2" step="0.2" disabled>
                                         </div>
                                     </div>
 
                                     <div class="row g-1 mb-1">
                                         <div class="col-6">
                                             <label class="text-muted mb-0">Escala / Tam (%):</label>
-                                            <input type="number" id="inspZoom" class="form-control form-control-sm py-0" value="100" min="15" max="250" step="5" disabled>
+                                            <input type="number" id="inspZoom" class="form-control form-control-sm py-0" value="100" min="10" max="250" step="5" disabled>
                                         </div>
                                         <div class="col-6">
                                             <label class="text-muted mb-0">Transición:</label>
@@ -444,8 +554,8 @@
                                         <input type="range" id="inspVolume" class="form-range my-0" min="0" max="100" step="1" value="100" disabled>
                                     </div>
 
-                                    <div class="mb-1">
-                                        <label class="text-muted mb-0">Filtro visual:</label>
+                                    <div class="mb-2">
+                                        <label class="text-muted mb-0">Filtro visual (Pista 1):</label>
                                         <select id="filterSelect" class="form-select form-select-sm py-0">
                                             <option value="none" selected>Normal</option>
                                             <option value="contrast(1.18) saturate(1.25)">Vívido / HD</option>
@@ -455,36 +565,17 @@
                                         </select>
                                     </div>
 
-                                    <!-- Botones de edición rápida: Subir/Bajar Pista, Cortar/Dividir, Eliminar -->
+                                    <!-- Botones de edición rápida -->
                                     <div class="d-flex gap-1 mb-1">
                                         <button type="button" id="btnTrackUp" class="btn btn-outline-secondary btn-sm flex-fill py-0" disabled title="Subir clip a la pista superior">▲</button>
                                         <button type="button" id="btnTrackDown" class="btn btn-outline-secondary btn-sm flex-fill py-0" disabled title="Bajar clip a la pista inferior">▼</button>
-                                        <button type="button" id="btnSplitClip" class="btn btn-warning btn-sm flex-fill py-0 fw-bold" disabled title="Cortar / Dividir clip donde está la línea roja">✂️ Cortar</button>
+                                        <button type="button" id="btnSplitClip" class="btn btn-warning btn-sm flex-fill py-0 fw-bold" disabled title="Dividir clip en la posición de la línea roja">✂️ Dividir</button>
                                         <button type="button" id="btnDeleteSelected" class="btn btn-outline-danger btn-sm flex-fill py-0" disabled title="Eliminar clip seleccionado">🗑️</button>
                                     </div>
 
                                     <button type="button" id="btnEditTextStyle" class="btn btn-outline-success btn-sm w-100 py-0 mb-1 fw-bold d-none">
                                         ✏️ Editar Texto, Color y Letra
                                     </button>
-
-                                    <!-- Opciones rápidas de Cámara Flotante -->
-                                    <div class="bg-white p-1 rounded border mb-1">
-                                        <div class="fw-bold text-danger mb-1" style="font-size:11px;">📹 Cámara Flotante (arrástrala en pantalla):</div>
-                                        <div class="row g-1 align-items-center">
-                                            <div class="col-7">
-                                                <select id="camShapeSelect" class="form-select form-select-sm py-0">
-                                                    <option value="rect" selected>Rectangular</option>
-                                                    <option value="circle">Circular</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-5">
-                                                <div class="form-check form-switch mb-0">
-                                                    <input class="form-check-input" type="checkbox" id="chkMicLive" checked>
-                                                    <label class="form-check-label fw-bold" for="chkMicLive" style="font-size:11px;">🎙️Mic</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
 
                                 <div class="d-grid gap-1">
@@ -504,30 +595,10 @@
                             </div>
                         </div>
 
-                        <!-- LÍNEA DE TIEMPO MULTIPISTA DINÁMICA ESTILO CAMTASIA -->
-                        <div id="timelineContainer">
-                            <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="small fw-bold">🎞️ Línea de Tiempo Multipista:</span>
-                                    <button type="button" id="btnAddTrack" class="btn btn-outline-info btn-sm py-0 px-2 fw-bold" style="font-size: 10.5px;">
-                                        ➕ Pista
-                                    </button>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <button type="button" id="btnSplitTimeline" class="btn btn-warning btn-sm py-0 px-2 fw-bold" style="font-size: 11px;" disabled title="Dividir en la posición actual del cabezal rojo">
-                                        ✂️ Dividir aquí
-                                    </button>
-                                    <div class="progress" style="width: 95px; height: 8px;">
-                                        <div id="renderProgress" class="progress-bar bg-danger" style="width: 0%;"></div>
-                                    </div>
-                                    <span class="badge bg-primary font-monospace" id="timeBadge">00:00 / 00:00</span>
-                                </div>
-                            </div>
-
+                        <!-- LÍNEA DE TIEMPO DIRECTA CON REGLA DE MINUTOS ARRIBA Y SCROLL EN PISTAS -->
+                        <div id="timelineContainer" title="Ayuda: Arrastra clips para moverlos · Arrastra orillas (↔) para recortar · Clic derecho sobre un clip para Dividir · Doble clic en texto para editar">
                             <div id="timelineWrapper" style="position: relative;">
-                                <div id="newTrackDropzone" class="new-track-dropzone">
-                                    ➕ Arrastra cualquier video, imagen, GIF, texto o audio aquí para crear automáticamente una Pista Superior
-                                </div>
+                                <div id="timelineRuler" title="Haz clic o arrastra sobre la regla para moverte a un minuto/segundo exacto"></div>
                                 <div id="tracksScrollArea"></div>
                                 <div id="timelinePlayhead" style="left: 0%;"></div>
                             </div>
@@ -539,6 +610,15 @@
 
         <div id="footer-placeholder"></div>
         <script src="footer.js"></script>
+    </div>
+
+    <!-- Menú Contextual al hacer Clic Derecho en la Línea de Tiempo -->
+    <div id="tlContextMenu">
+        <button type="button" class="ctx-menu-item" id="ctxSplitHere">✂️ Dividir clip aquí</button>
+        <button type="button" class="ctx-menu-item" id="ctxMoveTrackUp">▲ Subir a pista superior</button>
+        <button type="button" class="ctx-menu-item" id="ctxMoveTrackDown">▼ Bajar a pista inferior</button>
+        <hr class="my-1">
+        <button type="button" class="ctx-menu-item danger" id="ctxDeleteClip">🗑️ Eliminar clip</button>
     </div>
 
     <!-- Modal para editar Texto, Color, Fuente y Tamaño -->
@@ -649,7 +729,6 @@
         const btnTrackUp = document.getElementById('btnTrackUp');
         const btnTrackDown = document.getElementById('btnTrackDown');
         const btnSplitClip = document.getElementById('btnSplitClip');
-        const btnSplitTimeline = document.getElementById('btnSplitTimeline');
         const btnDeleteSelected = document.getElementById('btnDeleteSelected');
         const btnEditTextStyle = document.getElementById('btnEditTextStyle');
         const btnAddTrack = document.getElementById('btnAddTrack');
@@ -662,10 +741,15 @@
         const statusBadge = document.getElementById('statusBadge');
         const timeBadge = document.getElementById('timeBadge');
         const renderProgress = document.getElementById('renderProgress');
-        const timelineWrapper = document.getElementById('timelineWrapper');
-        const newTrackDropzone = document.getElementById('newTrackDropzone');
+        const timelineRuler = document.getElementById('timelineRuler');
         const tracksScrollArea = document.getElementById('tracksScrollArea');
         const timelinePlayhead = document.getElementById('timelinePlayhead');
+
+        const tlContextMenu = document.getElementById('tlContextMenu');
+        const ctxSplitHere = document.getElementById('ctxSplitHere');
+        const ctxMoveTrackUp = document.getElementById('ctxMoveTrackUp');
+        const ctxMoveTrackDown = document.getElementById('ctxMoveTrackDown');
+        const ctxDeleteClip = document.getElementById('ctxDeleteClip');
 
         const renderCanvas = document.getElementById('renderCanvas');
         const ctx = renderCanvas.getContext('2d');
@@ -691,7 +775,7 @@
             { id: 't4', text: 'Tratamiento y Prevención', color: '#4ade80' }
         ];
 
-        // Arquitectura Camtasia: trackIndex 0 = Pista 1 (fondo), 1 = Pista 2, 2 = Pista 3...
+        // Arquitectura multipista: trackIndex 0 = Pista 1 (fondo), 1 = Pista 2, 2 = Pista 3...
         let trackCount = 3;
         let timelineClips = [];
         let selectedClipId = null;
@@ -716,9 +800,10 @@
         let dragOffsetY = 0;
         let draggedLibraryPayload = null;
         let tlDragState = null;
+        let scrubbingRuler = false;
 
         const Toast = Swal.mixin({
-            toast: true, position: 'top-end', showConfirmButton: false, timer: 2400, timerProgressBar: true
+            toast: true, position: 'top-end', showConfirmButton: false, timer: 2300, timerProgressBar: true
         });
 
         function fmtTime(sec) {
@@ -729,7 +814,7 @@
         }
 
         function durClip(c) {
-            return Math.max(0.5, (c.trimEnd || 0) - (c.trimStart || 0));
+            return Math.max(0.2, (c.trimEnd || 0) - (c.trimStart || 0));
         }
 
         function finClip(c) {
@@ -755,13 +840,96 @@
             ctx.fillStyle = '#9ca3af';
             ctx.font = 'bold 21px Calibri, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('🎬 Arrastra videos, GIFs, imágenes o textos a cualquier Pista', renderCanvas.width / 2, renderCanvas.height / 2 - 10);
+            ctx.fillText('🎬 Arrastra videos, GIFs, imágenes o sonidos a las Pistas', renderCanvas.width / 2, renderCanvas.height / 2 - 10);
             ctx.font = '15px Calibri, sans-serif';
-            ctx.fillText('Las pistas superiores se superponen automáticamente estilo Camtasia', renderCanvas.width / 2, renderCanvas.height / 2 + 18);
+            ctx.fillText('Usa la regla superior de minutos para ubicarte en el segundo exacto', renderCanvas.width / 2, renderCanvas.height / 2 + 18);
         }
 
         /* ============================================================
-           0. DECODIFICADOR DE GIF ANIMADO PARA CANVAS
+           0. REGLA GRADUADA DE MINUTOS Y SEGUNDOS + MENÚ CLIC DERECHO
+           ============================================================ */
+        function renderizarReglaTiempo() {
+            const total = obtenerDuracionTotal();
+            timelineRuler.innerHTML = '';
+            const spanSec = total > 0 ? total : 60;
+
+            let majorStep = 5;
+            if (spanSec > 600) majorStep = 60;
+            else if (spanSec > 300) majorStep = 30;
+            else if (spanSec > 120) majorStep = 15;
+            else if (spanSec > 45) majorStep = 10;
+
+            const minorStep = majorStep / 5;
+
+            for (let t = 0; t <= spanSec; t += minorStep) {
+                const pct = (t / spanSec) * 100;
+                if (pct > 99.6) break;
+                const isMajor = Math.abs(Math.round(t / majorStep) * majorStep - t) < 0.05;
+
+                const tick = document.createElement('div');
+                tick.className = `ruler-tick ${isMajor ? 'major' : 'minor'}`;
+                tick.style.left = `${pct}%`;
+                timelineRuler.appendChild(tick);
+
+                if (isMajor) {
+                    const lbl = document.createElement('span');
+                    lbl.className = 'ruler-label';
+                    lbl.style.left = `${pct}%`;
+                    lbl.textContent = fmtTime(Math.round(t));
+                    timelineRuler.appendChild(lbl);
+                }
+            }
+        }
+
+        timelineRuler.addEventListener('pointerdown', (e) => {
+            const total = obtenerDuracionTotal();
+            if (total <= 0 || isRendering) return;
+            if (isPlayingPreview) detenerTodoProceso();
+            scrubbingRuler = true;
+            timelineRuler.setPointerCapture(e.pointerId);
+            const rect = timelineRuler.getBoundingClientRect();
+            const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            saltarATiempo(ratio * total);
+        });
+
+        timelineRuler.addEventListener('pointermove', (e) => {
+            if (!scrubbingRuler) return;
+            const total = obtenerDuracionTotal();
+            if (total <= 0) return;
+            const rect = timelineRuler.getBoundingClientRect();
+            const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            saltarATiempo(ratio * total);
+        });
+
+        timelineRuler.addEventListener('pointerup', (e) => {
+            if (scrubbingRuler) {
+                scrubbingRuler = false;
+                try { timelineRuler.releasePointerCapture(e.pointerId); } catch {}
+            }
+        });
+
+        // Ocultar menú contextual al hacer clic fuera
+        window.addEventListener('click', () => { tlContextMenu.style.display = 'none'; });
+
+        ctxSplitHere.addEventListener('click', () => {
+            tlContextMenu.style.display = 'none';
+            dividirClipEnCabezal();
+        });
+        ctxMoveTrackUp.addEventListener('click', () => {
+            tlContextMenu.style.display = 'none';
+            btnTrackUp.click();
+        });
+        ctxMoveTrackDown.addEventListener('click', () => {
+            tlContextMenu.style.display = 'none';
+            btnTrackDown.click();
+        });
+        ctxDeleteClip.addEventListener('click', () => {
+            tlContextMenu.style.display = 'none';
+            btnDeleteSelected.click();
+        });
+
+        /* ============================================================
+           0B. DECODIFICADOR DE GIF ANIMADO PARA CANVAS
            ============================================================ */
         async function decodificarGifAnimado(arrayBuffer, fallbackImg) {
             if ('ImageDecoder' in window) {
@@ -853,8 +1021,8 @@
         function renderizarMediaBin() {
             if (!mediaLibrary.length) {
                 mediaBinList.innerHTML = `<div class="text-muted small text-center p-3">
-                    📂 Sube aquí tus videos (.mp4), <b>GIFs animados (.gif)</b>, imágenes (.png/.jpg) o sonidos (.mp3).<br><br>
-                    Arrástralos a cualquier pista o suéltalos arriba para crear una pista nueva automáticamente.
+                    📂 Sube aquí tus videos (.mp4), <b>GIFs animados (.gif)</b>, imágenes (.png/.jpg) o sonidos (.mp3/.wav).<br><br>
+                    Sitúa la línea roja en el minuto exacto de la regla y arrastra el clip encima para cubrir marcas de agua o añadir efectos.
                 </div>`;
                 return;
             }
@@ -863,7 +1031,7 @@
                 const card = document.createElement('div');
                 card.className = 'media-row-card';
                 card.draggable = true;
-                card.title = `${item.name} — Arrastra a la Línea de Tiempo o doble clic para añadir`;
+                card.title = `${item.name} — Arrastra a cualquier Pista o doble clic para insertar en el cabezal`;
 
                 if (item.kind === 'image' || item.kind === 'gif') {
                     const tag = item.kind === 'gif' ? '🎞️ GIF Animado' : '🖼️ Imagen';
@@ -882,7 +1050,7 @@
                     card.innerHTML = `<div class="media-row-icon bg-info text-dark">🎵</div>
                                       <div class="media-row-info">
                                           <div class="small fw-bold text-dark text-truncate">${item.name}</div>
-                                          <div class="text-muted" style="font-size:10px;">Audio · ${fmtTime(item.duration)}</div>
+                                          <div class="text-muted" style="font-size:10px;">Audio / Efecto · ${fmtTime(item.duration)}</div>
                                       </div>`;
                 }
 
@@ -891,7 +1059,7 @@
                     e.dataTransfer.setData('text/plain', JSON.stringify(draggedLibraryPayload));
                 });
                 card.addEventListener('dblclick', () => {
-                    agregarMedioAutoCamtasia(item);
+                    agregarMedioAuto(item);
                 });
                 mediaBinList.appendChild(card);
             });
@@ -967,10 +1135,14 @@
                         };
                         mediaLibrary.unshift(nuevoMedia);
                         renderizarMediaBin();
-                        await agregarMedioAutoCamtasia(nuevoMedia);
+
+                        const posExacta = currentTimelineSec;
+                        const pistaDestino = timelineClips.some(c => c.trackIndex === 0) ? encontrarPistaLibreSuperior('broll') : 0;
+                        await agregarMedioEnPista(nuevoMedia, pistaDestino, posExacta);
+
                         statusBadge.className = 'badge bg-success';
-                        statusBadge.textContent = '✅ Clip añadido a pista';
-                        Toast.fire({ icon: 'success', title: 'Video libre añadido a tu Línea de Tiempo' });
+                        statusBadge.textContent = `✅ Insertado en ${fmtTime(posExacta)}`;
+                        Toast.fire({ icon: 'success', title: `Clip colocado en Pista ${pistaDestino + 1} (${fmtTime(posExacta)})` });
                     } catch {
                         statusBadge.className = 'badge bg-warning text-dark';
                         statusBadge.textContent = 'Listo';
@@ -1046,7 +1218,7 @@
                 card.innerHTML = `<div class="media-row-icon bg-dark" style="color:${t.color}; font-size:12px; font-weight:bold;">Aa</div>
                                   <div class="media-row-info">
                                       <div class="small fw-bold text-dark text-truncate">${t.text}</div>
-                                      <div class="text-muted" style="font-size:10px;">Arrastra a cualquier Pista</div>
+                                      <div class="text-muted" style="font-size:10px;">Arrastra o doble clic para añadir en el cabezal</div>
                                   </div>`;
                 card.addEventListener('dragstart', (e) => {
                     draggedLibraryPayload = { dragKind: 'text', text: t.text, color: t.color };
@@ -1133,20 +1305,22 @@
         });
 
         /* ============================================================
-           2. PISTAS DINÁMICAS TIPO CAMTASIA (AUTO-CREACIÓN DE PISTA)
+           2. PISTAS DINÁMICAS (AUTO-CREACIÓN DE PISTA Y COBERTURA)
            ============================================================ */
         btnAddTrack.addEventListener('click', () => {
             trackCount++;
             actualizarTodoUI();
+            tracksScrollArea.scrollTop = 0;
             Toast.fire({ icon: 'info', title: `Pista ${trackCount} añadida arriba` });
         });
 
         function encontrarPistaLibreSuperior(kind) {
             if (kind === 'audio') {
-                // Buscar una pista que ya tenga audio o esté vacía, sino crear nueva
                 for (let t = 0; t < trackCount; t++) {
                     const clipsEnPista = timelineClips.filter(c => c.trackIndex === t);
-                    if (clipsEnPista.length === 0 || clipsEnPista.every(c => c.type === 'audio')) return t;
+                    if (clipsEnPista.length === 0 || clipsEnPista.every(c => c.type === 'audio' && (c.start >= currentTimelineSec + 0.5 || finClip(c) <= currentTimelineSec))) {
+                        return t;
+                    }
                 }
                 trackCount++;
                 return trackCount - 1;
@@ -1154,61 +1328,35 @@
             if (kind === 'video' && !timelineClips.some(c => c.trackIndex === 0)) {
                 return 0;
             }
-            // Para GIFs, imágenes superpuestas o textos, buscar pista superior libre o crear una nueva
             for (let t = 1; t < trackCount; t++) {
-                if (!timelineClips.some(c => c.trackIndex === t)) return t;
+                const ocupadoEnTiempo = timelineClips.some(c => c.trackIndex === t && currentTimelineSec >= c.start - 0.1 && currentTimelineSec <= finClip(c) + 0.1);
+                if (!ocupadoEnTiempo) return t;
             }
             trackCount++;
             return trackCount - 1;
         }
 
-        async function agregarMedioAutoCamtasia(mediaItem) {
+        async function agregarMedioAuto(mediaItem) {
             let targetTrack = 0;
-            let startSec = 0;
+            let startSec = currentTimelineSec;
 
             if (mediaItem.kind === 'video') {
-                // En Pista 1 encadena al final de los videos existentes; si el usuario prefiere otra pista la puede subir con ▲
-                const clipsPista1 = timelineClips.filter(c => c.trackIndex === 0);
-                startSec = clipsPista1.reduce((mx, c) => Math.max(mx, finClip(c)), 0);
-                targetTrack = 0;
+                if (!timelineClips.some(c => c.trackIndex === 0)) {
+                    targetTrack = 0;
+                    startSec = 0;
+                } else {
+                    targetTrack = encontrarPistaLibreSuperior('broll');
+                    startSec = currentTimelineSec;
+                }
             } else if (mediaItem.kind === 'audio') {
                 targetTrack = encontrarPistaLibreSuperior('audio');
-                const clipsPista = timelineClips.filter(c => c.trackIndex === targetTrack);
-                startSec = clipsPista.reduce((mx, c) => Math.max(mx, finClip(c)), 0);
+                startSec = currentTimelineSec;
             } else {
-                // Imagen o GIF animado: crea o usa pista superior en la posición del cabezal
                 targetTrack = encontrarPistaLibreSuperior(mediaItem.kind);
                 startSec = currentTimelineSec;
             }
             await agregarMedioEnPista(mediaItem, targetTrack, startSec);
         }
-
-        newTrackDropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            newTrackDropzone.classList.add('drop-hover');
-        });
-        newTrackDropzone.addEventListener('dragleave', () => newTrackDropzone.classList.remove('drop-hover'));
-        newTrackDropzone.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            newTrackDropzone.classList.remove('drop-hover');
-            const payload = extraerPayloadDrag(e);
-            if (!payload) return;
-
-            trackCount++;
-            const nuevaPistaIdx = trackCount - 1;
-            const rect = newTrackDropzone.getBoundingClientRect();
-            const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-            const total = obtenerDuracionTotal();
-            const dropTime = total > 0 ? ratio * total : 0;
-
-            if (payload.dragKind === 'media') {
-                const mediaItem = mediaLibrary.find(m => m.id === payload.mediaId);
-                if (mediaItem) await agregarMedioEnPista(mediaItem, nuevaPistaIdx, dropTime);
-            } else if (payload.dragKind === 'text') {
-                agregarTextoAPista(payload.text, payload.color, nuevaPistaIdx, dropTime);
-            }
-            draggedLibraryPayload = null;
-        });
 
         function extraerPayloadDrag(e) {
             let payload = draggedLibraryPayload;
@@ -1281,7 +1429,6 @@
                 hiddenMediaPool.appendChild(v);
                 await new Promise(r => { v.onloadedmetadata = r; v.onerror = r; });
 
-                const esSuperpuesto = trackIndex > 0;
                 const nuevoClip = {
                     id: nextClipId++,
                     trackIndex,
@@ -1295,9 +1442,9 @@
                     trimStart: 0,
                     trimEnd: mediaItem.duration,
                     zoom: 100,
-                    xNorm: esSuperpuesto ? 0.62 : 0,
-                    yNorm: esSuperpuesto ? 0.08 : 0,
-                    wNorm: esSuperpuesto ? 0.32 : 1.0,
+                    xNorm: 0,
+                    yNorm: 0,
+                    wNorm: 1.0,
                     transition: null
                 };
                 timelineClips.push(nuevoClip);
@@ -1375,13 +1522,12 @@
             if (total <= 0) return;
             const t = currentTimelineSec;
 
-            // Buscar primero el clip seleccionado si el cabezal está dentro de él; si no, cualquier clip bajo el cabezal
-            let objetivo = timelineClips.find(c => c.id === selectedClipId && t > c.start + 0.35 && t < finClip(c) - 0.35);
+            let objetivo = timelineClips.find(c => c.id === selectedClipId && t > c.start + 0.25 && t < finClip(c) - 0.25);
             if (!objetivo) {
-                objetivo = timelineClips.find(c => t > c.start + 0.35 && t < finClip(c) - 0.35);
+                objetivo = timelineClips.find(c => t > c.start + 0.25 && t < finClip(c) - 0.25);
             }
             if (!objetivo) {
-                Toast.fire({ icon: 'info', title: 'Coloca la línea roja dentro de un clip (no en la orilla) para cortarlo' });
+                Toast.fire({ icon: 'info', title: 'Coloca la línea roja dentro de un clip (no en la orilla) para dividirlo' });
                 return;
             }
 
@@ -1440,10 +1586,9 @@
         }
 
         btnSplitClip.addEventListener('click', dividirClipEnCabezal);
-        btnSplitTimeline.addEventListener('click', dividirClipEnCabezal);
 
         /* ============================================================
-           5. RENDERIZADO DE PISTAS DINÁMICAS + DRAG & TRIM (↔)
+           5. RENDERIZADO DE PISTAS DINÁMICAS + DRAG & TRIM + CLIC DERECHO
            ============================================================ */
         function instalarInteraccionBloque(el, clipObj) {
             const handleLeft = document.createElement('div');
@@ -1457,7 +1602,9 @@
             el.appendChild(handleRight);
 
             const iniciarDrag = (mode, e) => {
+                if (e.button !== 0) return;
                 e.stopPropagation();
+                tlContextMenu.style.display = 'none';
                 if (isRendering) return;
                 if (isPlayingPreview) detenerTodoProceso();
 
@@ -1489,6 +1636,27 @@
                 iniciarDrag('move', e);
             });
 
+            // Clic derecho sobre cualquier clip: mueve la línea roja al punto exacto del clic y abre menú con "Dividir"
+            el.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isRendering) return;
+                if (isPlayingPreview) detenerTodoProceso();
+
+                selectedClipId = clipObj.id;
+                const rect = tracksScrollArea.getBoundingClientRect();
+                const total = obtenerDuracionTotal();
+                if (total > 0) {
+                    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    saltarATiempo(ratio * total);
+                }
+                actualizarTodoUI();
+
+                tlContextMenu.style.left = `${Math.min(window.innerWidth - 190, e.clientX)}px`;
+                tlContextMenu.style.top = `${Math.max(10, e.clientY - 115)}px`;
+                tlContextMenu.style.display = 'block';
+            });
+
             el.addEventListener('dblclick', (e) => {
                 e.stopPropagation();
                 if (clipObj.type === 'text') abrirModalEditarTexto(clipObj);
@@ -1503,26 +1671,36 @@
             if (!tlDragState.moved) return;
 
             const deltaSec = (dx / Math.max(50, tlDragState.wrapperWidth)) * tlDragState.totalSnapshot;
+            const snapUmbral = Math.max(0.25, tlDragState.totalSnapshot * 0.012);
             const { mode, item } = tlDragState;
 
             if (mode === 'move') {
-                item.start = Math.max(0, Number((tlDragState.origStart + deltaSec).toFixed(2)));
-                // Permitir mover verticalmente entre pistas al arrastrar arriba/abajo
-                const deltaTracks = Math.round(-dy / 32);
+                let candidatoStart = Math.max(0, Number((tlDragState.origStart + deltaSec).toFixed(2)));
+                if (Math.abs(candidatoStart - currentTimelineSec) <= snapUmbral) {
+                    candidatoStart = Number(currentTimelineSec.toFixed(2));
+                }
+                item.start = candidatoStart;
+
+                const deltaTracks = Math.round(-dy / 30);
                 if (deltaTracks !== 0) {
                     const nuevaPista = Math.max(0, tlDragState.origTrack + deltaTracks);
                     if (nuevaPista >= trackCount) trackCount = nuevaPista + 1;
                     item.trackIndex = nuevaPista;
                 }
             } else if (mode === 'trim-left') {
-                const maxTrimS = tlDragState.origTrimEnd - 0.5;
+                const maxTrimS = tlDragState.origTrimEnd - 0.2;
                 const nuevoTrimS = Math.max(0, Math.min(maxTrimS, Number((tlDragState.origTrimStart + deltaSec).toFixed(2))));
                 const diff = nuevoTrimS - tlDragState.origTrimStart;
                 item.trimStart = nuevoTrimS;
                 item.start = Math.max(0, Number((tlDragState.origStart + diff).toFixed(2)));
             } else if (mode === 'trim-right') {
                 const maxTrimE = (item.type === 'video' || item.type === 'audio') ? item.rawDuration : 180;
-                item.trimEnd = Math.max(item.trimStart + 0.5, Math.min(maxTrimE, Number((tlDragState.origTrimEnd + deltaSec).toFixed(2))));
+                let nuevoTrimE = Math.max(item.trimStart + 0.2, Math.min(maxTrimE, Number((tlDragState.origTrimEnd + deltaSec).toFixed(2))));
+                const finCandidato = item.start + (nuevoTrimE - item.trimStart);
+                if (Math.abs(finCandidato - currentTimelineSec) <= snapUmbral && currentTimelineSec > item.start + 0.2) {
+                    nuevoTrimE = Math.min(maxTrimE, Number((item.trimStart + (currentTimelineSec - item.start)).toFixed(2)));
+                }
+                item.trimEnd = nuevoTrimE;
             }
 
             renderizarPistas();
@@ -1543,6 +1721,7 @@
         });
 
         function actualizarTodoUI() {
+            renderizarReglaTiempo();
             renderizarPistas();
             actualizarInspector();
             actualizarBotones();
@@ -1552,7 +1731,37 @@
             const total = obtenerDuracionTotal();
             tracksScrollArea.innerHTML = '';
 
-            // Dibujar pistas desde arriba hacia abajo (Pista N ... Pista 2, Pista 1) estilo Camtasia
+            const dropNewZone = document.createElement('div');
+            dropNewZone.className = 'new-track-dropzone';
+            dropNewZone.textContent = '➕ Suelta aquí cualquier video, GIF, imagen, texto o sonido para crear automáticamente una Pista Superior';
+            dropNewZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropNewZone.classList.add('drop-hover');
+            });
+            dropNewZone.addEventListener('dragleave', () => dropNewZone.classList.remove('drop-hover'));
+            dropNewZone.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                dropNewZone.classList.remove('drop-hover');
+                const payload = extraerPayloadDrag(e);
+                if (!payload) return;
+
+                trackCount++;
+                const nuevaPistaIdx = trackCount - 1;
+                const rect = dropNewZone.getBoundingClientRect();
+                const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                const curTotal = obtenerDuracionTotal();
+                const dropTime = curTotal > 0 ? ratio * curTotal : currentTimelineSec;
+
+                if (payload.dragKind === 'media') {
+                    const mediaItem = mediaLibrary.find(m => m.id === payload.mediaId);
+                    if (mediaItem) await agregarMedioEnPista(mediaItem, nuevaPistaIdx, dropTime);
+                } else if (payload.dragKind === 'text') {
+                    agregarTextoAPista(payload.text, payload.color, nuevaPistaIdx, dropTime);
+                }
+                draggedLibraryPayload = null;
+            });
+            tracksScrollArea.appendChild(dropNewZone);
+
             for (let tIdx = trackCount - 1; tIdx >= 0; tIdx--) {
                 const row = document.createElement('div');
                 row.className = 'track-row';
@@ -1561,8 +1770,8 @@
                 const tag = document.createElement('span');
                 tag.className = 'track-label-tag';
                 tag.textContent = tIdx === 0
-                    ? `Pista 1 (Fondo Principal): Arrastra aquí videos, imágenes o GIFs`
-                    : `Pista ${tIdx + 1} (Capa Superior): Superpone videos, GIFs, imágenes, textos o audio`;
+                    ? `Pista 1 (Base): Video principal o escena de fondo`
+                    : `Pista ${tIdx + 1} (Superior): Cubre con video 100%, GIFs, imágenes, textos o sonidos`;
                 row.appendChild(tag);
 
                 row.addEventListener('dragover', (e) => {
@@ -1603,8 +1812,8 @@
                     const clipsPista = timelineClips.filter(c => c.trackIndex === tIdx);
                     clipsPista.forEach(c => {
                         const dur = durClip(c);
-                        const leftPct = Math.min(98, (c.start / total) * 100);
-                        const widthPct = Math.max(2.5, Math.min(100 - leftPct, (dur / total) * 100));
+                        const leftPct = Math.min(98.5, (c.start / total) * 100);
+                        const widthPct = Math.max(2, Math.min(100 - leftPct, (dur / total) * 100));
                         const el = document.createElement('div');
                         const isSel = c.id === selectedClipId;
                         const typeClass = `tl-clip-${c.type}`;
@@ -1618,7 +1827,7 @@
                         el.className = `tl-block ${typeClass} ${isSel ? 'tl-main-selected' : ''}`;
                         el.style.left = `${leftPct}%`;
                         el.style.width = `${widthPct}%`;
-                        el.textContent = `${icon} ${c.name} (${dur.toFixed(1)}s)${volTxt}${c.transition ? ' ✨' : ''}`;
+                        el.textContent = `${icon} ${c.name} [${fmtTime(c.start)} - ${fmtTime(finClip(c))}]${volTxt}${c.transition ? ' ✨' : ''}`;
                         instalarInteraccionBloque(el, c);
                         row.appendChild(el);
                     });
@@ -1670,7 +1879,7 @@
                 btnEditTextStyle.classList.remove('d-none');
             } else if (c.trackIndex > 0) {
                 inspZoom.disabled = false;
-                inspZoom.value = Math.round((c.wNorm || 0.25) * 400);
+                inspZoom.value = Math.round((c.wNorm || 1.0) * 100);
             } else {
                 inspZoom.disabled = false;
                 inspZoom.value = c.zoom || 100;
@@ -1713,7 +1922,7 @@
         inspDur.addEventListener('change', () => {
             const c = timelineClips.find(x => x.id === selectedClipId);
             if (!c) return;
-            const nuevaDur = Math.max(0.5, parseFloat(inspDur.value) || 1);
+            const nuevaDur = Math.max(0.2, parseFloat(inspDur.value) || 1);
             const maxE = (c.type === 'video' || c.type === 'audio') ? c.rawDuration : 180;
             c.trimEnd = Math.min(maxE, c.trimStart + nuevaDur);
             actualizarTodoUI();
@@ -1723,9 +1932,9 @@
         inspZoom.addEventListener('input', () => {
             const c = timelineClips.find(x => x.id === selectedClipId);
             if (!c || c.type === 'audio') return;
-            const val = Math.max(15, Math.min(250, parseFloat(inspZoom.value) || 100));
+            const val = Math.max(10, Math.min(250, parseFloat(inspZoom.value) || 100));
             if (c.type === 'text') c.fontScale = val;
-            else if (c.trackIndex > 0) c.wNorm = val / 400;
+            else if (c.trackIndex > 0) c.wNorm = val / 100;
             else c.zoom = val;
             dibujarEscena(currentTimelineSec);
         });
@@ -1735,9 +1944,6 @@
             if (!c) return;
             c.trackIndex++;
             if (c.trackIndex >= trackCount) trackCount = c.trackIndex + 1;
-            if (c.trackIndex > 0 && c.wNorm === 1.0) {
-                c.wNorm = 0.28; c.xNorm = 0.08; c.yNorm = 0.08;
-            }
             actualizarTodoUI();
             dibujarEscena(currentTimelineSec);
         });
@@ -1767,7 +1973,7 @@
         });
 
         /* ============================================================
-           6. SCRUBBER, CÁMARA FLOTANTE Y RENDER EN CANVAS (MULTIPISTA + GIF)
+           6. SCRUBBER, CÁMARA FLOTANTE Y RENDER EN CANVAS
            ============================================================ */
         function actualizarPlayhead(sec) {
             const total = obtenerDuracionTotal();
@@ -1777,8 +1983,8 @@
             timelinePlayhead.style.left = `${pct}%`;
         }
 
-        timelineWrapper.addEventListener('pointerdown', (e) => {
-            if (e.target.closest('.tl-block') || e.target.closest('#newTrackDropzone')) return;
+        tracksScrollArea.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0 || e.target.closest('.tl-block') || e.target.closest('.new-track-dropzone')) return;
             const total = obtenerDuracionTotal();
             if (total <= 0 || isRendering) return;
             if (isPlayingPreview) detenerTodoProceso();
@@ -1831,6 +2037,10 @@
                 return { x: Math.round(c.xNorm * cw), y: Math.round(c.yNorm * ch), w, h, fontSize, fontFam };
             }
 
+            if ((c.wNorm || 0) >= 0.99 && c.xNorm === 0 && c.yNorm === 0) {
+                return { x: 0, y: 0, w: cw, h: ch, fullCover: true };
+            }
+
             const w = Math.round(cw * (c.wNorm || 0.25));
             let ratioHW = 0.75;
             if (c.type === 'video' && c.videoEl && c.videoEl.videoWidth) {
@@ -1839,7 +2049,7 @@
                 ratioHW = c.imgEl.height / c.imgEl.width;
             }
             const h = Math.round(w * ratioHW);
-            return { x: Math.round(c.xNorm * cw), y: Math.round(c.yNorm * ch), w, h };
+            return { x: Math.round(c.xNorm * cw), y: Math.round(c.yNorm * ch), w, h, fullCover: false };
         }
 
         function dibujarEscena(tSec) {
@@ -1893,40 +2103,40 @@
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(c.text, r.x + r.w / 2, r.y + r.h / 2, r.w - 16);
-                } else if (c.trackIndex === 0) {
-                    // Capa base a pantalla completa
-                    if (c.type === 'video' && c.videoEl && c.videoEl.readyState >= 2) {
-                        const v = c.videoEl;
-                        const scale = Math.max(cw / (v.videoWidth || cw), ch / (v.videoHeight || ch)) * zoomManual;
-                        const dw = (v.videoWidth || cw) * scale;
-                        const dh = (v.videoHeight || ch) * scale;
-                        ctx.drawImage(v, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
-                    } else if (c.type === 'gif' && c.gifData) {
-                        const bmp = obtenerFrameGifEnTiempo(c.gifData, localOffset) || c.imgEl;
-                        if (bmp) {
-                            const scale = Math.max(cw / (bmp.width || cw), ch / (bmp.height || ch)) * zoomManual;
-                            const dw = (bmp.width || cw) * scale;
-                            const dh = (bmp.height || ch) * scale;
-                            ctx.drawImage(bmp, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
-                        }
-                    } else if (c.type === 'image' && c.imgEl) {
-                        const img = c.imgEl;
-                        const kb = 1 + 0.06 * prog;
-                        const scale = Math.max(cw / img.width, ch / img.height) * zoomManual * kb;
-                        const dw = img.width * scale;
-                        const dh = img.height * scale;
-                        ctx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
-                    }
                 } else {
-                    // Capa superpuesta arrastrable en el visor (Pista 2, 3, 4...)
                     const r = obtenerRectVisualClip(c);
-                    if (c.type === 'video' && c.videoEl && c.videoEl.readyState >= 2) {
-                        ctx.drawImage(c.videoEl, r.x, r.y, r.w, r.h);
-                    } else if (c.type === 'gif' && c.gifData) {
-                        const bmp = obtenerFrameGifEnTiempo(c.gifData, localOffset) || c.imgEl;
-                        if (bmp) ctx.drawImage(bmp, r.x, r.y, r.w, r.h);
-                    } else if (c.type === 'image' && c.imgEl) {
-                        ctx.drawImage(c.imgEl, r.x, r.y, r.w, r.h);
+                    if (c.trackIndex === 0 || r.fullCover) {
+                        if (c.type === 'video' && c.videoEl && c.videoEl.readyState >= 2) {
+                            const v = c.videoEl;
+                            const scale = Math.max(cw / (v.videoWidth || cw), ch / (v.videoHeight || ch)) * zoomManual;
+                            const dw = (v.videoWidth || cw) * scale;
+                            const dh = (v.videoHeight || ch) * scale;
+                            ctx.drawImage(v, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+                        } else if (c.type === 'gif' && c.gifData) {
+                            const bmp = obtenerFrameGifEnTiempo(c.gifData, localOffset) || c.imgEl;
+                            if (bmp) {
+                                const scale = Math.max(cw / (bmp.width || cw), ch / (bmp.height || ch)) * zoomManual;
+                                const dw = (bmp.width || cw) * scale;
+                                const dh = (bmp.height || ch) * scale;
+                                ctx.drawImage(bmp, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+                            }
+                        } else if (c.type === 'image' && c.imgEl) {
+                            const img = c.imgEl;
+                            const kb = c.trackIndex === 0 ? (1 + 0.06 * prog) : 1;
+                            const scale = Math.max(cw / img.width, ch / img.height) * zoomManual * kb;
+                            const dw = img.width * scale;
+                            const dh = img.height * scale;
+                            ctx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+                        }
+                    } else {
+                        if (c.type === 'video' && c.videoEl && c.videoEl.readyState >= 2) {
+                            ctx.drawImage(c.videoEl, r.x, r.y, r.w, r.h);
+                        } else if (c.type === 'gif' && c.gifData) {
+                            const bmp = obtenerFrameGifEnTiempo(c.gifData, localOffset) || c.imgEl;
+                            if (bmp) ctx.drawImage(bmp, r.x, r.y, r.w, r.h);
+                        } else if (c.type === 'image' && c.imgEl) {
+                            ctx.drawImage(c.imgEl, r.x, r.y, r.w, r.h);
+                        }
                     }
                 }
                 ctx.restore();
@@ -1987,7 +2197,7 @@
                 if (camIdleLoopId) cancelAnimationFrame(camIdleLoopId);
                 if (camStream) camStream.getTracks().forEach(t => t.stop());
                 camVideo.srcObject = null;
-                toggleCamBtn.className = 'btn btn-danger btn-sm py-0 px-3 fw-bold';
+                toggleCamBtn.className = 'btn btn-danger btn-sm w-100 fw-bold mb-2';
                 toggleCamBtn.textContent = '📹 Activar Cámara';
                 dibujarEscena(currentTimelineSec);
                 actualizarBotones();
@@ -1998,7 +2208,7 @@
                 camVideo.srcObject = camStream;
                 await camVideo.play();
                 camActive = true;
-                toggleCamBtn.className = 'btn btn-dark btn-sm py-0 px-3 fw-bold';
+                toggleCamBtn.className = 'btn btn-dark btn-sm w-100 fw-bold mb-2';
                 toggleCamBtn.textContent = '⏹️ Apagar Cámara';
                 const tick = () => {
                     if (!camActive) return;
@@ -2037,6 +2247,7 @@
 
             for (const c of movibles) {
                 const ro = obtenerRectVisualClip(c);
+                if (ro.fullCover) continue;
                 if (pt.x >= ro.x && pt.x <= ro.x + ro.w && pt.y >= ro.y && pt.y <= ro.y + ro.h) {
                     selectedClipId = c.id;
                     actualizarInspector();
@@ -2100,7 +2311,6 @@
             const soloCam = camActive && total <= 0;
             const listo = total > 0 || soloCam;
             previewBtn.disabled = total <= 0 || isRendering;
-            btnSplitTimeline.disabled = total <= 0 || isRendering;
             renderBtn.disabled = !listo || isRendering;
             renderBtn.innerHTML = soloCam ? '🔴 Grabar Cámara' : '🎬 Renderizar Video';
             clearAllBtn.disabled = !listo && !renderedBlobUrl;
@@ -2295,6 +2505,7 @@
             dibujarFondoBase();
         });
 
+        renderizarReglaTiempo();
         renderizarPistas();
         dibujarFondoBase();
     })();
