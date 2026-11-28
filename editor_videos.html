@@ -2516,7 +2516,7 @@
             });
         }
 
-        function ejecutarSecuencia(grabarArchivo) {
+function ejecutarSecuencia(grabarArchivo) {
             const total = obtenerDuracionTotal();
             const soloCam = camActive && total <= 0;
             if (total <= 0 && !soloCam) return;
@@ -2553,7 +2553,8 @@
                         aplicarVolumenClip(c, el);
                         const s = el.captureStream ? el.captureStream() : el.mozCaptureStream();
                         if (s && s.getAudioTracks().length) {
-                            audioCtx.createMediaStreamSource(new MediaStream(s.getAudioTracks())).connect(destAudio);
+                            const srcNode = audioCtx.createMediaStreamSource(new MediaStream(s.getAudioTracks()));
+                            srcNode.connect(destAudio);
                         }
                     } catch {}
                 });
@@ -2565,14 +2566,27 @@
                 }
 
                 const combined = new MediaStream([...canvasStream.getVideoTracks(), ...destAudio.stream.getAudioTracks()]);
-                const mime = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm';
-                renderedExt = mime.includes('mp4') ? 'mp4' : 'webm';
 
-                mediaRecorder = new MediaRecorder(combined, { mimeType: mime, videoBitsPerSecond: 3800000 });
+                // Priorizar MP4 con audio AAC (mp4a.40.2) compatible 100% con Reproductor de Windows y WhatsApp
+                const candidatosMime = [
+                    'video/mp4;codecs="avc1.42E01E,mp4a.40.2"',
+                    'video/mp4;codecs="avc1.4d002a,mp4a.40.2"',
+                    'video/webm;codecs="vp9,opus"',
+                    'video/webm;codecs="vp8,opus"',
+                    'video/webm'
+                ];
+                const mime = candidatosMime.find(m => MediaRecorder.isTypeSupported(m)) || '';
+                renderedExt = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
+
+                const recorderOpts = mime
+                    ? { mimeType: mime, videoBitsPerSecond: 3800000, audioBitsPerSecond: 128000 }
+                    : { videoBitsPerSecond: 3800000, audioBitsPerSecond: 128000 };
+
+                mediaRecorder = new MediaRecorder(combined, recorderOpts);
                 mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
                 mediaRecorder.onstop = () => {
                     if (audioCtx) audioCtx.close().catch(() => {});
-                    const blob = new Blob(chunks, { type: mime });
+                    const blob = new Blob(chunks, { type: mime || 'video/webm' });
                     if (renderedBlobUrl) URL.revokeObjectURL(renderedBlobUrl);
                     renderedBlobUrl = URL.createObjectURL(blob);
                     downloadVideoBtn.disabled = false;
@@ -2581,7 +2595,7 @@
                     statusBadge.textContent = '✅ ¡Video listo!';
                     isRendering = false;
                     actualizarBotones();
-                    Toast.fire({ icon: 'success', title: '¡Video listo para descargar!' });
+                    Toast.fire({ icon: 'success', title: `¡Video (${renderedExt.toUpperCase()}) listo con audio!` });
                 };
                 mediaRecorder.start(200);
             } else {
